@@ -56,26 +56,20 @@ export default async function Home() {
                 {session && <span>Logged in as {session.user?.name}</span>}
               </p>
               {!session ? (
-                <form>
-                  <button
+                <div className="flex gap-4">
+                  <Link
+                    href="/login"
                     className="rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20"
-                    formAction={async () => {
-                      "use server";
-                      const res = await auth.api.signInSocial({
-                        body: {
-                          provider: "github",
-                          callbackURL: "/",
-                        },
-                      });
-                      if (!res.url) {
-                        throw new Error("No URL returned from signInSocial");
-                      }
-                      redirect(res.url);
-                    }}
                   >
-                    Sign in with Github
-                  </button>
-                </form>
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="rounded-full bg-purple-600 px-10 py-3 font-semibold no-underline transition hover:bg-purple-500"
+                  >
+                    Sign up
+                  </Link>
+                </div>
               ) : (
                 <form>
                   <button
