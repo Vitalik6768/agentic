@@ -3,8 +3,29 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { z } from "zod";
 
 import { authClient } from "@/server/better-auth/client";
+
+const registerSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    email: z
+      .string()
+      .min(1, "Email is required")
+      .email("Invalid email address"),
+    password: z
+      .string()
+      .min(1, "Password is required")
+      .min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,33 +34,44 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof RegisterFormData, string>>
+  >({});
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-
+    setFieldErrors({});
     setLoading(true);
 
+    const result = registerSchema.safeParse({
+      name,
+      email,
+      password,
+      confirmPassword,
+    });
+
+    if (!result.success) {
+      const errors: Partial<Record<keyof RegisterFormData, string>> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof RegisterFormData;
+        errors[field] ??= issue.message;
+      }
+      setFieldErrors(errors);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const result = await authClient.signUp.email({
-        name,
-        email,
-        password,
+      const signUpResult = await authClient.signUp.email({
+        name: result.data.name,
+        email: result.data.email,
+        password: result.data.password,
       });
 
-      if (result.error) {
-        setError(result.error.message ?? "Failed to create account");
+      if (signUpResult.error) {
+        setError(signUpResult.error.message ?? "Failed to create account");
         return;
       }
 
@@ -79,9 +111,15 @@ export default function RegisterPage() {
               placeholder="John Doe"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
+              className={`rounded-lg border bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:ring-1 ${
+                fieldErrors.name
+                  ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                  : "border-white/10 focus:border-purple-400 focus:ring-purple-400"
+              }`}
             />
+            {fieldErrors.name && (
+              <p className="text-xs text-red-300">{fieldErrors.name}</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -94,9 +132,15 @@ export default function RegisterPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
+              className={`rounded-lg border bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:ring-1 ${
+                fieldErrors.email
+                  ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                  : "border-white/10 focus:border-purple-400 focus:ring-purple-400"
+              }`}
             />
+            {fieldErrors.email && (
+              <p className="text-xs text-red-300">{fieldErrors.email}</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -112,9 +156,15 @@ export default function RegisterPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
+              className={`rounded-lg border bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:ring-1 ${
+                fieldErrors.password
+                  ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                  : "border-white/10 focus:border-purple-400 focus:ring-purple-400"
+              }`}
             />
+            {fieldErrors.password && (
+              <p className="text-xs text-red-300">{fieldErrors.password}</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -130,9 +180,17 @@ export default function RegisterPage() {
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
+              className={`rounded-lg border bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:ring-1 ${
+                fieldErrors.confirmPassword
+                  ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                  : "border-white/10 focus:border-purple-400 focus:ring-purple-400"
+              }`}
             />
+            {fieldErrors.confirmPassword && (
+              <p className="text-xs text-red-300">
+                {fieldErrors.confirmPassword}
+              </p>
+            )}
           </div>
 
           <button

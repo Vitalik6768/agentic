@@ -3,29 +3,58 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { z } from "zod";
 
 import { authClient } from "@/server/better-auth/client";
+
+const loginSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(6, "Password must be at least 6 characters"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof LoginFormData, string>>
+  >({});
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setLoading(true);
 
+    const result = loginSchema.safeParse({ email, password });
+
+    if (!result.success) {
+      const errors: Partial<Record<keyof LoginFormData, string>> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof LoginFormData;
+
+        errors[field] ??= issue.message;
+      }
+      setFieldErrors(errors);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const result = await authClient.signIn.email({
-        email,
-        password,
+      const signInResult = await authClient.signIn.email({
+        email: result.data.email,
+        password: result.data.password,
       });
 
-      if (result.error) {
-        setError(result.error.message ?? "Failed to sign in");
+      if (signInResult.error) {
+        setError(signInResult.error.message ?? "Failed to sign in");
         return;
       }
 
@@ -65,9 +94,15 @@ export default function LoginPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
+              className={`rounded-lg border bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:ring-1 ${
+                fieldErrors.email
+                  ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                  : "border-white/10 focus:border-purple-400 focus:ring-purple-400"
+              }`}
             />
+            {fieldErrors.email && (
+              <p className="text-xs text-red-300">{fieldErrors.email}</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -83,9 +118,15 @@ export default function LoginPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
+              className={`rounded-lg border bg-white/5 px-4 py-2.5 text-white placeholder-white/30 outline-none transition focus:ring-1 ${
+                fieldErrors.password
+                  ? "border-red-400 focus:border-red-400 focus:ring-red-400"
+                  : "border-white/10 focus:border-purple-400 focus:ring-purple-400"
+              }`}
             />
+            {fieldErrors.password && (
+              <p className="text-xs text-red-300">{fieldErrors.password}</p>
+            )}
           </div>
 
           <button
