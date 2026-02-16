@@ -45,6 +45,7 @@ export default function LoginPage() {
       setFieldErrors(errors);
       setLoading(false);
       return;
+      
     }
 
     try {
