@@ -4,10 +4,11 @@ import z from "zod";
 // import { PAGINATIONS } from "@/config/constans";
 import { db } from "@/server/db";
 import { TRPCError } from "@trpc/server";
-// import type { Node, Edge } from "@xyflow/react";
+import type { Node, Edge } from "@xyflow/react";
 // import { sendWorkflowExecution } from "@/inngest/utils";
 import { NodeType } from "generated/prisma";
 import { PAGINATIONS } from "@/config/constans";
+// import type { Edge } from "@xyflow/react";
 
 export const workflowsRouter = createTRPCRouter({
   // create: protectedProcedure.mutation(async ({ ctx }) => {
@@ -154,55 +155,55 @@ export const workflowsRouter = createTRPCRouter({
   //       return workflow;
   //     });
   //   }),
-  // getOne: protectedProcedure
-  //   .input(
-  //     z.object({
-  //       id: z.string(),
-  //     })
-  //   )
-  //   .query(async ({ ctx, input }) => {
-  //     const workflow = await db.workflow.findUnique({
-  //       where: {
-  //         id: input.id,
-  //         userId: ctx.session.user.id,
-  //       },
+  getOne: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const workflow = await db.workflow.findUnique({
+        where: {
+          id: input.id,
+          userId: ctx.session.user.id,
+        },
 
-  //       include: {
-  //         nodes: true,
-  //         connections: true,
-  //       },
-  //     });
+        include: {
+          nodes: true,
+          connections: true,
+        },
+      });
 
-  //     if (!workflow) {
-  //       throw new TRPCError({
-  //         code: "NOT_FOUND",
-  //         message: "Workflow not found",
-  //       });
-  //     }
+      if (!workflow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Workflow not found",
+        });
+      }
 
-  //     const nodes: Node[] =
-  //       workflow?.nodes.map((node) => ({
-  //         id: node.id,
-  //         position: node.position as { x: number; y: number },
-  //         type: node.type,
-  //         data: (node.data as Record<string, unknown>) || {},
-  //       })) || [];
+      const nodes: Node[] =
+        workflow?.nodes.map((node) => ({
+          id: node.id,
+          position: node.position as { x: number; y: number },
+          type: node.type,
+          data: (node.data as Record<string, unknown>) || {},
+        })) || [];
 
-  //     const edges: Edge[] =
-  //       workflow?.connections.map((connection) => ({
-  //         id: connection.id,
-  //         source: connection.fromNodeId,
-  //         target: connection.toNodeId,
-  //         sourceHandle: connection.fromOutput,
-  //         targetHandle: connection.toInput,
-  //       })) || [];
-  //     return {
-  //       id: workflow?.id,
-  //       name: workflow?.name,
-  //       nodes,
-  //       edges,
-  //     };
-  //   }),
+      const edges: Edge[] =
+        workflow?.connections.map((connection) => ({
+          id: connection.id,
+          source: connection.fromNodeId,
+          target: connection.toNodeId,
+          sourceHandle: connection.fromOutput,
+          targetHandle: connection.toInput,
+        })) || [];
+      return {
+        id: workflow?.id,
+        name: workflow?.name,
+        nodes,
+        edges,
+      };
+    }),
   getMany: protectedProcedure
     .input(
       z.object({
