@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
@@ -139,15 +138,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-white/60">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/register"
-            className="font-medium text-purple-400 hover:text-purple-300"
-          >
-            Create one
-          </Link>
-        </p>
+        {/* Registration is temporarily disabled */}
       </div>
     </main>
   );
