@@ -57,6 +57,10 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
     }, [nodes]);
 
 
+    function setSelectorOpen(arg0: boolean) {
+        throw new Error("Function not implemented.");
+    }
+
     return (
         <div className="size-full">
             <ReactFlow
@@ -78,7 +82,7 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
                 <Controls />
                 <MiniMap />
                 <Panel position="top-right">
-                    <AddNodeButton onClick={() => { }} />
+                    <AddNodeButton onClick={() => { setSelectorOpen(true); }} />
                 </Panel>
                 {/* {hasManualTrigger && (
                     <Panel position="bottom-center">
