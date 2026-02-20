@@ -30,6 +30,7 @@ export default tseslint.config(
       "error",
       { checksVoidReturn: { attributes: false } },
     ],
+    "react/no-children-prop": "off",
   },
   },
   {

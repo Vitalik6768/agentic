@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.2",
+    "@hookform/resolvers": "^5.2.2",
     "@paralleldrive/cuid2": "^3.3.0",
     "@prisma/client": "^6.6.0",
     "@t3-oss/env-nextjs": "^0.12.0",
@@ -46,12 +47,13 @@
     "react": "^19.1.2",
     "react-dom": "^19.1.2",
     "react-error-boundary": "^6.1.1",
+    "react-hook-form": "^7.71.1",
     "server-only": "^0.0.1",
     "shadcn": "^3.8.5",
     "sonner": "^2.0.7",
     "superjson": "^2.2.1",
     "tailwind-merge": "^3.4.1",
-    "zod": "^3.24.2"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

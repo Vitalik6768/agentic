@@ -1,3 +1,5 @@
+import { HttpRequestNode } from "@/app/features/executions/nodes/http-request/node";
+import { ManualTriggerNode } from "@/app/features/triggers/manual-trigger/node";
 import { InitialNode } from "@/components/initial-node";
 import type { NodeTypes } from "@xyflow/react";
 import { NodeType } from "generated/prisma";
@@ -12,9 +14,9 @@ import { NodeType } from "generated/prisma";
 // import { NodeTypes } from "@xyflow/react";
 
 export const nodeComponents = {
-  [NodeType.INITIAL]: InitialNode
-//   [NodeType.MANUAL_TRIGGER]: ManualTriggerNode,
-//   [NodeType.HTTP_REQUEST]: HttpRequestNode,
+  [NodeType.INITIAL]: InitialNode,
+  [NodeType.MANUAL_TRIGGER]: ManualTriggerNode,
+  [NodeType.HTTP_REQUEST]: HttpRequestNode,
 //   [NodeType.GOOGLE_FORM_TRIGGER]: GoogleFormTriggerNode,
 //   [NodeType.GEMINI]: GeminiNode,
 //   [NodeType.OPENAI]: OpenAiNode,
