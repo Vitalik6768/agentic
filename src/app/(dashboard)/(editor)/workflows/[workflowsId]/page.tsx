@@ -1,7 +1,7 @@
 // import { Editor, EditorError, EditorLoading } from "@/features/editor/components/editor";
 // import { EditorHeader } from "@/features/editor/components/editor-header";
 // import { prefetchWorkflow } from "@/app/features/workflows/server/prefetch";
-import { EditorError, EditorLoading } from "@/app/features/editor/components/editor";
+import { Editor, EditorError, EditorLoading } from "@/app/features/editor/components/editor";
 import { EditorHeader } from "@/app/features/editor/components/editor-header";
 import { prefetchWorkflow } from "@/app/features/workflows/server/prefetch";
 import { requireAuth } from "@/server/better-auth/server";
@@ -26,9 +26,9 @@ const page = async ({ params }: pageProps) => {
             <ErrorBoundary fallback={<EditorError />}>
                 <Suspense fallback={<EditorLoading />}>
                     <EditorHeader workflowId={workflowsId} />
-                    {/* <main className="flex-1">
+                    <main className="flex-1">
                         <Editor workflowId={workflowsId} />
-                    </main> */}
+                    </main>
                 </Suspense>
             </ErrorBoundary>
 
