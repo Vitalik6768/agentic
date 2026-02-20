@@ -7,6 +7,7 @@ import { TRPCError } from "@trpc/server";
 // import type { Node, Edge } from "@xyflow/react";
 // import { sendWorkflowExecution } from "@/inngest/utils";
 import { NodeType } from "generated/prisma";
+import { PAGINATIONS } from "@/config/constans";
 
 export const workflowsRouter = createTRPCRouter({
   // create: protectedProcedure.mutation(async ({ ctx }) => {
@@ -202,55 +203,55 @@ export const workflowsRouter = createTRPCRouter({
   //       edges,
   //     };
   //   }),
-  // getMany: protectedProcedure
-  //   .input(
-  //     z.object({
-  //       page: z.number().default(PAGINATIONS.DEFAULT_PAGE),
-  //       pageSize: z
-  //         .number()
-  //         .min(PAGINATIONS.MIN_PAGE_SIZE)
-  //         .max(PAGINATIONS.MAX_PAGE_SIZE)
-  //         .default(PAGINATIONS.DEFAULT_PAGE_SIZE),
-  //       search: z.string().default(""),
-  //     })
-  //   )
-  //   .query(async ({ ctx, input }) => {
-  //     const { page, pageSize, search } = input;
-  //     const [items, totalCount] = await Promise.all([
-  //       db.workflow.findMany({
-  //         skip: (page - 1) * pageSize,
-  //         take: pageSize,
-  //         where: {
-  //           userId: ctx.session.user.id,
-  //           name: {
-  //             contains: search,
-  //             mode: "insensitive",
-  //           },
-  //         },
-  //         orderBy: {
-  //           updatedAt: "desc",
-  //         },
-  //       }),
-  //       db.workflow.count({
-  //         where: {
-  //           userId: ctx.session.user.id,
-  //           name: {
-  //             contains: search,
-  //             mode: "insensitive",
-  //           },
-  //         },
-  //       }),
-  //     ]);
-  //     const totalPages = Math.ceil(totalCount / pageSize);
-  //     const hasNextPage = page < totalPages;
-  //     const hasPreviousPage = page > 1;
-  //     return {
-  //       items,
-  //       totalCount,
-  //       totalPages,
-  //       hasNextPage,
-  //       hasPreviousPage,
-  //       page,
-  //     };
-  //   }),
+  getMany: protectedProcedure
+    .input(
+      z.object({
+        page: z.number().default(PAGINATIONS.DEFAULT_PAGE),
+        pageSize: z
+          .number()
+          .min(PAGINATIONS.MIN_PAGE_SIZE)
+          .max(PAGINATIONS.MAX_PAGE_SIZE)
+          .default(PAGINATIONS.DEFAULT_PAGE_SIZE),
+        search: z.string().default(""),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { page, pageSize, search } = input;
+      const [items, totalCount] = await Promise.all([
+        db.workflow.findMany({
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          where: {
+            userId: ctx.session.user.id,
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+        }),
+        db.workflow.count({
+          where: {
+            userId: ctx.session.user.id,
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        }),
+      ]);
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const hasNextPage = page < totalPages;
+      const hasPreviousPage = page > 1;
+      return {
+        items,
+        totalCount,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+        page,
+      };
+    }),
 });
