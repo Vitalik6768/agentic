@@ -30,9 +30,9 @@ const page = async ({ params }: pageProps) => {
                         <Editor workflowId={workflowsId} />
                     </main> */}
                 </Suspense>
-        </ErrorBoundary>
+            </ErrorBoundary>
 
-        // </HydrateClient >
+        </HydrateClient >
     )
 };
 

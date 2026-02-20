@@ -82,7 +82,7 @@ export const EditorNameInput = ({ workflowId }: { workflowId: string }) => {
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Enter") {
-            handleSave();
+            void handleSave();
         }else if (event.key === "Escape") {
             setName(workflow.name);
             setIsEditing(false);
