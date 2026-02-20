@@ -9,6 +9,8 @@ import { addEdge, applyEdgeChanges, applyNodeChanges, Background, type Connectio
 import { useSuspenseWorkflow } from "../../workflows/hooks/use-workflows";
 import { useSetAtom } from "jotai";
 import { editorAtom } from "../store/atoms";
+import { nodeComponents } from "@/config/node-components";
+import { AddNodeButton } from "./add-node-button";
 // import { nodeComponents } from "@/config/node-components";
 // import { AddNodeButton } from "./add-node-button";
 // import { useSetAtom } from "jotai";
@@ -63,7 +65,7 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
-                // nodeTypes={nodeComponents}
+                nodeTypes={nodeComponents}
                 onInit={setEditor}
                 fitView
                 snapGrid={[10, 10]}
@@ -75,9 +77,9 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
                 <Background />
                 <Controls />
                 <MiniMap />
-                {/* <Panel position="top-right">
+                <Panel position="top-right">
                     <AddNodeButton onClick={() => { }} />
-                </Panel> */}
+                </Panel>
                 {/* {hasManualTrigger && (
                     <Panel position="bottom-center">
                         <ExecuteWorkflowButton workflow={workflowId} />
