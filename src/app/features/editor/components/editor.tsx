@@ -11,6 +11,7 @@ import { useSetAtom } from "jotai";
 import { editorAtom } from "../store/atoms";
 import { nodeComponents } from "@/config/node-components";
 import { AddNodeButton } from "./add-node-button";
+import { ExecuteWorkflowButton } from "./execute-workflow-button";
 // import { nodeComponents } from "@/config/node-components";
 // import { AddNodeButton } from "./add-node-button";
 // import { useSetAtom } from "jotai";
@@ -84,11 +85,11 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
                 <Panel position="top-right">
                     <AddNodeButton onClick={() => { setSelectorOpen(true); }} />
                 </Panel>
-                {/* {hasManualTrigger && (
+                {hasManualTrigger && (
                     <Panel position="bottom-center">
                         <ExecuteWorkflowButton workflow={workflowId} />
                     </Panel>
-                )} */}
+                )}
             </ReactFlow>
 
 

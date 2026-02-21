@@ -2,6 +2,7 @@
 
 import { BaseHandle } from "@/components/react-flow/base-handle";
 import { BaseNode, BaseNodeContent } from "@/components/react-flow/base-node";
+import { NodeStatusIndicator, type NodeStatus } from "@/components/react-flow/node-status-indicator";
 // import { type NodeStatus, NodeStatusIndicator } from "@/components/react-flow/node-status-indicator";
 import { WorkflowNode } from "@/components/react-flow/workflow-node";
 import { type NodeProps, Position, useReactFlow } from "@xyflow/react";
@@ -18,7 +19,7 @@ interface BaseExecutionNodeProps extends NodeProps {
     onDoubleClick?: () => void;
     name?: string;
     description?: string;
-    // status: NodeStatus;
+    status: NodeStatus;
     icon?: React.ComponentType<{ className?: string }> | string;
 }
 
@@ -31,7 +32,7 @@ export const BaseExecutionNode = memo(({
     onDoubleClick,
     onSettings,
     onDelete,
-    // status="initial",
+    status="initial",
     ...props
 }: BaseExecutionNodeProps) => {
     const { setNodes, setEdges } = useReactFlow();
@@ -56,14 +57,14 @@ export const BaseExecutionNode = memo(({
 
             {...props}
         >
-            {/* <NodeStatusIndicator
+            <NodeStatusIndicator
                 status={status}
                 variant="border"
                 className="rounded-l-2xl"
-            > */}
+            >
             <BaseNode
                 onDoubleClick={onDoubleClick}
-            // status={status}
+                status={status}
             >
                 <BaseNodeContent>
                     {typeof Icon === "string" ? (
@@ -84,10 +85,10 @@ export const BaseExecutionNode = memo(({
                     />
                 </BaseNodeContent>
             </BaseNode>
-            {/* </NodeStatusIndicator> } */}
+            </NodeStatusIndicator>
         </WorkflowNode >
     )
-    
+
 })
 
 

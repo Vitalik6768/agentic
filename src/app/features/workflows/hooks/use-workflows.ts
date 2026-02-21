@@ -70,7 +70,6 @@ export const useRemoveWorkflow = () => {
 
 }
 
-
 export const useUpdateWorkflow = () => {
     const queryClient = useQueryClient();
     const trpc = useTRPC();
@@ -83,6 +82,20 @@ export const useUpdateWorkflow = () => {
         },
         onError: (error) => {
             toast.error(`failed to save workflow ${error.message}`);
+        },
+    }));
+
+}
+
+export const useExecuteWorkflow = () => {
+    const trpc = useTRPC();
+
+    return useMutation(trpc.workflows.execute.mutationOptions({
+        onSuccess: (data) => {
+            toast.success(`Workflow executed successfully`);
+        },
+        onError: (error) => {
+            toast.error(`failed to execute workflow ${error.message}`);
         },
     }));
 

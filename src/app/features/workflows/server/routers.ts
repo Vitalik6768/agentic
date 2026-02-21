@@ -8,6 +8,7 @@ import type { Node, Edge } from "@xyflow/react";
 // import { sendWorkflowExecution } from "@/inngest/utils";
 import { NodeType } from "generated/prisma";
 import { PAGINATIONS } from "@/config/constans";
+import { sendWorkflowExecution } from "@/inngest/utills";
 // import type { Edge } from "@xyflow/react";
 
 export const workflowsRouter = createTRPCRouter({
@@ -20,22 +21,22 @@ export const workflowsRouter = createTRPCRouter({
   //   });
   // }),
 
-  // execute: protectedProcedure
-  //   .input(z.object({
-  //     id: z.string(),
-  //   }))
-  //   .mutation(async ({ ctx, input }) => {
-  //     const workflow = await db.workflow.findUniqueOrThrow({
-  //       where: {
-  //         id: input.id,
-  //         userId: ctx.session.user.id,
-  //       },
-  //     });
-  //     await sendWorkflowExecution({
-  //       workflowId: input.id,
-  //       userId: ctx.session.user.id,
-  //     });
-  //   }),
+  execute: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const workflow = await db.workflow.findUniqueOrThrow({
+        where: {
+          id: input.id,
+          userId: ctx.session.user.id,
+        },
+      });
+      await sendWorkflowExecution({
+        workflowId: input.id,
+        userId: ctx.session.user.id,
+      });
+    }),
   create: protectedProcedure.mutation(async ({ ctx }) => {
     return db.workflow.create({
       data: {

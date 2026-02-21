@@ -1,8 +1,9 @@
 import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
+import type { NodeStatus } from "./node-status-indicator";
 
-export function BaseNode({ className, ...props }: ComponentProps<"div">) {
+export function BaseNode({ className, status, ...props }: ComponentProps<"div"> & { status: NodeStatus }) {
   return (
     <div
       className={cn(
