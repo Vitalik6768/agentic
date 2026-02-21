@@ -62,7 +62,7 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
   //     async () => context
   //   );
   try {
-    const result = await step.run("http request", async () => {
+    const result = await step.run(`http-request-${nodeId}`, async () => {
       const endpoint = Handlebars.compile(data.endpoint)(context);
       const method = data.method;
       const options: KyOptions = { method };

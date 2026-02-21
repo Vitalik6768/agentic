@@ -5,6 +5,7 @@ import { ExecutionStatus, type NodeType, type Prisma } from "generated/prisma";
 import { httpRequestChannel } from "./channels/http-request";
 import { manualTriggerChannel } from "./channels/manual-trigger";
 import { getExecutor } from "@/app/features/executions/lib/executer-regestry";
+import { topologicalSort } from "./utills";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { ExecutionStatus, NodeType } from "@/generated/prisma";
@@ -79,7 +80,11 @@ export const executeWorkflow = inngest.createFunction(
         },
       });
 
-      return workflow.nodes;
+      const sorted = topologicalSort(
+        workflow.nodes as unknown as import("@xyflow/react").Node[],
+        workflow.connections,
+      );
+      return sorted as unknown as typeof workflow.nodes;
     });
 
     const userId = await step.run("find-user-id", async () => {
