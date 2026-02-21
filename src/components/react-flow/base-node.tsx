@@ -1,9 +1,13 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, HtmlHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 import type { NodeStatus } from "./node-status-indicator";
 
-export function BaseNode({ className, status, ...props }: ComponentProps<"div"> & { status: NodeStatus }) {
+interface BaseNodeProps extends HtmlHTMLAttributes<HTMLDivElement> {
+  status?: NodeStatus;
+}
+
+export function BaseNode({ className, status, ...props }: BaseNodeProps) {
   return (
     <div
       className={cn(

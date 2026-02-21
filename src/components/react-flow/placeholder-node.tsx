@@ -50,6 +50,7 @@ export function PlaceholderNode({ children, onClick }: PlaceholderNodeProps) {
     <BaseNode
       className="bg-card w-[150px] border-dashed border-gray-400 p-2 text-center text-gray-400 shadow-none"
       onClick={onClick ?? handleClick}
+      status="initial"
     >
       {children}
       <Handle
