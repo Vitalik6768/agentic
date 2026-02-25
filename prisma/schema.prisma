@@ -94,6 +94,7 @@ model Credential {
 enum CredentialType {
   OPENAI
   GEMINI
+  OPENROUTER
 }
 
 model Workflow {
@@ -117,6 +118,7 @@ enum NodeType {
   GEMINI
   DISCORD
   SLACK
+  OPENROUTER
 }
 
 model Node {

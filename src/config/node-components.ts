@@ -1,4 +1,5 @@
 import { HttpRequestNode } from "@/app/features/executions/nodes/http-request/node";
+import { OpenRouterNode } from "@/app/features/executions/nodes/open-router/node";
 import { ManualTriggerNode } from "@/app/features/triggers/manual-trigger/node";
 import { InitialNode } from "@/components/initial-node";
 import type { NodeTypes } from "@xyflow/react";
@@ -17,6 +18,7 @@ export const nodeComponents = {
   [NodeType.INITIAL]: InitialNode,
   [NodeType.MANUAL_TRIGGER]: ManualTriggerNode,
   [NodeType.HTTP_REQUEST]: HttpRequestNode,
+  [NodeType.OPENROUTER]: OpenRouterNode,
 //   [NodeType.GOOGLE_FORM_TRIGGER]: GoogleFormTriggerNode,
 //   [NodeType.GEMINI]: GeminiNode,
 //   [NodeType.OPENAI]: OpenAiNode,

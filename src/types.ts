@@ -1,6 +1,7 @@
 export enum CredentialType {
   OPENAI = "OPENAI",
   GEMINI = "GEMINI",
+  OPENROUTER = "OPENROUTER",
 }
 
 export interface Credential {

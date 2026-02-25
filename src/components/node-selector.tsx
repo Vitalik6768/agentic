@@ -47,10 +47,10 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/gemini.svg",
     },
     {
-        type: NodeType.OPENAI,
-        label: "OpenAI",
-        description: "Use OpenAI to generate text",
-        icon: "/logos/openai.svg",
+        type: NodeType.OPENROUTER,
+        label: "OpenRouter",
+        description: "Use OpenRouter to generate text",
+        icon: "/logos/openrouter.svg",
     },
     {
         type: NodeType.DISCORD,

@@ -26,9 +26,9 @@ type FormValues = z.infer<typeof formSchema>;
 
 const credentialTypeOptions = [
     {
-        value: CredentialType.OPENAI,
-        label: "OpenAI",
-        icon: "/logos/openai.svg",
+        value: CredentialType.OPENROUTER,
+        label: "OpenRouter",
+        icon: "/logos/openrouter.svg",
 
     },
     {
@@ -59,7 +59,7 @@ export const CredentialForm = ({ initialData }: CredentialFormProps) => {
         resolver: zodResolver(formSchema),
         defaultValues: initialData ?? {
             name: "",
-            type: CredentialType.OPENAI,
+            type: CredentialType.OPENROUTER,
             value: "",
         },
     });

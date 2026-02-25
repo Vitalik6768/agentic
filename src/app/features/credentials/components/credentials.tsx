@@ -95,6 +95,7 @@ export const CredentialsEmpty = () => {
 const credentialTypeIcon: Record<CredentialType, React.ReactNode> = {
     [CredentialType.OPENAI]: "/logos/openai.svg",
     [CredentialType.GEMINI]: "/logos/gemini.svg",
+    [CredentialType.OPENROUTER]: "/logos/openrouter.svg",
 }
 
 export const CredentialItem = ({ data }: { data: Credential }) => {
@@ -102,7 +103,7 @@ export const CredentialItem = ({ data }: { data: Credential }) => {
     const handleRemove = async () => {
         void removeCredential.mutateAsync({ id: data.id });
     }
-    const icon = credentialTypeIcon[data.type] ?? "/logos/openai.svg";
+    const icon = credentialTypeIcon[data.type] ?? "/logos/openrouter.svg";
     return (
         <EntityItem
             href={`/credentials/${data.id}`}
