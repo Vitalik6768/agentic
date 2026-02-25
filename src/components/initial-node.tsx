@@ -8,9 +8,6 @@ import { NodeSelector } from "./node-selector";
 import { WorkflowNode } from "./react-flow/workflow-node";
 
 
-
-
-
 export const InitialNode = memo((props: NodeProps) => {
     const [selectorOpen, setSelectorOpen] = useState(false);
     return (

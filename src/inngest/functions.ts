@@ -4,7 +4,7 @@ import { NonRetriableError } from "inngest";
 import { ExecutionStatus, type NodeType, type Prisma } from "generated/prisma";
 import { httpRequestChannel } from "./channels/http-request";
 import { manualTriggerChannel } from "./channels/manual-trigger";
-import { getExecutor } from "@/app/features/executions/lib/executer-regestry";
+import { getExecutor } from "@/app/features/registry/executer-regestry";
 import { topologicalSort } from "./utills";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";

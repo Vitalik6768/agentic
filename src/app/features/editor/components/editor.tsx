@@ -9,7 +9,7 @@ import { addEdge, applyEdgeChanges, applyNodeChanges, Background, type Connectio
 import { useSuspenseWorkflow } from "../../workflows/hooks/use-workflows";
 import { useSetAtom } from "jotai";
 import { editorAtom } from "../store/atoms";
-import { nodeComponents } from "@/config/node-components";
+import { nodeComponents } from "@/app/features/registry/node-components";
 import { AddNodeButton } from "./add-node-button";
 import { ExecuteWorkflowButton } from "./execute-workflow-button";
 // import { nodeComponents } from "@/config/node-components";

@@ -1,8 +1,8 @@
 import { NodeType } from "generated/prisma";
-import type { NodeExecutor } from "../types";
-import { manualTriggerExecutor } from "../../triggers/manual-trigger/executor";
-import { httpRequestExecutor } from "../nodes/http-request/executor";
-import { openRouterExecutor } from "../nodes/open-router/executor";
+import type { NodeExecutor } from "../executions/types";
+import { manualTriggerExecutor } from "../triggers/manual-trigger/executor";
+import { httpRequestExecutor } from "../executions/nodes/http-request/executor";
+import { openRouterExecutor } from "../executions/nodes/open-router/executor";
 
 export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
