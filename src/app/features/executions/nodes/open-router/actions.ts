@@ -6,13 +6,13 @@ import { getSubscriptionToken, type Realtime } from "@inngest/realtime";
 
 
 export type OpenRouterToken = Realtime.Token<typeof openRouterChannel,
-["status"]
+["status", "result"]
 >;
 
 export async function fetchOpenRouterRealtimeToken(): Promise<OpenRouterToken> {
     const token = await getSubscriptionToken(inngest, {
         channel: openRouterChannel(),
-        topics: ["status"],
+        topics: ["status", "result"],
     })
     return token;
 }

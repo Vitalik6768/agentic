@@ -7,4 +7,11 @@ export const openRouterChannel = channel(OPEN_ROUTER_CHANNEL_NAME).addTopic(
         nodeId: string;
         status: "loading" | "success" | "error";
     }>()
+).addTopic(
+    topic("result").type<{
+        nodeId: string;
+        status: "success" | "error";
+        output?: string;
+        error?: string;
+    }>()
 )

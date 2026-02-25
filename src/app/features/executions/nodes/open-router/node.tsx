@@ -10,6 +10,7 @@ import { OPEN_ROUTER_CHANNEL_NAME } from "@/inngest/channels/open-router";
 import { useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { OpenRouterDialog, type OpenRouterFormValues } from "./dialog";
 import { fetchOpenRouterRealtimeToken } from "./actions";
+import { useInngestSubscription } from "@inngest/realtime/hooks";
 
 
 type OpenRouterNodeData = {
@@ -29,7 +30,35 @@ export const OpenRouterNode = memo((props: NodeProps<OpenRouterNodeType>) => {
         refreshToken: fetchOpenRouterRealtimeToken,
     });
     const [dialogOpen, setDialogOpen] = useState(false);
-    const { setNodes, getNodes } = useReactFlow();
+    const { setNodes } = useReactFlow();
+    const { data: realtimeMessages } = useInngestSubscription({
+        refreshToken: fetchOpenRouterRealtimeToken,
+        enabled: true,
+    });
+
+    const latestResultMessage = realtimeMessages
+        .filter(
+            (message) =>
+                message.kind === "data" &&
+                message.channel === OPEN_ROUTER_CHANNEL_NAME &&
+                message.topic === "result" &&
+                (message.data as { nodeId: string }).nodeId === props.id
+        )
+        .sort((a, b) => {
+            if (a.kind === "data" && b.kind === "data") {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+
+            return 0;
+        })[0];
+
+    const latestExecutionResult = latestResultMessage?.kind === "data"
+        ? (latestResultMessage.data as {
+            status: "success" | "error";
+            output?: string;
+            error?: string;
+        })
+        : null;
 
     const handleOpenSettings = () => {
         setDialogOpen(true);
@@ -65,6 +94,9 @@ export const OpenRouterNode = memo((props: NodeProps<OpenRouterNodeType>) => {
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
                 defaultValues={nodeData as Partial<OpenRouterFormValues>}
+                executionStatus={nodeStatus}
+                executionOutput={latestExecutionResult?.output ?? ""}
+                executionError={latestExecutionResult?.error}
             />
             <BaseExecutionNode
                 status={nodeStatus}

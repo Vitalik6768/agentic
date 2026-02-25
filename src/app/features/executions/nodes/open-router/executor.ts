@@ -172,6 +172,13 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
       return extractModelText(result);
     });
     await publish(
+      openRouterChannel().result({
+        nodeId,
+        status: "success",
+        output: text,
+      })
+    );
+    await publish(
       openRouterChannel().status({
         nodeId,
         status: "success",
@@ -184,6 +191,14 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
     };
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown OpenRouter error";
+    await publish(
+      openRouterChannel().result({
+        nodeId,
+        status: "error",
+        error: errorMessage,
+      })
+    );
     await publish(
       openRouterChannel().status({
         nodeId,
