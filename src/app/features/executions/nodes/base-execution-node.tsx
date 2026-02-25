@@ -6,7 +6,8 @@ import { NodeStatusIndicator, type NodeStatus } from "@/components/react-flow/no
 // import { type NodeStatus, NodeStatusIndicator } from "@/components/react-flow/node-status-indicator";
 import { WorkflowNode } from "@/components/react-flow/workflow-node";
 import { type NodeProps, Position, useReactFlow } from "@xyflow/react";
-import { memo, type ReactNode, type ReactElement } from "react";
+import { CheckIcon, TriangleAlertIcon } from "lucide-react";
+import { memo, type ReactNode } from "react";
 
 
 
@@ -60,17 +61,27 @@ export const BaseExecutionNode = memo(({
             <NodeStatusIndicator
                 status={status}
                 variant="border"
-                className="rounded-l-2xl"
+                className="rounded-none"
             >
             <BaseNode
                 onDoubleClick={onDoubleClick}
+                className="relative h-15 w-16 rounded-none border-slate-300 bg-card shadow-sm"
                 status={status}
             >
-                <BaseNodeContent>
+                <BaseNodeContent className="relative flex h-full w-full items-center justify-center p-0">
                     {typeof Icon === "string" ? (
-                        <img src={Icon} alt={name} width={16} height={16} />
+                        <img src={Icon} alt={name} width={28} height={28} className="mt-1 h-7 w-7 object-contain" />
                     ) : Icon ? (
-                        <Icon className="size-5 object-contain rounded-sm" />
+                        <Icon className="mt-1 size-7 object-contain rounded-sm text-muted-foreground" />
+                    ) : null}
+                    {status === "success" ? (
+                        <div className="absolute right-1.5 bottom-0.5 rounded-full bg-background p-0.5 text-green-500">
+                            <CheckIcon className="size-3.5" />
+                        </div>
+                    ) : status === "error" ? (
+                        <div className="absolute right-1.5 bottom-0.5 rounded-full bg-background p-0.5 text-red-500">
+                            <TriangleAlertIcon className="size-3.5" />
+                        </div>
                     ) : null}
                     {children}
                     <BaseHandle

@@ -107,7 +107,7 @@ export const NodeStatusIndicator = ({
       }
     case "success":
       return (
-        <StatusBorder className={cn("border-green-700/50", className)}>{children}</StatusBorder>
+        <StatusBorder className={cn("border-green-600", className)}>{children}</StatusBorder>
       );
     case "error":
       return <StatusBorder className={cn("border-red-700/50", className)}>{children}</StatusBorder>;
