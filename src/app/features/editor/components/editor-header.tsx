@@ -8,7 +8,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAtomValue } from "jotai";
 import { useSuspenseWorkflow, useUpdateWorkflow, useUpdateWorkflowName } from "@/app/features/workflows/hooks/use-workflows";
 
-import { SaveIcon } from "lucide-react";
+import { LoaderCircleIcon, SaveIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -34,9 +34,17 @@ export const EditorSaveButton = ({ workflowId }: { workflowId: string }) => {
     }
     return (
         <div className="ml-auto">
-            <Button onClick={handleSave} disabled={saveWorkflow.isPending}>
-                <SaveIcon className="size-4" />
-                Save
+            <Button
+                onClick={handleSave}
+                disabled={saveWorkflow.isPending}
+                className="gap-2 bg-blue-600 px-5 font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-lg hover:cursor-pointer"
+            >
+                {saveWorkflow.isPending ? (
+                    <LoaderCircleIcon className="size-4 animate-spin" />
+                ) : (
+                    <SaveIcon className="size-4" />
+                )}
+                {saveWorkflow.isPending ? "Saving..." : "Save"}
             </Button>
         </div>
 
