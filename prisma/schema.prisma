@@ -95,6 +95,7 @@ enum CredentialType {
   OPENAI
   GEMINI
   OPENROUTER
+  SET_NODE
 }
 
 model Workflow {
@@ -113,6 +114,7 @@ enum NodeType {
   INITIAL
   MANUAL_TRIGGER
   HTTP_REQUEST
+  SET_NODE
   GOOGLE_FORM_TRIGGER
   OPENAI
   GEMINI

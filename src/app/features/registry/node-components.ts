@@ -4,6 +4,7 @@ import { ManualTriggerNode } from "@/app/features/triggers/manual-trigger/node";
 import { InitialNode } from "@/components/initial-node";
 import type { NodeTypes } from "@xyflow/react";
 import { NodeType } from "generated/prisma";
+import { SetNodeNode } from "../executions/nodes/set-node/node";
 // import { DiscordNode } from "@/features/executions/components/discord/node";
 // import { GeminiNode } from "@/features/executions/components/gemini/node";
 // import { HttpRequestNode } from "@/features/executions/components/http-request/node";
@@ -19,6 +20,7 @@ export const nodeComponents = {
   [NodeType.MANUAL_TRIGGER]: ManualTriggerNode,
   [NodeType.HTTP_REQUEST]: HttpRequestNode,
   [NodeType.OPENROUTER]: OpenRouterNode,
+  [NodeType.SET_NODE]: SetNodeNode,
 //   [NodeType.GOOGLE_FORM_TRIGGER]: GoogleFormTriggerNode,
 //   [NodeType.GEMINI]: GeminiNode,
 //   [NodeType.OPENAI]: OpenAiNode,

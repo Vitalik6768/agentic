@@ -41,10 +41,10 @@ const executionNodes: NodeTypeOption[] = [
         icon: GlobeIcon,
     },
     {
-        type: NodeType.GEMINI,
-        label: "Gemini",
-        description: "Use Gemini to generate text",
-        icon: "/logos/gemini.svg",
+        type: NodeType.SET_NODE,
+        label: "Set Node",
+        description: "Set a variable in the context",
+        icon: "/logos/set-node.svg",
     },
     {
         type: NodeType.OPENROUTER,
