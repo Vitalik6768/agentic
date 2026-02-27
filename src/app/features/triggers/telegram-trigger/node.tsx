@@ -1,45 +1,67 @@
-// import { NodeProps } from "@xyflow/react";
 import { memo, useState } from "react";
-// import { BaseTriggerNode } from "../base-trigger-node";
-// import { ManualTriggerDialog } from "./dialog";
-// import { NodeStatus } from "@/components/react-flow/node-status-indicator";
-// import { MANUAL_TRIGGER_CHANNEL_NAME } from "@/inngest/channels/manual-trigger";
-// import { useNodeStatus } from "@/features/executions/hooks/use-node-status";
-// import { fetchManualTriggerRealtimeToken } from "./actions";
-import type { NodeProps } from "@xyflow/react";
+import { useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { BaseTriggerNode } from "../base-trigger-node";
 import { fetchTelegramTriggerRealtimeToken } from "./actions";
 import { useNodeStatus } from "../../executions/hooks/use-node-status";
 import { TELEGRAM_TRIGGER_CHANNEL_NAME } from "@/inngest/channels/telegram-trigger";
+import { TelegramTriggerDialog, type TelegramTriggerFormValues } from "./dialog";
 
+type TelegramTriggerNodeData = {
+    credentialId?: string;
+}
 
-export const TelegramTriggerNode = memo((props: NodeProps) => {
-    const [open, setOpen] = useState(false);
+type TelegramTriggerNodeType = Node<TelegramTriggerNodeData>;
 
+export const TelegramTriggerNode = memo((props: NodeProps<TelegramTriggerNodeType>) => {
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const { setNodes } = useReactFlow();
     const nodeStatus = useNodeStatus({
         nodeId: props.id,
         channel: TELEGRAM_TRIGGER_CHANNEL_NAME,
         topic: "status",
         refreshToken: fetchTelegramTriggerRealtimeToken,
     });
+
     const handleSettings = () => {
-        setOpen(true);
+        setDialogOpen(true);
     }
+
+    const handleSubmit = (values: TelegramTriggerFormValues) => {
+        setNodes((nodes) => nodes.map((node) => {
+            if (node.id === props.id) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        ...values,
+                    },
+                };
+            }
+            return node;
+        }));
+    };
+
+    const nodeData = props.data;
+    const description = nodeData?.credentialId ? "Configured" : "NOT CONFIGURED";
+
     return (
         <>
-        {/* <ManualTriggerDialog open={open} onOpenChange={setOpen} /> */}
-        <BaseTriggerNode 
-        status={nodeStatus}
-        {...props}
-        children={<></>}
-        icon="/logos/telegram.svg"
-        name="Telegram Trigger"
-        description="Trigger the workflow via Telegram"
-        onDoubleClick={handleSettings}
-        onSettings={handleSettings}
-         />
-
-
+            <TelegramTriggerDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onSubmit={handleSubmit}
+                defaultValues={nodeData as Partial<TelegramTriggerFormValues>}
+            />
+            <BaseTriggerNode
+                status={nodeStatus}
+                {...props}
+                children={<></>}
+                icon="/logos/telegram.svg"
+                name="Telegram Trigger"
+                description={description}
+                onDoubleClick={handleSettings}
+                onSettings={handleSettings}
+            />
         </>
     )
 })
