@@ -7,6 +7,7 @@ import { NodeType } from "generated/prisma";
 import { SetNodeNode } from "../executions/nodes/set-node/node";
 import { TelegramMessageNode } from "../executions/nodes/telegram-message/node";
 import { TelegramTriggerNode } from "../triggers/telegram-trigger/node";
+import { WebhookTriggerNode } from "../triggers/webhook-trigger/node";
 // import { DiscordNode } from "@/features/executions/components/discord/node";
 // import { GeminiNode } from "@/features/executions/components/gemini/node";
 // import { HttpRequestNode } from "@/features/executions/components/http-request/node";
@@ -21,6 +22,7 @@ export const nodeComponents = {
   [NodeType.INITIAL]: InitialNode,
   [NodeType.MANUAL_TRIGGER]: ManualTriggerNode,
   [NodeType.TELEGRAM_TRIGGER]: TelegramTriggerNode,
+  [NodeType.WEBHOOK_TRIGGER]: WebhookTriggerNode,
   [NodeType.HTTP_REQUEST]: HttpRequestNode,
   [NodeType.OPENROUTER]: OpenRouterNode,
   [NodeType.SET_NODE]: SetNodeNode,

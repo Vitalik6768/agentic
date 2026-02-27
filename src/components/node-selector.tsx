@@ -32,6 +32,12 @@ const triggerNodes: NodeTypeOption[] = [
         icon: "/logos/telegram.svg",
     },
     {
+        type: NodeType.WEBHOOK_TRIGGER,
+        label: "Webhook Trigger",
+        description: "Trigger the workflow via HTTP webhook",
+        icon: "/logos/webhook.svg",
+    },
+    {
         type: NodeType.GOOGLE_FORM_TRIGGER,
         label: "Google Form Trigger",
         description: "When a Google Form is submitted",

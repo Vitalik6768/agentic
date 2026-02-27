@@ -124,6 +124,7 @@ enum NodeType {
   SLACK
   OPENROUTER
   TELEGRAM_MESSAGE
+  WEBHOOK_TRIGGER
 }
 
 model Node {

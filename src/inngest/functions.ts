@@ -9,6 +9,7 @@ import { topologicalSort } from "./utills";
 import { openRouterChannel } from "./channels/open-router";
 import { telegramTriggerChannel } from "./channels/telegram-trigger";
 import { telegramMessageChannel } from "./channels/telegram-message";
+import { webhookTriggerChannel } from "./channels/webhook_trigger";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { ExecutionStatus, NodeType } from "@/generated/prisma";
@@ -47,6 +48,7 @@ export const executeWorkflow = inngest.createFunction(
       telegramTriggerChannel(),
       telegramMessageChannel(),
       openRouterChannel(),
+      webhookTriggerChannel(),
     //   googleFormTriggerChannel(),
     //   geminiChannel(),
     //   openAiChannel(),
