@@ -5,6 +5,7 @@ import { fetchTelegramTriggerRealtimeToken } from "./actions";
 import { useNodeStatus } from "../../executions/hooks/use-node-status";
 import { TELEGRAM_TRIGGER_CHANNEL_NAME } from "@/inngest/channels/telegram-trigger";
 import { TelegramTriggerDialog, type TelegramTriggerFormValues } from "./dialog";
+import { useInngestSubscription } from "@inngest/realtime/hooks";
 
 type TelegramTriggerNodeData = {
     credentialId?: string;
@@ -21,6 +22,34 @@ export const TelegramTriggerNode = memo((props: NodeProps<TelegramTriggerNodeTyp
         topic: "status",
         refreshToken: fetchTelegramTriggerRealtimeToken,
     });
+    const { data: realtimeMessages } = useInngestSubscription({
+        refreshToken: fetchTelegramTriggerRealtimeToken,
+        enabled: true,
+    });
+
+    const latestResultMessage = realtimeMessages
+        .filter(
+            (message) =>
+                message.kind === "data" &&
+                message.channel === TELEGRAM_TRIGGER_CHANNEL_NAME &&
+                message.topic === "result" &&
+                (message.data as { nodeId: string }).nodeId === props.id
+        )
+        .sort((a, b) => {
+            if (a.kind === "data" && b.kind === "data") {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+
+            return 0;
+        })[0];
+
+    const latestExecutionResult = latestResultMessage?.kind === "data"
+        ? (latestResultMessage.data as {
+            status: "success" | "error";
+            output?: string;
+            error?: string;
+        })
+        : null;
 
     const handleSettings = () => {
         setDialogOpen(true);
@@ -51,6 +80,9 @@ export const TelegramTriggerNode = memo((props: NodeProps<TelegramTriggerNodeTyp
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
                 defaultValues={nodeData as Partial<TelegramTriggerFormValues>}
+                executionStatus={nodeStatus}
+                executionOutput={latestExecutionResult?.output ?? ""}
+                executionError={latestExecutionResult?.error}
             />
             <BaseTriggerNode
                 status={nodeStatus}

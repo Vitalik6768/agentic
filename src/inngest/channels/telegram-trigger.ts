@@ -8,4 +8,11 @@ export const telegramTriggerChannel = channel(TELEGRAM_TRIGGER_CHANNEL_NAME).add
         nodeId: string;
         status: "loading" | "success" | "error";
     }>()
+).addTopic(
+    topic("result").type<{
+        nodeId: string;
+        status: "success" | "error";
+        output?: string;
+        error?: string;
+    }>()
 )

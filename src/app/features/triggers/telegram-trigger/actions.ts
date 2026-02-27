@@ -6,13 +6,13 @@ import { getSubscriptionToken, type Realtime } from "@inngest/realtime";
 
 
 export type TelegramTriggerToken = Realtime.Token<typeof telegramTriggerChannel,
-["status"]
+["status", "result"]
 >;
 
 export async function fetchTelegramTriggerRealtimeToken(): Promise<TelegramTriggerToken> {
     const token = await getSubscriptionToken(inngest, {
         channel: telegramTriggerChannel(),
-        topics: ["status"],
+        topics: ["status", "result"],
     })
     return token;
 }
