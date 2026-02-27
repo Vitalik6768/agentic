@@ -26,6 +26,12 @@ const triggerNodes: NodeTypeOption[] = [
         icon: MousePointer2Icon,
     },
     {
+        type: NodeType.TELEGRAM_TRIGGER,
+        label: "Telegram Trigger",
+        description: "Trigger the workflow via Telegram",
+        icon: "/logos/telegram.svg",
+    },
+    {
         type: NodeType.GOOGLE_FORM_TRIGGER,
         label: "Google Form Trigger",
         description: "When a Google Form is submitted",

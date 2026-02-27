@@ -3,7 +3,6 @@
 import { ErrorView, LoadingView } from "@/components/entity-components";
 // import { useSuspenseWorkflow } from "@/app/features/workflows/hooks/use-workflows";
 import '@xyflow/react/dist/style.css';
-import { NodeType } from "generated/prisma";
 import { useCallback, useMemo, useState } from "react";
 import { addEdge, applyEdgeChanges, applyNodeChanges, Background, type Connection, Controls, type Edge, type EdgeChange, MiniMap, type Node, type NodeChange, Panel, Position, ReactFlow } from "@xyflow/react";
 import { useSuspenseWorkflow } from "../../workflows/hooks/use-workflows";
@@ -53,8 +52,10 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
         (params: Connection) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
         [],
     );
-    const hasManualTrigger = useMemo(() => {
-        return nodes.some((node) => node.type === NodeType.MANUAL_TRIGGER);
+    const hasConfiguredTrigger = useMemo(() => {
+        return nodes.some(
+            (node) => typeof node.type === "string" && node.type.endsWith("_TRIGGER"),
+        );
     }, [nodes]);
 
 
@@ -85,7 +86,7 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
                 <Panel position="top-right">
                     <AddNodeButton onClick={() => { setSelectorOpen(true); }} />
                 </Panel>
-                {hasManualTrigger && (
+                {hasConfiguredTrigger && (
                     <Panel position="bottom-center">
                         <ExecuteWorkflowButton workflow={workflowId} />
                     </Panel>

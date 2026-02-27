@@ -4,9 +4,11 @@ import { manualTriggerExecutor } from "../triggers/manual-trigger/executor";
 import { httpRequestExecutor } from "../executions/nodes/http-request/executor";
 import { openRouterExecutor } from "../executions/nodes/open-router/executor";
 import { setNodeExecutor } from "../executions/nodes/set-node/executor";
+import { telegramTriggerExecutor } from "../triggers/telegram-trigger/executor";
 
 export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
+    [NodeType.TELEGRAM_TRIGGER]: telegramTriggerExecutor,
     [NodeType.HTTP_REQUEST]: httpRequestExecutor as NodeExecutor,
     [NodeType.INITIAL]: manualTriggerExecutor,
     [NodeType.OPENROUTER]: openRouterExecutor as NodeExecutor,

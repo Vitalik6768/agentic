@@ -7,6 +7,7 @@ import { manualTriggerChannel } from "./channels/manual-trigger";
 import { getExecutor } from "@/app/features/registry/executer-regestry";
 import { topologicalSort } from "./utills";
 import { openRouterChannel } from "./channels/open-router";
+import { telegramTriggerChannel } from "./channels/telegram-trigger";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { ExecutionStatus, NodeType } from "@/generated/prisma";
@@ -42,6 +43,7 @@ export const executeWorkflow = inngest.createFunction(
     channels: [
       httpRequestChannel(),
       manualTriggerChannel(),
+      telegramTriggerChannel(),
       openRouterChannel(),
     //   googleFormTriggerChannel(),
     //   geminiChannel(),

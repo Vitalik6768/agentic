@@ -96,6 +96,7 @@ enum CredentialType {
   GEMINI
   OPENROUTER
   SET_NODE
+  TELEGRAM_BOT
 }
 
 model Workflow {
@@ -113,6 +114,7 @@ model Workflow {
 enum NodeType {
   INITIAL
   MANUAL_TRIGGER
+  TELEGRAM_TRIGGER
   HTTP_REQUEST
   SET_NODE
   GOOGLE_FORM_TRIGGER
