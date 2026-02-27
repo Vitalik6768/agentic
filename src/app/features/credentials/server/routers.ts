@@ -8,10 +8,7 @@ import { CredentialType } from "@/types";
 import { encrypt } from "@/lib/encryption";
 // import { CredentialType } from "@/types";
 
-
 export const credentialsRouter = createTRPCRouter({
-  
-
   
   create: protectedProcedure
   .input(z.object({

@@ -65,7 +65,7 @@ export const BaseExecutionNode = memo(({
             >
             <BaseNode
                 onDoubleClick={onDoubleClick}
-                className="relative h-15 w-16 rounded-none border-slate-300 bg-card shadow-sm"
+                className="relative h-15 w-16 rounded-none border-slate-500 bg-card"
                 status={status}
             >
                 <BaseNodeContent className="relative flex h-full w-full items-center justify-center p-0">
