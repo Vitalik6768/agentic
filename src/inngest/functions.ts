@@ -82,7 +82,8 @@ export const executeWorkflow = inngest.createFunction(
           id: workflowId,
           userId: event.data.userId,
         },
-        include: {
+        select: {
+          userId: true,
           nodes: true,
           connections: true,
         },
@@ -92,26 +93,18 @@ export const executeWorkflow = inngest.createFunction(
         workflow.nodes as unknown as import("@xyflow/react").Node[],
         workflow.connections,
       );
-      return sorted as unknown as typeof workflow.nodes;
+      return {
+        sortedNodes: sorted as unknown as typeof workflow.nodes,
+        userId: workflow.userId,
+      };
     });
-
-    const userId = await step.run("find-user-id", async () => {
-      const workflow = await db.workflow.findUniqueOrThrow({
-        where: {
-          id: workflowId,
-        },
-        select: {
-          userId: true,
-        },
-      });
-      return workflow.userId;
-    });
+    const userId = sortedNodes.userId;
 
     let context = event.data.initialData ?? {};
 
     //exucute nodes
 
-    for (const node of sortedNodes) {
+    for (const node of sortedNodes.sortedNodes) {
       const executor = getExecutor(node.type);
       context = await executor({
         data: node.data as Record<string, unknown>,
