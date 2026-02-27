@@ -90,7 +90,7 @@ export const telegramMessageExecutor: NodeExecutor<TelegramMessageData> = async 
   const renderedMessage = Handlebars.compile(data.message)(context).trim();
   const contextChatId = (context as { telegram?: { chat?: { id?: number | string } } }).telegram?.chat?.id;
   const renderedChatId = data.chatId ? Handlebars.compile(data.chatId)(context).trim() : "";
-  const finalChatId = renderedChatId ?? (contextChatId != null ? String(contextChatId) : "");
+  const finalChatId = renderedChatId || (contextChatId != null ? String(contextChatId) : "");
 
   if (!finalChatId) {
     await publish(telegramMessageChannel().status({ nodeId, status: "error" }));
@@ -118,8 +118,9 @@ export const telegramMessageExecutor: NodeExecutor<TelegramMessageData> = async 
 
   try {
     const responseData = await step.run(`telegram-send-message-${nodeId}`, async () => {
+      const decryptedToken = decrypt(credential.value);
       const response = await ky
-        .post(`https://api.telegram.org/bot${decrypt(credential.value)}/sendMessage`, {
+        .post(`https://api.telegram.org/bot${decryptedToken}/sendMessage`, {
           json: {
             chat_id: finalChatId,
             text: renderedMessage,
