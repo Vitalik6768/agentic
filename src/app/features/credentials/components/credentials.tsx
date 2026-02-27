@@ -97,6 +97,7 @@ const credentialTypeIcon: Record<CredentialType, React.ReactNode> = {
     [CredentialType.GEMINI]: "/logos/gemini.svg",
     [CredentialType.OPENROUTER]: "/logos/openrouter.svg",
     [CredentialType.SET_NODE]: "/logos/set-node.svg",
+    [CredentialType.TELEGRAM_BOT]: "/logos/telegram.svg",
 }
 
 export const CredentialItem = ({ data }: { data: Credential }) => {

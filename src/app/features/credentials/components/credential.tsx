@@ -32,6 +32,11 @@ const credentialTypeOptions = [
 
     },
     {
+        value: CredentialType.TELEGRAM_BOT,
+        label: "Telegram Bot",
+        icon: "/logos/telegram.svg",
+    },
+    {
         value: CredentialType.GEMINI,
         label: "Gemini",
         icon: "/logos/gemini.svg",
