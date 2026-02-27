@@ -90,7 +90,7 @@ export const telegramMessageExecutor: NodeExecutor<TelegramMessageData> = async 
   const renderedMessage = Handlebars.compile(data.message)(context).trim();
   const contextChatId = (context as { telegram?: { chat?: { id?: number | string } } }).telegram?.chat?.id;
   const renderedChatId = data.chatId ? Handlebars.compile(data.chatId)(context).trim() : "";
-  const finalChatId = renderedChatId || (contextChatId != null ? String(contextChatId) : "");
+  const finalChatId = renderedChatId ?? (contextChatId != null ? String(contextChatId) : "");
 
   if (!finalChatId) {
     await publish(telegramMessageChannel().status({ nodeId, status: "error" }));
@@ -153,7 +153,7 @@ export const telegramMessageExecutor: NodeExecutor<TelegramMessageData> = async 
 
     return {
       ...context,
-      [variableName || "telegramMessage"]: responseData,
+      [variableName ?? "telegramMessage"]: responseData,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown Telegram message error";

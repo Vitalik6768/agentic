@@ -1,6 +1,6 @@
 import { sendWorkflowExecution } from "@/inngest/utills";
 import { db } from "@/server/db";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 type TelegramUpdate = {
   update_id?: number;
