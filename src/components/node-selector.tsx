@@ -53,6 +53,12 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/set-node.svg",
     },
     {
+        type: NodeType.TELEGRAM_MESSAGE,
+        label: "Telegram Message",
+        description: "Send a message to a Telegram chat",
+        icon: "/logos/telegram-message.svg",
+    },
+    {
         type: NodeType.OPENROUTER,
         label: "OpenRouter",
         description: "Use OpenRouter to generate text",

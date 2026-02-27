@@ -5,6 +5,7 @@ import { httpRequestExecutor } from "../executions/nodes/http-request/executor";
 import { openRouterExecutor } from "../executions/nodes/open-router/executor";
 import { setNodeExecutor } from "../executions/nodes/set-node/executor";
 import { telegramTriggerExecutor } from "../triggers/telegram-trigger/executor";
+import { telegramMessageExecutor } from "../executions/nodes/telegram-message/executor";
 
 export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
@@ -13,6 +14,7 @@ export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.INITIAL]: manualTriggerExecutor,
     [NodeType.OPENROUTER]: openRouterExecutor as NodeExecutor,
     [NodeType.SET_NODE]: setNodeExecutor as NodeExecutor,
+    [NodeType.TELEGRAM_MESSAGE]: telegramMessageExecutor as NodeExecutor,
 }
 
 export const getExecutor = (type: NodeType): NodeExecutor => {

@@ -123,6 +123,7 @@ enum NodeType {
   DISCORD
   SLACK
   OPENROUTER
+  TELEGRAM_MESSAGE
 }
 
 model Node {
