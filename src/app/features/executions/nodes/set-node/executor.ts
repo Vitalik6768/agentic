@@ -45,7 +45,6 @@ export const setNodeExecutor: NodeExecutor<SetNodeData> = async ({
   data,
   nodeId,
   context,
-  step,
   publish,
 }) => {
   const variableName = data.variableName ?? data.varibleName;
@@ -75,9 +74,7 @@ export const setNodeExecutor: NodeExecutor<SetNodeData> = async ({
   }
   try {
     const resolvedValue = resolveValue(data, context);
-    const result = await step.run(`set-node-${nodeId}`, async () => {
-      return { ...context, [variableName]: resolvedValue };
-    });
+    const result = { ...context, [variableName]: resolvedValue };
     await publish(
       setNodeChannel().result({
         nodeId,

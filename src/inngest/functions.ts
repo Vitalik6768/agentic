@@ -68,43 +68,38 @@ export const executeWorkflow = inngest.createFunction(
       throw new NonRetriableError("Inngest event ID is required");
     }
 
-    await step.run("create-execution", async () => {
-      return await db.execution.create({
-        data: {
-          workflowId,
-          inngestEventId,
-        },
-      });
+    await db.execution.upsert({
+      where: {
+        inngestEventId,
+      },
+      create: {
+        workflowId,
+        inngestEventId,
+      },
+      update: {},
     });
-    const sortedNodes = await step.run("preper workflow nodes", async () => {
-      const workflow = await db.workflow.findUniqueOrThrow({
-        where: {
-          id: workflowId,
-          userId: event.data.userId,
-        },
-        select: {
-          userId: true,
-          nodes: true,
-          connections: true,
-        },
-      });
-
-      const sorted = topologicalSort(
-        workflow.nodes as unknown as import("@xyflow/react").Node[],
-        workflow.connections,
-      );
-      return {
-        sortedNodes: sorted as unknown as typeof workflow.nodes,
-        userId: workflow.userId,
-      };
+    const workflow = await db.workflow.findUniqueOrThrow({
+      where: {
+        id: workflowId,
+        userId: event.data.userId,
+      },
+      select: {
+        userId: true,
+        nodes: true,
+        connections: true,
+      },
     });
-    const userId = sortedNodes.userId;
+    const sortedNodes = topologicalSort(
+      workflow.nodes as unknown as import("@xyflow/react").Node[],
+      workflow.connections,
+    ) as unknown as typeof workflow.nodes;
+    const userId = workflow.userId;
 
     let context = event.data.initialData ?? {};
 
     //exucute nodes
 
-    for (const node of sortedNodes.sortedNodes) {
+    for (const node of sortedNodes) {
       const executor = getExecutor(node.type);
       context = await executor({
         data: node.data as Record<string, unknown>,
@@ -115,18 +110,16 @@ export const executeWorkflow = inngest.createFunction(
         publish,
       });
     }
-    await step.run("update-execution", async () => {
-      return await db.execution.update({
-        where: {
-          inngestEventId,
-          workflowId,
-        },
-        data: {
-          status: ExecutionStatus.SUCCESS,
-          completedAt: new Date(),
-          output: context as Prisma.InputJsonValue,
-        },
-      });
+    await db.execution.update({
+      where: {
+        inngestEventId,
+        workflowId,
+      },
+      data: {
+        status: ExecutionStatus.SUCCESS,
+        completedAt: new Date(),
+        output: context as Prisma.InputJsonValue,
+      },
     });
     return { workflowId, result: context };
   },
