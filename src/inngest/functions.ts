@@ -10,6 +10,7 @@ import { openRouterChannel } from "./channels/open-router";
 import { telegramTriggerChannel } from "./channels/telegram-trigger";
 import { telegramMessageChannel } from "./channels/telegram-message";
 import { webhookTriggerChannel } from "./channels/webhook_trigger";
+import type { Realtime } from "@inngest/realtime";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { ExecutionStatus, NodeType } from "@/generated/prisma";
@@ -96,6 +97,11 @@ export const executeWorkflow = inngest.createFunction(
     const userId = workflow.userId;
 
     let context = event.data.initialData ?? {};
+    const disableRealtime =
+      (event.data.initialData as { meta?: { disableRealtime?: unknown } } | undefined)?.meta?.disableRealtime === true;
+    const publishFn: Realtime.PublishFn = disableRealtime
+      ? (async () => undefined) as Realtime.PublishFn
+      : publish;
 
     //exucute nodes
 
@@ -107,7 +113,7 @@ export const executeWorkflow = inngest.createFunction(
         userId,
         context,
         step,
-        publish,
+        publish: publishFn,
       });
     }
     await db.execution.update({

@@ -51,6 +51,10 @@ export const WebhookTriggerDialog = ({
     workflowId && typeof window !== "undefined"
       ? `${window.location.origin}/api/webhooks/workflow?workflowId=${workflowId}`
       : "";
+  const prodWebhookUrl =
+    workflowId && typeof window !== "undefined"
+      ? `${window.location.origin}/api/webhooks/prod/workflow?workflowId=${workflowId}`
+      : "";
 
   const form = useForm<WebhookTriggerFormValues>({
     resolver: zodResolver(formSchema),
@@ -72,11 +76,11 @@ export const WebhookTriggerDialog = ({
     onOpenChange(false);
   };
 
-  const handleCopyUrl = async () => {
-    if (!webhookUrl || !navigator?.clipboard) {
+  const handleCopyUrl = async (url: string) => {
+    if (!url || !navigator?.clipboard) {
       return;
     }
-    await navigator.clipboard.writeText(webhookUrl);
+    await navigator.clipboard.writeText(url);
   };
 
   return (
@@ -116,7 +120,26 @@ export const WebhookTriggerDialog = ({
                 <FormLabel>Webhook URL</FormLabel>
                 <div className="flex gap-2">
                   <Input readOnly value={webhookUrl} placeholder="Save workflow to generate URL" />
-                  <Button type="button" variant="outline" onClick={handleCopyUrl} disabled={!webhookUrl}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleCopyUrl(webhookUrl)}
+                    disabled={!webhookUrl}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <FormLabel>Production Webhook URL</FormLabel>
+                <div className="flex gap-2">
+                  <Input readOnly value={prodWebhookUrl} placeholder="Save workflow to generate URL" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleCopyUrl(prodWebhookUrl)}
+                    disabled={!prodWebhookUrl}
+                  >
                     Copy
                   </Button>
                 </div>
