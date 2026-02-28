@@ -23,10 +23,19 @@ export const workflowsRouter = createTRPCRouter({
           id: input.id,
           userId: ctx.session.user.id,
         },
+        select: {
+          published: true,
+        },
       });
       await sendWorkflowExecution({
         workflowId: input.id,
         userId: ctx.session.user.id,
+        initialData: {
+          meta: {
+            disableRealtime: workflow.published === true,
+            triggerSource: "manual",
+          },
+        },
       });
     }),
   create: protectedProcedure.mutation(async ({ ctx }) => {

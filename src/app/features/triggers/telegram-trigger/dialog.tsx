@@ -72,7 +72,7 @@ export const TelegramTriggerDialog = ({
         onOpenChange(false)
     }
 
-    const handleSetWebhook = async () => {
+    const handleSetWebhook: () => Promise<void> = async () => {
         if (!workflowId) {
             toast.error("Workflow ID is missing in URL");
             return;
@@ -102,7 +102,7 @@ export const TelegramTriggerDialog = ({
         }
     };
 
-    const handleRemoveWebhook = async () => {
+    const handleRemoveWebhook: () => Promise<void> = async () => {
         if (!workflowId) {
             toast.error("Workflow ID is missing in URL");
             return;

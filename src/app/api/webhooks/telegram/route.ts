@@ -60,13 +60,19 @@ export async function POST(request: NextRequest) {
 
     const workflow = await db.workflow.findUnique({
       where: { id: workflowId },
-      select: { userId: true },
+      select: { userId: true, published: true },
     });
 
     if (!workflow) {
       return NextResponse.json(
         { success: false, message: "Workflow not found" },
         { status: 404 },
+      );
+    }
+    if (workflow.published !== true) {
+      return NextResponse.json(
+        { success: false, message: "Workflow must be published before Telegram webhook execution" },
+        { status: 403 },
       );
     }
 
@@ -98,6 +104,10 @@ export async function POST(request: NextRequest) {
       workflowId,
       userId: workflow.userId,
       initialData: {
+        meta: {
+          disableRealtime: true,
+          triggerSource: "telegram-webhook",
+        },
         telegram: telegramData,
       },
     });
