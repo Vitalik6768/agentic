@@ -101,3 +101,19 @@ export const useExecuteWorkflow = () => {
 
 }
 
+export const useUpdatePublishedWorkflow = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+
+    return useMutation(trpc.workflows.updataPublished.mutationOptions({
+        onSuccess: (data) => {
+            toast.success(`Workflow published successfully`);
+            void queryClient.invalidateQueries(trpc.workflows.getMany.queryOptions({}));
+            void queryClient.invalidateQueries(trpc.workflows.getOne.queryOptions({ id: data.id }));
+        },
+        onError: (error) => {
+            toast.error(`failed to publish workflow ${error.message}`);
+        },
+    }));
+}
+

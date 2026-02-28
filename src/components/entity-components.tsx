@@ -6,6 +6,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardTitle } from "./ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import { Switch } from "./ui/switch";
 
 type EntityHeaderProps = {
     title: string;
@@ -250,6 +251,7 @@ export const EntityList = <T,>({ items, renderItem, emptyView, className }: enti
     )
 }
 
+
 interface entityItemProps {
     href: string;
     title: string;
@@ -258,10 +260,13 @@ interface entityItemProps {
     actions?: React.ReactNode;
     onRemove?: () => void;
     className?: string;
+    onPublish?: (published: boolean) => void;
+    published?: boolean;
     isRemoving?: boolean;
+    isPublishing?: boolean;
 }
 
-export const EntityItem = ({ href, title, subtitle, image, actions, onRemove, className, isRemoving }: entityItemProps) => {
+export const EntityItem = ({ href, title, subtitle, image, actions, onRemove, className, isRemoving, onPublish, published, isPublishing }: entityItemProps) => {
     const handleRemove = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -269,7 +274,7 @@ export const EntityItem = ({ href, title, subtitle, image, actions, onRemove, cl
             return;
         }
         if (onRemove) {
-             onRemove();
+            onRemove();
         }
 
     }
@@ -291,9 +296,25 @@ export const EntityItem = ({ href, title, subtitle, image, actions, onRemove, cl
                             )}
                         </div>
                     </div>
-                    {(actions ?? onRemove) && (
+                    {(actions ?? onRemove ?? onPublish) && (
                         <div className="flex gap-x-4 items-center">
                             {actions}
+                            {onPublish && (
+                                <div
+                                    className="flex items-center gap-2"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }}
+                                >
+                                    <Switch
+                                        className="data-[state=checked]:bg-blue-500 hover:cursor-pointer"
+                                        checked={published}
+                                        disabled={isPublishing}
+                                        onCheckedChange={onPublish}
+                                    />
+                                </div>
+                            )}
                             {onRemove && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>

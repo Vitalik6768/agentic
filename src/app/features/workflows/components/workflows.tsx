@@ -1,7 +1,7 @@
 'use client';
 
 // import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, EntitySearch, ErrorView, LoadingView } from "@/components/entity-components";
-import { useCreateWorkflow, useRemoveWorkflow, useSuspenseWorkflows } from "../hooks/use-workflows";
+import { useCreateWorkflow, useRemoveWorkflow, useSuspenseWorkflows, useUpdatePublishedWorkflow } from "../hooks/use-workflows";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 // import { useWorkflowsParams } from "../hooks/use-workflows-params";
@@ -122,6 +122,10 @@ export const WorkflowItem = ({ data }: { data: Workflow }) => {
     const handleRemove = async () => {
         await removeWorkflow.mutateAsync({ id: data.id });
     }
+    const updatePublishedWorkflow = useUpdatePublishedWorkflow();
+    const handleUpdatePublished = async (published: boolean) => {
+        await updatePublishedWorkflow.mutateAsync({ id: data.id, published });
+    }
     return (
         <EntityItem
             href={`/workflows/${data.id}`}
@@ -143,6 +147,9 @@ export const WorkflowItem = ({ data }: { data: Workflow }) => {
             }
             onRemove={handleRemove}
             isRemoving={removeWorkflow.isPending}
+            onPublish={handleUpdatePublished}
+            published={data.published ?? false}
+            isPublishing={updatePublishedWorkflow.isPending}
         />
     )
 }

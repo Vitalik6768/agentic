@@ -12,14 +12,6 @@ import { sendWorkflowExecution } from "@/inngest/utills";
 // import type { Edge } from "@xyflow/react";
 
 export const workflowsRouter = createTRPCRouter({
-  // create: protectedProcedure.mutation(async ({ ctx }) => {
-  //   return db.workflow.create({
-  //     data: {
-  //       name: "New Workflow",
-  //       userId: ctx.session.user.id,
-  //     },
-  //   });
-  // }),
 
   execute: protectedProcedure
     .input(z.object({
@@ -204,6 +196,24 @@ export const workflowsRouter = createTRPCRouter({
         nodes,
         edges,
       };
+    }),
+  updataPublished: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        published: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return db.workflow.update({
+        where: {
+          id: input.id,
+          userId: ctx.session.user.id,
+        },
+        data: {
+          published: input.published,
+        },
+      });
     }),
   getMany: protectedProcedure
     .input(

@@ -27,7 +27,6 @@ const page = async ({ searchParams }: Props) => {
             <WorkflowsList />
           </Suspense>
         </ErrorBoundary>
-
       </HydrateClient>
     </WorkflowsContainer>
   )
