@@ -177,8 +177,8 @@ export const TelegramTriggerDialog = ({
                                     <FormMessage />
                                 </FormItem>
                             )} />
-
-                            <DialogFooter className="mt-4 flex flex-wrap justify-end gap-2">
+                           
+                            <DialogFooter className="mt-40 flex flex-wrap justify-end gap-2">
                                 <Button type="submit">Save</Button>
                                 <Button
                                     type="button"
