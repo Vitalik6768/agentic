@@ -86,6 +86,7 @@ export const executeWorkflow = inngest.createFunction(
       },
       select: {
         userId: true,
+        published: true,
         nodes: true,
         connections: true,
       },
@@ -97,8 +98,9 @@ export const executeWorkflow = inngest.createFunction(
     const userId = workflow.userId;
 
     let context = event.data.initialData ?? {};
-    const disableRealtime =
+    const disableRealtimeFromEvent =
       (event.data.initialData as { meta?: { disableRealtime?: unknown } } | undefined)?.meta?.disableRealtime === true;
+    const disableRealtime = workflow.published === true || disableRealtimeFromEvent;
     const publishFn: Realtime.PublishFn = disableRealtime
       ? (async () => undefined) as Realtime.PublishFn
       : publish;
