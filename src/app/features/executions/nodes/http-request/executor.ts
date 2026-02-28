@@ -16,6 +16,12 @@ type HttpRequestData = {
   endpoint: string;
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
   body?: string;
+  authType?: "NONE" | "BEARER" | "BASIC" | "API_KEY";
+  bearerToken?: string;
+  basicUsername?: string;
+  basicPassword?: string;
+  apiKeyHeaderName?: string;
+  apiKeyValue?: string;
 };
 export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
   data,
@@ -66,16 +72,38 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
       const endpoint = Handlebars.compile(data.endpoint)(context);
       const method = data.method;
       const options: KyOptions = { method };
+      const headers: Record<string, string> = {};
 
       if (["POST", "PUT", "PATCH"].includes(method)) {
         if (data.body) {
           const resolvedBody = Handlebars.compile(data.body)(context);
           JSON.parse(resolvedBody);
           options.body = resolvedBody;
-          options.headers = {
-            "Content-Type": "application/json",
-          };
+          headers["Content-Type"] = "application/json";
         }
+      }
+
+      const authType = data.authType ?? "NONE";
+      if (authType === "BEARER" && data.bearerToken) {
+        const token = Handlebars.compile(data.bearerToken)(context);
+        headers.Authorization = `Bearer ${token}`;
+      }
+      if (authType === "BASIC" && data.basicUsername && data.basicPassword) {
+        const username = Handlebars.compile(data.basicUsername)(context);
+        const password = Handlebars.compile(data.basicPassword)(context);
+        const encoded = Buffer.from(`${username}:${password}`).toString("base64");
+        headers.Authorization = `Basic ${encoded}`;
+      }
+      if (authType === "API_KEY" && data.apiKeyHeaderName && data.apiKeyValue) {
+        const headerName = Handlebars.compile(data.apiKeyHeaderName)(context);
+        const apiKey = Handlebars.compile(data.apiKeyValue)(context);
+        if (headerName) {
+          headers[headerName] = apiKey;
+        }
+      }
+
+      if (Object.keys(headers).length > 0) {
+        options.headers = headers;
       }
       const response = await ky(endpoint, options);
       const contentType = response.headers.get("content-type") ?? "";

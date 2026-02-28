@@ -16,6 +16,12 @@ type HttpRequestNodeData = {
     endpoint?: string;
     method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
     body?: string;
+    authType?: "NONE" | "BEARER" | "BASIC" | "API_KEY";
+    bearerToken?: string;
+    basicUsername?: string;
+    basicPassword?: string;
+    apiKeyHeaderName?: string;
+    apiKeyValue?: string;
 }
 
 type HttpRequestNodeType = Node<HttpRequestNodeData>;
@@ -34,9 +40,16 @@ export const HttpRequestNode = memo((props: NodeProps<HttpRequestNodeType>) => {
         setDialogOpen(true);
     }
     const handleSubmit = (values: {
+        varibleName: string;
         endpoint: string;
         method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
         body?: string;
+        authType?: "NONE" | "BEARER" | "BASIC" | "API_KEY";
+        bearerToken?: string;
+        basicUsername?: string;
+        basicPassword?: string;
+        apiKeyHeaderName?: string;
+        apiKeyValue?: string;
     }) => {
         setNodes((nodes) => nodes.map((node) => {
             if (node.id === props.id) {

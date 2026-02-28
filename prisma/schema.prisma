@@ -82,6 +82,7 @@ model Credential {
   name      String
   value     String
   type      CredentialType
+  settings  Json?
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
