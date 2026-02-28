@@ -8,7 +8,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "Agentic Flow",
+  title: "Agentic Core",
   description: "Build and run intelligent workflows",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };

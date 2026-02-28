@@ -23,7 +23,7 @@ export default async function Home() {
             <span className="bg-linear-to-r from-fuchsia-300 via-violet-300 to-cyan-200 bg-clip-text text-transparent">
               Agentic
             </span>{" "}
-            Flow
+            Core
           </h1>
           <p className="max-w-2xl text-center text-lg text-white/80">
             Design automations, trigger executions, and manage credentials from one sleek workspace.

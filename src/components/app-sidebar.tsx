@@ -44,7 +44,7 @@ export const AppSidebar = () => {
                     <SidebarMenuButton asChild className="gap-x-4 h-10 px-4">
                         <Link href="/workflows" prefetch>
                             <Image src="/logos/logo.svg" alt="Nodebase" width={30} height={30} />
-                            <span className="text-1xl font-bold">Agentic</span>
+                            <span className="text-2xl font-bold">Agentic</span>
 
                             
                         </Link>
@@ -69,7 +69,7 @@ export const AppSidebar = () => {
                                     >
                                         <Link href={item.url} prefetch>
                                         <item.icon />
-                                        <span className="truncate">{item.title}</span>
+                                        <span className="truncate text-base font-medium">{item.title}</span>
                                         </Link>
 
                                     </SidebarMenuButton>
@@ -96,7 +96,7 @@ export const AppSidebar = () => {
                      
                             })}>
                                 <LogOutIcon />
-                                <span className="truncate">Logout</span>
+                                <span className="truncate text-base font-medium">Logout</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
