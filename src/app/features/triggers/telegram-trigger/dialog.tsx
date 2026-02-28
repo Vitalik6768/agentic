@@ -6,12 +6,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { CredentialType } from "@/types";
 import z from "zod";
 import { useGetCredentialsByType } from "../../credentials/hooks/use-credentials";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
+import { useParams } from "next/navigation";
+import { toast } from "sonner";
 
 
 const formSchema = z.object({
@@ -40,6 +42,10 @@ export const TelegramTriggerDialog = ({
     executionOutput = "",
     executionError,
 }: Props) => {
+    const [webhookAction, setWebhookAction] = useState<"set" | "remove" | null>(null);
+    const params = useParams<{ workflowsId?: string | string[] }>();
+    const workflowIdValue = params.workflowsId;
+    const workflowId = Array.isArray(workflowIdValue) ? workflowIdValue[0] : workflowIdValue;
 
     const { data: credentials, isLoading: isLoadingCredentials } = useGetCredentialsByType(CredentialType.TELEGRAM_BOT);
 
@@ -65,6 +71,67 @@ export const TelegramTriggerDialog = ({
         onSubmit(values);
         onOpenChange(false)
     }
+
+    const handleSetWebhook = async () => {
+        if (!workflowId) {
+            toast.error("Workflow ID is missing in URL");
+            return;
+        }
+
+        setWebhookAction("set");
+        try {
+            const response = await fetch(`/api/webhooks/set-webhook?workflowId=${encodeURIComponent(workflowId)}`, {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json",
+                },
+                body: JSON.stringify({ workflowId }),
+            });
+
+            const result = (await response.json()) as { success?: boolean; message?: string };
+            if (!response.ok || !result.success) {
+                toast.error(result.message ?? "Failed to set Telegram webhook");
+                return;
+            }
+
+            toast.success(result.message ?? "Telegram webhook set successfully");
+        } catch {
+            toast.error("Failed to set Telegram webhook");
+        } finally {
+            setWebhookAction(null);
+        }
+    };
+
+    const handleRemoveWebhook = async () => {
+        if (!workflowId) {
+            toast.error("Workflow ID is missing in URL");
+            return;
+        }
+
+        setWebhookAction("remove");
+        try {
+            const response = await fetch(`/api/webhooks/remove-webhook?workflowId=${encodeURIComponent(workflowId)}`, {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json",
+                },
+                body: JSON.stringify({ workflowId }),
+            });
+
+            const result = (await response.json()) as { success?: boolean; message?: string };
+            if (!response.ok || !result.success) {
+                toast.error(result.message ?? "Failed to remove Telegram webhook");
+                return;
+            }
+
+            toast.success(result.message ?? "Telegram webhook removed successfully");
+        } catch {
+            toast.error("Failed to remove Telegram webhook");
+        } finally {
+            setWebhookAction(null);
+        }
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-5xl">
@@ -111,8 +178,24 @@ export const TelegramTriggerDialog = ({
                                 </FormItem>
                             )} />
 
-                            <DialogFooter className="mt-4">
-                                <Button className="w-full" type="submit">Save</Button>
+                            <DialogFooter className="mt-4 flex flex-wrap justify-end gap-2">
+                                <Button type="submit">Save</Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleSetWebhook}
+                                    disabled={!workflowId || webhookAction !== null}
+                                >
+                                    {webhookAction === "set" ? "Setting..." : "Set Webhook"}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={handleRemoveWebhook}
+                                    disabled={!workflowId || webhookAction !== null}
+                                >
+                                    {webhookAction === "remove" ? "Removing..." : "Remove Webhook"}
+                                </Button>
                             </DialogFooter>
                         </form>
                     </Form>
