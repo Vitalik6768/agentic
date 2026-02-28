@@ -69,13 +69,6 @@ export async function POST(request: NextRequest) {
         { status: 404 },
       );
     }
-    if (workflow.published !== true) {
-      return NextResponse.json(
-        { success: false, message: "Workflow must be published before Telegram webhook execution" },
-        { status: 403 },
-      );
-    }
-
     const telegramData = {
       updateId: body.update_id ?? null,
       messageId: message.message_id ?? null,
@@ -105,8 +98,8 @@ export async function POST(request: NextRequest) {
       userId: workflow.userId,
       initialData: {
         meta: {
-          disableRealtime: true,
-          triggerSource: "telegram-webhook",
+          disableRealtime: workflow.published === true,
+          triggerSource: workflow.published === true ? "telegram-webhook-published" : "telegram-webhook-draft",
         },
         telegram: telegramData,
       },
