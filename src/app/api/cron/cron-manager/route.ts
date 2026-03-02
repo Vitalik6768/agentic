@@ -1,7 +1,7 @@
 import axios, { type AxiosError } from "axios";
 import { type NextRequest, NextResponse } from "next/server";
+import { setWorkflowCronEnabled, upsertScheduleCronJob } from "@/lib/cron-job";
 import { parseScheduleConfig } from "@/lib/workflow-schedule";
-import { upsertScheduleCronJob } from "../../../../lib/cron-job";
 
 const CRON_JOB_API_BASE_URL = "https://api.cron-job.org";
 
@@ -12,7 +12,7 @@ type CronApiError = {
 
 const getApiKey = (request: NextRequest) => {
   const headerKey = request.headers.get("x-cron-job-api-key");
-  return headerKey ?? process.env.CRON_JOB_API_KEY ?? process.env.CRONE_API_KEY ?? null;
+  return headerKey ?? process.env.CRONE_SECRET ?? process.env.CRON_SECRET ?? null;
 };
 
 const getJobId = (request: NextRequest, body: unknown): string | null => {
@@ -57,7 +57,7 @@ const ensureApiKey = (request: NextRequest) => {
       {
         success: false,
         message:
-          "Missing cron-job.org API key. Set CRON_JOB_API_KEY (or CRONE_API_KEY) or pass x-cron-job-api-key header.",
+          "Missing cron-job.org API key. Set CRONE_SECRET (or CRON_SECRET) or pass x-cron-job-api-key header.",
       },
       { status: 500 },
     );
@@ -171,12 +171,40 @@ export async function PATCH(request: NextRequest) {
   if (apiKey instanceof NextResponse) return apiKey;
 
   try {
-    const body = (await request.json()) as { jobId?: string | number; job?: Record<string, unknown> };
+    const body = (await request.json()) as {
+      workflowId?: unknown;
+      enabled?: unknown;
+      jobId?: string | number;
+      job?: Record<string, unknown>;
+    };
+
+    const workflowId =
+      typeof body.workflowId === "string" && body.workflowId.trim().length > 0
+        ? body.workflowId.trim()
+        : null;
+    if (workflowId && typeof body.enabled === "boolean") {
+      const result = await setWorkflowCronEnabled({
+        workflowId,
+        enabled: body.enabled,
+        apiKey,
+      });
+
+      return NextResponse.json(
+        {
+          success: true,
+          workflowId,
+          cronJobId: result.cronJobId,
+          workflowSchedule: result.workflowSchedule,
+        },
+        { status: 200 },
+      );
+    }
+
     const jobId = getJobId(request, body);
 
     if (!jobId) {
       return NextResponse.json(
-        { success: false, message: "jobId is required (query or body)" },
+        { success: false, message: "jobId or workflowId+enabled is required" },
         { status: 400 },
       );
     }

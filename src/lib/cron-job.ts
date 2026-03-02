@@ -110,6 +110,12 @@ export type UpsertScheduleCronInput = {
   apiKey?: string;
 };
 
+export type SetWorkflowCronEnabledInput = {
+  workflowId: string;
+  enabled: boolean;
+  apiKey?: string;
+};
+
 export const upsertScheduleCronJob = async ({
   workflowId,
   cronExpression,
@@ -119,9 +125,9 @@ export const upsertScheduleCronJob = async ({
   maxDelaySec = null,
   apiKey,
 }: UpsertScheduleCronInput) => {
-  const resolvedApiKey = apiKey ?? process.env.CRONE_SECRET ?? process.env.CRON_JOB_API_KEY;
+  const resolvedApiKey = apiKey ?? process.env.CRONE_SECRET ?? process.env.CRON_SECRET;
   if (!resolvedApiKey) {
-    throw new Error("Missing CRONE_SECRET/CRON_JOB_API_KEY for cron-job.org API");
+    throw new Error("Missing CRONE_SECRET/CRON_SECRET for cron-job.org API");
   }
   if (!process.env.CRONE_EXECUTION_URL) {
     throw new Error("Missing CRONE_EXECUTION_URL");
@@ -195,6 +201,47 @@ export const upsertScheduleCronJob = async ({
 
   return {
     cronJobId,
+    workflowSchedule: saved,
+  };
+};
+
+export const setWorkflowCronEnabled = async ({
+  workflowId,
+  enabled,
+  apiKey,
+}: SetWorkflowCronEnabledInput) => {
+  const resolvedApiKey = apiKey ?? process.env.CRONE_SECRET ?? process.env.CRON_SECRET;
+  if (!resolvedApiKey) {
+    throw new Error("Missing CRONE_SECRET/CRON_SECRET for cron-job.org API");
+  }
+
+  const existingSchedule = await db.workflowSchedule.findUnique({
+    where: { workflowId },
+    select: { cronJobId: true },
+  });
+  if (!existingSchedule?.cronJobId) {
+    throw new Error("No cron job found for this workflow");
+  }
+
+  await axios.patch(
+    `${CRON_JOB_API_BASE_URL}/jobs/${existingSchedule.cronJobId}`,
+    { job: { enabled } },
+    {
+      headers: {
+        Authorization: `Bearer ${resolvedApiKey}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 15_000,
+    },
+  );
+
+  const saved = await db.workflowSchedule.update({
+    where: { workflowId },
+    data: { enabled },
+  });
+
+  return {
+    cronJobId: existingSchedule.cronJobId,
     workflowSchedule: saved,
   };
 };

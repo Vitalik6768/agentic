@@ -233,6 +233,8 @@ export const workflowsRouter = createTRPCRouter({
           },
         },
       });
+      const appUrl = (process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
 
       if (!workflow) {
         throw new TRPCError({
@@ -241,8 +243,9 @@ export const workflowsRouter = createTRPCRouter({
         });
       }
 
+      const scheduleNode = workflow.nodes[0];
+
       if (input.published) {
-        const scheduleNode = workflow.nodes[0];
         if (scheduleNode) {
           const parsed = parseScheduleConfig(scheduleNode.data);
           if (!parsed) {
@@ -252,7 +255,6 @@ export const workflowsRouter = createTRPCRouter({
             });
           }
 
-          const appUrl = (process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(/\/$/, "");
           const cronResponse = await fetch(`${appUrl}/api/cron/cron-manager`, {
             method: "PUT",
             headers: {
@@ -285,6 +287,36 @@ export const workflowsRouter = createTRPCRouter({
             });
           }
         }
+      }
+
+      if (!input.published && scheduleNode) {
+          const cronResponse = await fetch(`${appUrl}/api/cron/cron-manager`, {
+            method: "PATCH",
+            headers: {
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              workflowId: workflow.id,
+              enabled: false,
+            }),
+          });
+
+          if (!cronResponse.ok) {
+            let errorMessage = "Failed to pause schedule trigger";
+            try {
+              const payload = (await cronResponse.json()) as { message?: unknown };
+              if (typeof payload.message === "string" && payload.message.length > 0) {
+                errorMessage = payload.message;
+              }
+            } catch {
+              // Keep fallback message.
+            }
+
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: errorMessage,
+            });
+          }
       }
 
       return db.workflow.update({
