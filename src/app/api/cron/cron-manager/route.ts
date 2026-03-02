@@ -41,8 +41,8 @@ const toErrorResponse = (error: unknown, fallbackMessage: string) => {
     {
       success: false,
       message:
-        (payload && typeof payload.message === "string" && payload.message) ||
-        axiosError.message ||
+        (payload && typeof payload.message === "string" && payload.message) ??
+        axiosError.message ??
         fallbackMessage,
       error: payload ?? null,
     },

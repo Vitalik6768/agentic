@@ -119,7 +119,7 @@ export const upsertScheduleCronJob = async ({
   maxDelaySec = null,
   apiKey,
 }: UpsertScheduleCronInput) => {
-  const resolvedApiKey = apiKey || process.env.CRONE_SECRET || process.env.CRON_JOB_API_KEY;
+  const resolvedApiKey = apiKey ?? process.env.CRONE_SECRET ?? process.env.CRON_JOB_API_KEY;
   if (!resolvedApiKey) {
     throw new Error("Missing CRONE_SECRET/CRON_JOB_API_KEY for cron-job.org API");
   }
