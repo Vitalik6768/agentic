@@ -74,7 +74,13 @@ export const cronExpressionToCronJobSchedule = (cronExpression: string, timezone
     throw new Error("Cron expression must have exactly 5 fields");
   }
 
-  const [minute, hour, mday, month, wday] = fields;
+  const [minute, hour, mday, month, wday] = fields as [
+    string,
+    string,
+    string,
+    string,
+    string,
+  ];
   const ranges: Record<CronFieldName, [number, number]> = {
     minutes: [0, 59],
     hours: [0, 23],

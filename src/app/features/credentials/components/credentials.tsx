@@ -8,6 +8,7 @@ import { useEntitySearch } from "../hooks/use-entity-search";
 import { formatDistanceToNow } from "date-fns";
 import type { Credential } from "@/types";
 import  { CredentialType } from "@/types";
+
 import Image from "next/image";
 
 export const CredentialsSearch = () => {
@@ -98,7 +99,7 @@ const credentialTypeIcon: Record<CredentialType, React.ReactNode> = {
     [CredentialType.OPENROUTER]: "/logos/openrouter.svg",
     [CredentialType.SET_NODE]: "/logos/set-node.svg",
     [CredentialType.TELEGRAM_BOT]: "/logos/telegram.svg",
-    
+
 }
 
 export const CredentialItem = ({ data }: { data: Credential }) => {
