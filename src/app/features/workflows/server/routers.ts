@@ -9,6 +9,7 @@ import type { Node, Edge } from "@xyflow/react";
 import { NodeType } from "generated/prisma";
 import { PAGINATIONS } from "@/config/constans";
 import { sendWorkflowExecution } from "@/inngest/utills";
+import { parseScheduleConfig } from "@/lib/workflow-schedule";
 // import type { Edge } from "@xyflow/react";
 
 export const workflowsRouter = createTRPCRouter({
@@ -214,6 +215,78 @@ export const workflowsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const workflow = await db.workflow.findUnique({
+        where: {
+          id: input.id,
+          userId: ctx.session.user.id,
+        },
+        select: {
+          id: true,
+          nodes: {
+            where: {
+              type: NodeType.SCHEDULE_TRIGGER,
+            },
+            select: {
+              data: true,
+            },
+            take: 1,
+          },
+        },
+      });
+
+      if (!workflow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Workflow not found",
+        });
+      }
+
+      if (input.published) {
+        const scheduleNode = workflow.nodes[0];
+        if (scheduleNode) {
+          const parsed = parseScheduleConfig(scheduleNode.data);
+          if (!parsed) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Schedule trigger requires a valid cronExpression before publishing",
+            });
+          }
+
+          const appUrl = (process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(/\/$/, "");
+          const cronResponse = await fetch(`${appUrl}/api/cron/cron-manager`, {
+            method: "PUT",
+            headers: {
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              workflowId: workflow.id,
+              cronExpression: parsed.cronExpression,
+              timezone: parsed.timezone,
+              enabled: parsed.enabled,
+              misfirePolicy: parsed.misfirePolicy,
+              maxDelaySec: parsed.maxDelaySec,
+            }),
+          });
+
+          if (!cronResponse.ok) {
+            let errorMessage = "Failed to activate schedule trigger";
+            try {
+              const payload = (await cronResponse.json()) as { message?: unknown };
+              if (typeof payload.message === "string" && payload.message.length > 0) {
+                errorMessage = payload.message;
+              }
+            } catch {
+              // Keep fallback message.
+            }
+
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: errorMessage,
+            });
+          }
+        }
+      }
+
       return db.workflow.update({
         where: {
           id: input.id,

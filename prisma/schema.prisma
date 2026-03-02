@@ -104,6 +104,8 @@ model Workflow {
   id          String       @id @default(cuid())
   name        String
   published   Boolean?      @default(false)
+  schedule    WorkflowSchedule?
+
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   nodes       Node[]
@@ -117,6 +119,7 @@ enum NodeType {
   INITIAL
   MANUAL_TRIGGER
   TELEGRAM_TRIGGER
+  SCHEDULE_TRIGGER
   HTTP_REQUEST
   SET_NODE
   GOOGLE_FORM_TRIGGER
@@ -187,4 +190,33 @@ model Execution {
   inngestEventId String @unique
 
   output Json?
+}
+
+enum MisfirePolicy {
+  SKIP_MISSED
+  RUN_ONCE_IF_MISSED
+  CATCH_UP
+}
+
+model WorkflowSchedule {
+  id             String   @id @default(cuid())
+  workflowId     String   @unique
+  workflow       Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  cronExpression String
+  timezone       String   @default("UTC")
+  enabled        Boolean  @default(true)
+  cronJobId      String?
+  // Scheduling state
+  nextRunAt      DateTime
+  lastRunAt      DateTime?
+
+  // Behavior controls
+  misfirePolicy  MisfirePolicy @default(SKIP_MISSED)
+  maxDelaySec    Int?          // optional: skip if too late
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([enabled, nextRunAt])
 }

@@ -38,6 +38,12 @@ const triggerNodes: NodeTypeOption[] = [
         icon: "/logos/webhook.svg",
     },
     {
+        type: NodeType.SCHEDULE_TRIGGER,
+        label: "Schedule Trigger",
+        description: "Trigger the workflow on a schedule",
+        icon: "/logos/schedule-trigger.svg",
+    },
+    {
         type: NodeType.GOOGLE_FORM_TRIGGER,
         label: "Google Form Trigger",
         description: "When a Google Form is submitted",
