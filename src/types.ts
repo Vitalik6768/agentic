@@ -3,8 +3,7 @@ export enum CredentialType {
   GEMINI = "GEMINI",
   OPENROUTER = "OPENROUTER",
   SET_NODE = "SET_NODE",
-  TELEGRAM_BOT = "TELEGRAM_BOT",
-  SCHEDULE_TRIGGER = "SCHEDULE_TRIGGER",
+  TELEGRAM_BOT = "TELEGRAM_BOT"
 }
 
 export interface Credential {
