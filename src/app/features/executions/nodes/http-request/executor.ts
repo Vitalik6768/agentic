@@ -3,13 +3,9 @@ import { NonRetriableError } from "inngest";
 import ky, { type Options as KyOptions } from "ky";
 import Handlebars from "handlebars";
 import { httpRequestChannel } from "@/inngest/channels/http-request";
+import { registerHandlebarsHelpers } from "@/lib/handlebars-helpers";
 
-Handlebars.registerHelper("json", (context) => {
-  const jsonString = JSON.stringify(context, null, 2);
-  const safeString = new Handlebars.SafeString(jsonString);
-  return safeString;
-  // return JSON.stringify(context, null, 2);
-});
+registerHandlebarsHelpers();
 
 type HttpRequestData = {
   varibleName: string;

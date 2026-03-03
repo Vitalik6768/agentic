@@ -5,11 +5,9 @@ import ky from "ky";
 import { telegramMessageChannel } from "@/inngest/channels/telegram-message";
 import { db } from "@/server/db";
 import { decrypt } from "@/lib/encryption";
+import { registerHandlebarsHelpers } from "@/lib/handlebars-helpers";
 
-Handlebars.registerHelper("json", (context) => {
-  const jsonString = JSON.stringify(context, null, 2);
-  return new Handlebars.SafeString(jsonString);
-});
+registerHandlebarsHelpers();
 
 type TelegramMessageData = {
   variableName?: string;

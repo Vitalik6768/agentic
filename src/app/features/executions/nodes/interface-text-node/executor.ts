@@ -4,13 +4,9 @@ import Handlebars from "handlebars";
 import { db } from "@/server/db";
 import { interfaceTextChannel } from "@/inngest/channels/interface-text";
 import { InterfaceType } from "generated/prisma";
+import { registerHandlebarsHelpers } from "@/lib/handlebars-helpers";
 
-Handlebars.registerHelper("json", (context) => {
-  const jsonString = JSON.stringify(context, null, 2);
-  const safeString = new Handlebars.SafeString(jsonString);
-  return safeString;
-  // return JSON.stringify(context, null, 2);
-});
+registerHandlebarsHelpers();
 
 type InterfaceTextNodeData = {
   variableName?: string;

@@ -2,13 +2,9 @@ import type { NodeExecutor } from "../../types";
 import { NonRetriableError } from "inngest";
 import Handlebars from "handlebars";
 import { setNodeChannel } from "@/inngest/channels/set-node";
+import { registerHandlebarsHelpers } from "@/lib/handlebars-helpers";
 
-Handlebars.registerHelper("json", (context) => {
-  const jsonString = JSON.stringify(context, null, 2);
-  const safeString = new Handlebars.SafeString(jsonString);
-  return safeString;
-  // return JSON.stringify(context, null, 2);
-});
+registerHandlebarsHelpers();
 
 type SetNodeData = {
   variableName?: string;

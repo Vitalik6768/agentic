@@ -6,13 +6,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { DataTransferPanel, ExecutionOutputPanel } from "@/components/data-transfer";
+import { ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
 import { useTRPC } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { InterfaceType } from "generated/prisma";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
-import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
@@ -136,64 +135,16 @@ export const InterfaceTextDialog = ({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid items-start gap-6 md:grid-cols-3">
-                    <DataTransferPanel
-                        title="Previous Nodes Output"
-                        subtitle={`${availableVariables.length} variables`}
+                    <VariablePickerPanel
+                        items={availableVariables}
+                        isLoading={isLoadingVariables}
+                        nodeOptions={nodeOptions}
+                        selectedNodeId={selectedNodeId}
+                        onSelectedNodeIdChange={onSelectedNodeIdChange}
+                        onInsertVariable={handleInsertVariable}
+                        resetModeKey={open}
                         className="max-h-[72vh] overflow-hidden"
-                    >
-                        {nodeOptions.length > 0 ? (
-                            <div className="mb-3">
-                                <Select
-                                    value={selectedNodeId}
-                                    onValueChange={onSelectedNodeIdChange}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select source node" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {nodeOptions.map((option) => (
-                                            <SelectItem key={option.nodeId} value={option.nodeId}>
-                                                {option.variableRoot} ({option.nodeType})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        ) : null}
-                        {isLoadingVariables ? (
-                            <div className="flex min-h-[180px] items-center justify-center gap-2 rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-                                <Loader2 className="size-4 animate-spin" />
-                                Loading variables...
-                            </div>
-                        ) : availableVariables.length > 0 ? (
-                            <div className="max-h-[52vh] space-y-2 overflow-auto">
-                                {availableVariables.map((item) => (
-                                    <button
-                                        key={`${item.nodeId}-${item.key}`}
-                                        type="button"
-                                        className="w-full rounded-md border bg-background p-2 text-left hover:bg-accent"
-                                        onClick={() => handleInsertVariable(item.token)}
-                                    >
-                                        <p className="font-mono text-xs">{item.token}</p>
-                                        <p className="mt-1 text-[11px] text-muted-foreground">{item.key}</p>
-                                        <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                                            <span>{item.nodeType}</span>
-                                            <span>{item.valueType}</span>
-                                        </div>
-                                        {item.preview ? (
-                                            <p className="mt-1 truncate text-[11px] text-muted-foreground">
-                                                {item.preview}
-                                            </p>
-                                        ) : null}
-                                    </button>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex min-h-[180px] items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-                                No upstream variables found. Configure previous nodes with a variable name first.
-                            </div>
-                        )}
-                    </DataTransferPanel>
+                    />
                     <Form {...form}>
                         <form
                             onSubmit={form.handleSubmit(handleSubmit)}
