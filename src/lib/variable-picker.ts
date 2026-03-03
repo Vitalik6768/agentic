@@ -21,8 +21,15 @@ export type AvailableVariable = {
   token: string;
   nodeId: string;
   nodeType: string;
+  variableRoot: string;
   preview?: string;
   valueType: PickerValueType;
+};
+
+export type UpstreamVariableNodeOption = {
+  nodeId: string;
+  nodeType: string;
+  variableRoot: string;
 };
 
 const getNodeTypeLabel = (type: string | undefined) => {
@@ -138,12 +145,16 @@ export const getAvailableVariables = (
   nodes: Node[],
   edges: Edge[],
   executionOutput: unknown,
+  selectedNodeId?: string,
 ): AvailableVariable[] => {
   const upstreamMap = getUpstreamVariables(currentNodeId, nodes, edges);
   const context = isRecord(executionOutput) ? executionOutput : null;
   const variables: AvailableVariable[] = [];
 
   for (const [key, sourceMeta] of upstreamMap.entries()) {
+    if (selectedNodeId && sourceMeta.nodeId !== selectedNodeId) {
+      continue;
+    }
     const runtimeValue = context?.[key];
     const paths =
       runtimeValue === undefined
@@ -156,6 +167,7 @@ export const getAvailableVariables = (
         token: toToken(item.path, item.value),
         nodeId: sourceMeta.nodeId,
         nodeType: sourceMeta.nodeType,
+        variableRoot: key,
         preview: getPreview(item.value),
         valueType: getValueType(item.value),
       });
@@ -163,4 +175,19 @@ export const getAvailableVariables = (
   }
 
   return variables.sort((a, b) => a.key.localeCompare(b.key));
+};
+
+export const getUpstreamVariableNodeOptions = (
+  currentNodeId: string,
+  nodes: Node[],
+  edges: Edge[],
+): UpstreamVariableNodeOption[] => {
+  const upstreamMap = getUpstreamVariables(currentNodeId, nodes, edges);
+  return Array.from(upstreamMap.entries())
+    .map(([variableRoot, meta]) => ({
+      nodeId: meta.nodeId,
+      nodeType: meta.nodeType,
+      variableRoot,
+    }))
+    .sort((a, b) => a.variableRoot.localeCompare(b.variableRoot));
 };

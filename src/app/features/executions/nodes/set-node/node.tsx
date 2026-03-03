@@ -1,11 +1,15 @@
 "use client";
 
 // import { Node, NodeProps, useReactFlow } from "@xyflow/react";
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { useReactFlow, type Node, type NodeProps } from "@xyflow/react";
-import { SetNodeDialog, type SetNodeDialogValues } from "./dialog";
+import {
+    SetNodeDialog,
+    type SetNodeDialogValues,
+    type SetNodeVariableNodeOption,
+} from "./dialog";
 import { fetchSetNodeRealtimeToken } from "./actions";
 import { useInngestSubscription } from "@inngest/realtime/hooks";
 import { SET_NODE_CHANNEL_NAME } from "@/inngest/channels/set-node";
@@ -13,7 +17,11 @@ import { PencilIcon } from "lucide-react";
 import { useTRPC } from "@/trpc/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { getAvailableVariables, type AvailableVariable } from "@/lib/variable-picker";
+import {
+    getAvailableVariables,
+    getUpstreamVariableNodeOptions,
+    type AvailableVariable,
+} from "@/lib/variable-picker";
 
 
 type SetNodeNodeData = {
@@ -37,6 +45,8 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
     });
     const [dialogOpen, setDialogOpen] = useState(false);
     const [availableVariables, setAvailableVariables] = useState<AvailableVariable[]>([]);
+    const [nodeOptions, setNodeOptions] = useState<SetNodeVariableNodeOption[]>([]);
+    const [selectedNodeId, setSelectedNodeId] = useState<string>("");
     const { setNodes, getNodes, getEdges } = useReactFlow();
     const latestWorkflowOutputQuery = useQuery({
         ...(workflowId
@@ -78,12 +88,33 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
         valueType: props.data?.valueType,
     };
 
-    const handleOpenSettings = () => {
+    useEffect(() => {
+        if (!dialogOpen) return;
         const vars = getAvailableVariables(
             props.id,
             getNodes(),
             getEdges(),
             latestWorkflowOutputQuery.data?.output,
+            selectedNodeId || undefined,
+        );
+        setAvailableVariables(vars);
+    }, [dialogOpen, props.id, getNodes, getEdges, latestWorkflowOutputQuery.data?.output, selectedNodeId]);
+
+    const handleOpenSettings = () => {
+        const upstreamOptions = getUpstreamVariableNodeOptions(
+            props.id,
+            getNodes(),
+            getEdges(),
+        );
+        setNodeOptions(upstreamOptions);
+        const defaultNodeId = upstreamOptions[upstreamOptions.length - 1]?.nodeId ?? "";
+        setSelectedNodeId(defaultNodeId);
+        const vars = getAvailableVariables(
+            props.id,
+            getNodes(),
+            getEdges(),
+            latestWorkflowOutputQuery.data?.output,
+            defaultNodeId || undefined,
         );
         setAvailableVariables(vars);
         setDialogOpen(true);
@@ -119,6 +150,10 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
                 availableVariables={availableVariables}
+                isLoadingVariables={latestWorkflowOutputQuery.isFetching}
+                nodeOptions={nodeOptions}
+                selectedNodeId={selectedNodeId}
+                onSelectedNodeIdChange={setSelectedNodeId}
             />
             <BaseExecutionNode
                 status={nodeStatus}

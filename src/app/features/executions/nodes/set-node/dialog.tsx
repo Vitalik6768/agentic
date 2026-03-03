@@ -12,6 +12,7 @@ import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
+import { Loader2 } from "lucide-react";
 
 
 
@@ -28,8 +29,15 @@ export type SetNodeAvailableVariable = {
     token: string;
     nodeId: string;
     nodeType: string;
+    variableRoot: string;
     preview?: string;
     valueType: "string" | "number" | "boolean" | "object" | "array" | "null";
+};
+
+export type SetNodeVariableNodeOption = {
+    nodeId: string;
+    nodeType: string;
+    variableRoot: string;
 };
 
 interface Props {
@@ -41,6 +49,10 @@ interface Props {
     executionOutput?: string;
     executionError?: string;
     availableVariables?: SetNodeAvailableVariable[];
+    isLoadingVariables?: boolean;
+    selectedNodeId?: string;
+    onSelectedNodeIdChange?: (nodeId: string) => void;
+    nodeOptions?: SetNodeVariableNodeOption[];
 }
 
 export const SetNodeDialog = ({
@@ -52,6 +64,10 @@ export const SetNodeDialog = ({
     executionOutput = "",
     executionError,
     availableVariables = [],
+    isLoadingVariables = false,
+    selectedNodeId,
+    onSelectedNodeIdChange,
+    nodeOptions = [],
 }: Props) => {
     const valueTextareaRef = useRef<HTMLTextAreaElement | null>(null);
     const form = useForm<SetNodeDialogValues>({
@@ -113,7 +129,31 @@ export const SetNodeDialog = ({
                         title="Previous Nodes Output"
                         subtitle={`${availableVariables.length} variables`}
                     >
-                        {availableVariables.length > 0 ? (
+                        {nodeOptions.length > 0 ? (
+                            <div className="mb-3">
+                                <Select
+                                    value={selectedNodeId}
+                                    onValueChange={onSelectedNodeIdChange}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select source node" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {nodeOptions.map((option) => (
+                                            <SelectItem key={option.nodeId} value={option.nodeId}>
+                                                {option.variableRoot} ({option.nodeType})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        ) : null}
+                        {isLoadingVariables ? (
+                            <div className="flex min-h-[180px] items-center justify-center gap-2 rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
+                                <Loader2 className="size-4 animate-spin" />
+                                Loading variables...
+                            </div>
+                        ) : availableVariables.length > 0 ? (
                             <div className="max-h-[420px] space-y-2 overflow-auto">
                                 {availableVariables.map((item) => (
                                     <button
