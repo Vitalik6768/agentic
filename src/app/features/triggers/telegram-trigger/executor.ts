@@ -3,9 +3,16 @@ import { telegramTriggerChannel } from "@/inngest/channels/telegram-trigger";
 import type { NodeExecutor } from "../../executions/types";
 import { NonRetriableError } from "inngest";
 
-type TelegramTriggerData = Record<string, unknown>;
+type TelegramTriggerData = {
+  variableName?: string;
+};
 
-export const telegramTriggerExecutor: NodeExecutor<TelegramTriggerData> = async ({ nodeId, context, step, publish }) => {
+export const telegramTriggerExecutor: NodeExecutor<TelegramTriggerData> = async ({ data, nodeId, context, step, publish }) => {
+  const variableName =
+    typeof data?.variableName === "string" && data.variableName.trim()
+      ? data.variableName.trim()
+      : "telegramTrigger";
+
   await publish(
     telegramTriggerChannel().status({
       nodeId,
@@ -14,7 +21,16 @@ export const telegramTriggerExecutor: NodeExecutor<TelegramTriggerData> = async 
   );
 
   try {
-    const result = await step.run(`execute telegram trigger ${nodeId}`, async () => context);
+    const result = await step.run(`execute telegram trigger ${nodeId}`, async () => {
+      const contextRecord = context as Record<string, unknown>;
+      const telegramPayload =
+        "telegram" in contextRecord ? contextRecord.telegram : contextRecord;
+
+      return {
+        ...contextRecord,
+        [variableName]: telegramPayload,
+      };
+    });
     await publish(
       telegramTriggerChannel().result({
         nodeId,

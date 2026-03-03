@@ -8,6 +8,7 @@ import { TelegramTriggerDialog, type TelegramTriggerFormValues } from "./dialog"
 import { useInngestSubscription } from "@inngest/realtime/hooks";
 
 type TelegramTriggerNodeData = {
+    variableName?: string;
     credentialId?: string;
 }
 

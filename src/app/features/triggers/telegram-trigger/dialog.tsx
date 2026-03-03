@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
@@ -17,6 +18,10 @@ import { toast } from "sonner";
 
 
 const formSchema = z.object({
+    variableName: z
+        .string()
+        .min(1, { message: "Variable name is required" })
+        .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
     credentialId: z.string().min(1, { message: "Credential is required" }),
 
 })
@@ -53,6 +58,7 @@ export const TelegramTriggerDialog = ({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            variableName: defaultValues.variableName ?? "telegramTrigger",
             credentialId: defaultValues.credentialId ?? "",
         },
     })
@@ -60,6 +66,7 @@ export const TelegramTriggerDialog = ({
     useEffect(() => {
         if (open) {
             form.reset({
+                variableName: defaultValues.variableName ?? "telegramTrigger",
                 credentialId: defaultValues.credentialId ?? "",
             })
         }
@@ -147,6 +154,19 @@ export const TelegramTriggerDialog = ({
                             onSubmit={form.handleSubmit(handleSubmit)}
                             className="space-y-8 mt-4"
                         >
+                            <FormField control={form.control} name="variableName" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Variable Name</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="text"
+                                            placeholder="telegramTrigger"
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
                             <FormField control={form.control} name="credentialId" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Telegram Credential</FormLabel>
