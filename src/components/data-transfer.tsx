@@ -34,6 +34,8 @@ type ExecutionOutputPanelProps = {
   executionOutput?: string;
   executionError?: string;
   idleMessage?: string;
+  className?: string;
+  outputClassName?: string;
 };
 
 export const ExecutionOutputPanel = ({
@@ -41,6 +43,8 @@ export const ExecutionOutputPanel = ({
   executionOutput = "",
   executionError,
   idleMessage = "Execute this workflow to view the latest node output here.",
+  className,
+  outputClassName,
 }: ExecutionOutputPanelProps) => {
   const subtitle =
     executionStatus === "loading"
@@ -52,13 +56,13 @@ export const ExecutionOutputPanel = ({
           : "Idle";
 
   return (
-    <DataTransferPanel title="Execution Output" subtitle={subtitle}>
+    <DataTransferPanel title="Execution Output" subtitle={subtitle} className={className}>
       {executionStatus === "success" && executionOutput ? (
-        <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap">
+        <pre className={cn("max-h-[52vh] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap", outputClassName)}>
           {executionOutput}
         </pre>
       ) : executionStatus === "error" ? (
-        <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap text-red-500">
+        <pre className={cn("max-h-[52vh] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap text-red-500", outputClassName)}>
           {executionError ?? "Execution failed"}
         </pre>
       ) : (

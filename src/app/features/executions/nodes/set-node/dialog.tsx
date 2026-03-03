@@ -117,17 +117,18 @@ export const SetNodeDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-7xl">
+            <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-6xl">
                 <DialogHeader>
                     <DialogTitle>Set Variable</DialogTitle>
                     <DialogDescription>
                         Create or overwrite a variable in workflow context.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-6 md:grid-cols-3">
+                <div className="grid items-start gap-6 md:grid-cols-3">
                     <DataTransferPanel
                         title="Previous Nodes Output"
                         subtitle={`${availableVariables.length} variables`}
+                        className="max-h-[72vh] overflow-hidden"
                     >
                         {nodeOptions.length > 0 ? (
                             <div className="mb-3">
@@ -154,7 +155,7 @@ export const SetNodeDialog = ({
                                 Loading variables...
                             </div>
                         ) : availableVariables.length > 0 ? (
-                            <div className="max-h-[420px] space-y-2 overflow-auto">
+                            <div className="max-h-[52vh] space-y-2 overflow-auto">
                                 {availableVariables.map((item) => (
                                     <button
                                         key={`${item.nodeId}-${item.key}`}
@@ -276,6 +277,7 @@ export const SetNodeDialog = ({
                         executionOutput={executionOutput}
                         executionError={executionError}
                         idleMessage="Execute this workflow to view the latest Set node output here."
+                        className="max-h-[72vh] overflow-hidden"
                     />
                 </div>
             </DialogContent>

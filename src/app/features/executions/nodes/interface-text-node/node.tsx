@@ -1,14 +1,25 @@
 "use client";
 
 import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
-import { GlobeIcon } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
-import { InterfaceTextDialog, type InterfaceTextFormValues } from "./dialog";
+import {
+    InterfaceTextDialog,
+    type InterfaceTextFormValues,
+    type InterfaceTextVariableNodeOption,
+} from "./dialog";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { fetchInterfaceTextRealtimeToken } from "./actions";
 import { INTERFACE_TEXT_CHANNEL_NAME } from "@/inngest/channels/interface-text";
 import { useInngestSubscription } from "@inngest/realtime/hooks";
+import { useTRPC } from "@/trpc/react";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
+import {
+    getAvailableVariables,
+    getUpstreamVariableNodeOptions,
+    type AvailableVariable,
+} from "@/lib/variable-picker";
 type InterfaceTextNodeData = {
     variableName?: string;
     varibleName?: string;
@@ -21,6 +32,9 @@ type InterfaceTextNodeData = {
 type InterfaceTextNodeType = Node<InterfaceTextNodeData>;
 
 export const InterfaceTextNode = memo((props: NodeProps<InterfaceTextNodeType>) => {
+    const trpc = useTRPC();
+    const params = useParams<{ workflowsId?: string }>();
+    const workflowId = typeof params.workflowsId === "string" ? params.workflowsId : undefined;
     const nodeStatus = useNodeStatus({
         nodeId: props.id,
         channel: INTERFACE_TEXT_CHANNEL_NAME,
@@ -28,13 +42,50 @@ export const InterfaceTextNode = memo((props: NodeProps<InterfaceTextNodeType>) 
         refreshToken: fetchInterfaceTextRealtimeToken,
     });
     const [dialogOpen, setDialogOpen] = useState(false);
-    const { setNodes } = useReactFlow();
+    const [availableVariables, setAvailableVariables] = useState<AvailableVariable[]>([]);
+    const [nodeOptions, setNodeOptions] = useState<InterfaceTextVariableNodeOption[]>([]);
+    const [selectedNodeId, setSelectedNodeId] = useState<string>("");
+    const { setNodes, getNodes, getEdges } = useReactFlow();
+    const latestWorkflowOutputQuery = useQuery({
+        ...(workflowId
+            ? trpc.executions.getLatestWorkflowOutput.queryOptions({ workflowId })
+            : trpc.executions.getLatestWorkflowOutput.queryOptions({ workflowId: "" })),
+        enabled: Boolean(workflowId) && dialogOpen,
+    });
     const { data: realtimeMessages } = useInngestSubscription({
         refreshToken: fetchInterfaceTextRealtimeToken,
         enabled: true,
     });
 
+    useEffect(() => {
+        if (!dialogOpen) return;
+        const vars = getAvailableVariables(
+            props.id,
+            getNodes(),
+            getEdges(),
+            latestWorkflowOutputQuery.data?.output,
+            selectedNodeId || undefined,
+        );
+        setAvailableVariables(vars);
+    }, [dialogOpen, props.id, getNodes, getEdges, latestWorkflowOutputQuery.data?.output, selectedNodeId]);
+
     const handleOpenSettings = () => {
+        const upstreamOptions = getUpstreamVariableNodeOptions(
+            props.id,
+            getNodes(),
+            getEdges(),
+        );
+        setNodeOptions(upstreamOptions);
+        const defaultNodeId = upstreamOptions[upstreamOptions.length - 1]?.nodeId ?? "";
+        setSelectedNodeId(defaultNodeId);
+        const vars = getAvailableVariables(
+            props.id,
+            getNodes(),
+            getEdges(),
+            latestWorkflowOutputQuery.data?.output,
+            defaultNodeId || undefined,
+        );
+        setAvailableVariables(vars);
         setDialogOpen(true);
     }
     const handleSubmit = (values: {
@@ -95,6 +146,11 @@ export const InterfaceTextNode = memo((props: NodeProps<InterfaceTextNodeType>) 
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
+                availableVariables={availableVariables}
+                isLoadingVariables={latestWorkflowOutputQuery.isFetching}
+                nodeOptions={nodeOptions}
+                selectedNodeId={selectedNodeId}
+                onSelectedNodeIdChange={setSelectedNodeId}
             />
             <BaseExecutionNode
                 status={nodeStatus}

@@ -6,15 +6,17 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ExecutionOutputPanel } from "@/components/data-transfer";
+import { DataTransferPanel, ExecutionOutputPanel } from "@/components/data-transfer";
 import { useTRPC } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { InterfaceType } from "generated/prisma";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
+import type { AvailableVariable } from "@/lib/variable-picker";
 
 
 const formSchema = z.object({
@@ -34,6 +36,11 @@ const formSchema = z.object({
 
 
 export type InterfaceTextFormValues = z.infer<typeof formSchema>;
+export type InterfaceTextVariableNodeOption = {
+    nodeId: string;
+    nodeType: string;
+    variableRoot: string;
+};
 
 interface Props {
     open: boolean
@@ -43,7 +50,11 @@ interface Props {
     executionStatus?: NodeStatus;
     executionOutput?: string;
     executionError?: string;
-
+    availableVariables?: AvailableVariable[];
+    isLoadingVariables?: boolean;
+    selectedNodeId?: string;
+    onSelectedNodeIdChange?: (nodeId: string) => void;
+    nodeOptions?: InterfaceTextVariableNodeOption[];
 }
 
 export const InterfaceTextDialog = ({ 
@@ -54,7 +65,13 @@ export const InterfaceTextDialog = ({
     executionStatus = "initial",
     executionOutput = "",
     executionError,
+    availableVariables = [],
+    isLoadingVariables = false,
+    selectedNodeId,
+    onSelectedNodeIdChange,
+    nodeOptions = [],
 }: Props) => {
+    const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
     const trpc = useTRPC();
     const interfacesQuery = useQuery(trpc.interfaces.getMany.queryOptions());
     const textInterfaces = interfacesQuery.data?.items.filter((item) => item.type === InterfaceType.TEXT) ?? [];
@@ -84,24 +101,103 @@ export const InterfaceTextDialog = ({
     const watchOperation = form.watch("operation");
     const showBodyField = watchOperation === "ADD_CONTENT";
 
+    const handleInsertVariable = (token: string) => {
+        const textarea = bodyTextareaRef.current;
+        const currentValue = form.getValues("body") ?? "";
+
+        if (!textarea) {
+            form.setValue("body", `${currentValue}${token}`, { shouldDirty: true });
+            return;
+        }
+
+        const start = textarea.selectionStart ?? currentValue.length;
+        const end = textarea.selectionEnd ?? currentValue.length;
+        const nextValue = `${currentValue.slice(0, start)}${token}${currentValue.slice(end)}`;
+
+        form.setValue("body", nextValue, { shouldDirty: true });
+        requestAnimationFrame(() => {
+            textarea.focus();
+            const nextCursor = start + token.length;
+            textarea.setSelectionRange(nextCursor, nextCursor);
+        });
+    };
+
     const handleSubmit = (values: z.infer<typeof formSchema>) => {
         onSubmit(values);
         onOpenChange(false)
     }
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-5xl">
+            <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-6xl">
                 <DialogHeader>
                     <DialogTitle>Interface Text</DialogTitle>
                     <DialogDescription>
                         Add content to an interface or fetch its current content.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid items-start gap-6 md:grid-cols-3">
+                    <DataTransferPanel
+                        title="Previous Nodes Output"
+                        subtitle={`${availableVariables.length} variables`}
+                        className="max-h-[72vh] overflow-hidden"
+                    >
+                        {nodeOptions.length > 0 ? (
+                            <div className="mb-3">
+                                <Select
+                                    value={selectedNodeId}
+                                    onValueChange={onSelectedNodeIdChange}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select source node" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {nodeOptions.map((option) => (
+                                            <SelectItem key={option.nodeId} value={option.nodeId}>
+                                                {option.variableRoot} ({option.nodeType})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        ) : null}
+                        {isLoadingVariables ? (
+                            <div className="flex min-h-[180px] items-center justify-center gap-2 rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
+                                <Loader2 className="size-4 animate-spin" />
+                                Loading variables...
+                            </div>
+                        ) : availableVariables.length > 0 ? (
+                            <div className="max-h-[52vh] space-y-2 overflow-auto">
+                                {availableVariables.map((item) => (
+                                    <button
+                                        key={`${item.nodeId}-${item.key}`}
+                                        type="button"
+                                        className="w-full rounded-md border bg-background p-2 text-left hover:bg-accent"
+                                        onClick={() => handleInsertVariable(item.token)}
+                                    >
+                                        <p className="font-mono text-xs">{item.token}</p>
+                                        <p className="mt-1 text-[11px] text-muted-foreground">{item.key}</p>
+                                        <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                                            <span>{item.nodeType}</span>
+                                            <span>{item.valueType}</span>
+                                        </div>
+                                        {item.preview ? (
+                                            <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                                                {item.preview}
+                                            </p>
+                                        ) : null}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex min-h-[180px] items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
+                                No upstream variables found. Configure previous nodes with a variable name first.
+                            </div>
+                        )}
+                    </DataTransferPanel>
                     <Form {...form}>
                         <form
                             onSubmit={form.handleSubmit(handleSubmit)}
-                            className="space-y-8 mt-4"
+                            className="mt-4 space-y-8"
                         >
                     <FormField
                             control={form.control}
@@ -187,22 +283,29 @@ export const InterfaceTextDialog = ({
                             <FormField
                                 control={form.control}
                                 name="body"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Content to Add</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                className="min-h-[120px] font-mono text-sm"
-                                                placeholder="Write text or use {{template}} variables from context"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormDescription>
-                                            Supports Handlebars templates like {`{{variableName}}`}.
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
+                                render={({ field }) => {
+                                    const { ref, ...fieldProps } = field;
+                                    return (
+                                        <FormItem>
+                                            <FormLabel>Content to Add</FormLabel>
+                                            <FormControl>
+                                                <Textarea
+                                                    ref={(element) => {
+                                                        ref(element);
+                                                        bodyTextareaRef.current = element;
+                                                    }}
+                                                    className="min-h-[120px] font-mono text-sm"
+                                                    placeholder="Write text or use {{template}} variables from context"
+                                                    {...fieldProps}
+                                                />
+                                            </FormControl>
+                                            <FormDescription>
+                                                Supports Handlebars templates like {`{{variableName}}`}.
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    );
+                                }}
                             />
                         )}
                         {interfacesQuery.isLoading && (
@@ -224,6 +327,7 @@ export const InterfaceTextDialog = ({
                         executionOutput={executionOutput}
                         executionError={executionError}
                         idleMessage="Execute this workflow to view the latest Interface Text node output here."
+                        className="max-h-[72vh] overflow-hidden"
                     />
                 </div>
             </DialogContent>
