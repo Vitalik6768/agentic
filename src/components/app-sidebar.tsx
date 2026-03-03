@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { FolderOpen, FolderOpenIcon, HistoryIcon, KeyIcon, LogOutIcon, PlayIcon } from "lucide-react";
+import { FolderOpen, FolderOpenIcon, HistoryIcon, KeyIcon, LogOutIcon, PlayIcon, SquareDashedMousePointer } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "./ui/sidebar";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ const menuItems = [
         items: [
             {
                 title: "Interfaces",
-                icon: FolderOpenIcon,
+                icon: SquareDashedMousePointer,
                 url: "/interfaces",
             },
             {

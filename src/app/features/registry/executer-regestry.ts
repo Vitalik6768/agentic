@@ -8,6 +8,7 @@ import { telegramTriggerExecutor } from "../triggers/telegram-trigger/executor";
 import { telegramMessageExecutor } from "../executions/nodes/telegram-message/executor";
 import { webhookTriggerExecutor } from "../triggers/webhook-trigger/executor";
 import { scheduleTriggerExecutor } from "../triggers/schedule-trigger/executor";
+import { interfaceTextNodeExecutor } from "../executions/nodes/interface-text-node/executor";
 
 export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
@@ -18,6 +19,7 @@ export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.INITIAL]: manualTriggerExecutor,
     [NodeType.OPENROUTER]: openRouterExecutor as NodeExecutor,
     [NodeType.SET_NODE]: setNodeExecutor as NodeExecutor,
+    [NodeType.INTERFACE_TEXT]: interfaceTextNodeExecutor as NodeExecutor,
     [NodeType.TELEGRAM_MESSAGE]: telegramMessageExecutor as NodeExecutor,
     
 }

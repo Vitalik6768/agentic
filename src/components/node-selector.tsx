@@ -77,6 +77,12 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/openrouter.svg",
     },
     {
+        type: NodeType.INTERFACE_TEXT,
+        label: "Interface Text",
+        description: "Use an interface text",
+        icon: "/logos/interface-text.svg",
+    },
+    {
         type: NodeType.DISCORD,
         label: "Discord",
         description: "Use Discord to send messages",

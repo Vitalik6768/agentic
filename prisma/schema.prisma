@@ -132,6 +132,7 @@ enum NodeType {
   OPENROUTER
   TELEGRAM_MESSAGE
   WEBHOOK_TRIGGER
+  INTERFACE_TEXT
 }
 
 model Node {

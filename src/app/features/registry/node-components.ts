@@ -6,6 +6,7 @@ import type { NodeTypes } from "@xyflow/react";
 import { NodeType } from "generated/prisma";
 import { SetNodeNode } from "../executions/nodes/set-node/node";
 import { TelegramMessageNode } from "../executions/nodes/telegram-message/node";
+import { InterfaceTextNode } from "../executions/nodes/interface-text-node/node";
 import { ScheduleTriggerNode } from "../triggers/schedule-trigger/node";
 import { TelegramTriggerNode } from "../triggers/telegram-trigger/node";
 import { WebhookTriggerNode } from "../triggers/webhook-trigger/node";
@@ -28,6 +29,7 @@ export const nodeComponents = {
   [NodeType.HTTP_REQUEST]: HttpRequestNode,
   [NodeType.OPENROUTER]: OpenRouterNode,
   [NodeType.SET_NODE]: SetNodeNode,
+  [NodeType.INTERFACE_TEXT]: InterfaceTextNode,
   [NodeType.TELEGRAM_MESSAGE]: TelegramMessageNode,
 //   [NodeType.GOOGLE_FORM_TRIGGER]: GoogleFormTriggerNode,
 //   [NodeType.GEMINI]: GeminiNode,
