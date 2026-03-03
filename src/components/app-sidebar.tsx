@@ -14,6 +14,11 @@ const menuItems = [
         title: "Main",
         items: [
             {
+                title: "Interfaces",
+                icon: FolderOpenIcon,
+                url: "/interfaces",
+            },
+            {
                 title: "Workflows",
                 icon: FolderOpenIcon,
                 url: "/workflows",

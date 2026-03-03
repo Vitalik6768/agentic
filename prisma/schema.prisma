@@ -27,6 +27,7 @@ model User {
   accounts      Account[]
   workflows     Workflow[]
   credentials   Credential[]
+  interfaces    Interface[]
 
   @@unique([email])
   @@map("user")
@@ -113,6 +114,7 @@ model Workflow {
   userId      String
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   executions  Execution[]
+  interfaceWorkflows InterfaceWorkflow[]
 }
 
 enum NodeType {
@@ -219,4 +221,75 @@ model WorkflowSchedule {
   updatedAt      DateTime @updatedAt
 
   @@index([enabled, nextRunAt])
+}
+
+enum InterfaceType {
+  TEXT
+  // CHAT
+  // FORM
+  // ...
+}
+
+model Interface {
+  id          String          @id @default(cuid())
+  name        String
+  slug        String?
+  type        InterfaceType
+  settings    Json?           // shared UI/runtime config
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  publishedAt DateTime?
+
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  text        TextInterface?
+  workflowLinks InterfaceWorkflow[]
+  events      InterfaceEvent[]
+
+  @@unique([userId, slug])
+  @@index([userId, type])
+}
+
+model TextInterface {
+  interfaceId  String   @id
+  interface    Interface @relation(fields: [interfaceId], references: [id], onDelete: Cascade)
+
+  title        String?
+  contentJson  Json?     // canonical editor document (TipTap JSON)
+  contentHtml  String?   @db.Text // optional cache/export
+  clientEmail  String?
+}
+
+model InterfaceWorkflow {
+  id          String   @id @default(cuid())
+  interfaceId String
+  workflowId  String
+  event       String   @default("submit")
+  enabled     Boolean  @default(true)
+  order       Int      @default(0)
+  config      Json?
+
+  interface   Interface @relation(fields: [interfaceId], references: [id], onDelete: Cascade)
+  workflow    Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([interfaceId, workflowId, event])
+  @@index([workflowId, enabled])
+}
+
+model InterfaceEvent {
+  id            String   @id @default(cuid())
+  interfaceId   String
+  interface     Interface @relation(fields: [interfaceId], references: [id], onDelete: Cascade)
+
+  type          String
+  payload       Json
+  response      Json?
+  executionId   String?
+  createdAt     DateTime @default(now())
+
+  @@index([interfaceId, createdAt])
 }
