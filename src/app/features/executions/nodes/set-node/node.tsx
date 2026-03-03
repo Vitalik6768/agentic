@@ -10,18 +10,25 @@ import { fetchSetNodeRealtimeToken } from "./actions";
 import { useInngestSubscription } from "@inngest/realtime/hooks";
 import { SET_NODE_CHANNEL_NAME } from "@/inngest/channels/set-node";
 import { PencilIcon } from "lucide-react";
+import { useTRPC } from "@/trpc/react";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
+import { getAvailableVariables, type AvailableVariable } from "@/lib/variable-picker";
 
 
 type SetNodeNodeData = {
     variableName?: string;
+    varibleName?: string;
     value?: string;
     valueType?: "string" | "number" | "boolean" | "json";
 }
 
-
 type SetNodeType = Node<SetNodeNodeData>;
 
 export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
+    const trpc = useTRPC();
+    const params = useParams<{ workflowsId?: string }>();
+    const workflowId = typeof params.workflowsId === "string" ? params.workflowsId : undefined;
     const nodeStatus = useNodeStatus({
         nodeId: props.id,
         channel: SET_NODE_CHANNEL_NAME,
@@ -29,7 +36,14 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
         refreshToken: fetchSetNodeRealtimeToken,
     });
     const [dialogOpen, setDialogOpen] = useState(false);
-    const { setNodes } = useReactFlow();
+    const [availableVariables, setAvailableVariables] = useState<AvailableVariable[]>([]);
+    const { setNodes, getNodes, getEdges } = useReactFlow();
+    const latestWorkflowOutputQuery = useQuery({
+        ...(workflowId
+            ? trpc.executions.getLatestWorkflowOutput.queryOptions({ workflowId })
+            : trpc.executions.getLatestWorkflowOutput.queryOptions({ workflowId: "" })),
+        enabled: Boolean(workflowId) && dialogOpen,
+    });
     const { data: realtimeMessages } = useInngestSubscription({
         refreshToken: fetchSetNodeRealtimeToken,
         enabled: true,
@@ -65,6 +79,13 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
     };
 
     const handleOpenSettings = () => {
+        const vars = getAvailableVariables(
+            props.id,
+            getNodes(),
+            getEdges(),
+            latestWorkflowOutputQuery.data?.output,
+        );
+        setAvailableVariables(vars);
         setDialogOpen(true);
     }
     const handleSubmit = (values: SetNodeDialogValues) => {
@@ -97,6 +118,7 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
+                availableVariables={availableVariables}
             />
             <BaseExecutionNode
                 status={nodeStatus}

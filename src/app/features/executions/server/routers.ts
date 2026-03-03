@@ -34,6 +34,32 @@ export const executionsRouter = createTRPCRouter({
         },
       });
     }),
+  getLatestWorkflowOutput: protectedProcedure
+    .input(
+      z.object({
+        workflowId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return db.execution.findFirst({
+        where: {
+          workflowId: input.workflowId,
+          workflow: {
+            userId: ctx.session.user.id,
+          },
+        },
+        orderBy: {
+          startedAt: "desc",
+        },
+        select: {
+          id: true,
+          status: true,
+          output: true,
+          startedAt: true,
+          completedAt: true,
+        },
+      });
+    }),
   getMany: protectedProcedure
     .input(
       z.object({

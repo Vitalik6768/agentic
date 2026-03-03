@@ -6,6 +6,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ExecutionOutputPanel } from "@/components/data-transfer";
 import { useTRPC } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -218,27 +219,12 @@ export const InterfaceTextDialog = ({
                             </DialogFooter>
                         </form>
                     </Form>
-                    <div className="rounded-md border bg-muted/30 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-semibold">Execution Output</h3>
-                            <span className="text-xs text-muted-foreground">
-                                {executionStatus === "loading" ? "Running..." : executionStatus === "success" ? "Completed" : executionStatus === "error" ? "Failed" : "Idle"}
-                            </span>
-                        </div>
-                        {executionStatus === "success" && executionOutput ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap">
-                                {executionOutput}
-                            </pre>
-                        ) : executionStatus === "error" ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap text-red-500">
-                                {executionError ?? "Execution failed"}
-                            </pre>
-                        ) : (
-                            <div className="flex min-h-[180px] items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-                                Execute this workflow to view the latest Interface Text node output here.
-                            </div>
-                        )}
-                    </div>
+                    <ExecutionOutputPanel
+                        executionStatus={executionStatus}
+                        executionOutput={executionOutput}
+                        executionError={executionError}
+                        idleMessage="Execute this workflow to view the latest Interface Text node output here."
+                    />
                 </div>
             </DialogContent>
         </Dialog>
