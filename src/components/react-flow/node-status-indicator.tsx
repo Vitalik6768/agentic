@@ -35,37 +35,20 @@ export const SpinnerLoadingIndicator = ({
 
 export const BorderLoadingIndicator = ({
   children,
-  className
+  className,
 }: {
   children: ReactNode;
   className?: string;
 }) => {
   return (
-    <>
-      <div className="absolute -top-px -left-px h-[calc(100%+2px)] w-[calc(100%+2px)]">
-        <style>
-          {`
-        @keyframes spin {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        .spinner {
-          animation: spin 2s linear infinite;
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          width: 140%;
-          aspect-ratio: 1;
-          transform-origin: center;
-        }
-      `}
-        </style>
+    <div className="relative">
+      <div className="pointer-events-none absolute inset-0 z-10">
         <div className={cn("absolute inset-0 overflow-hidden rounded-sm", className)}>
-          <div className="spinner rounded-full bg-[conic-gradient(from_0deg_at_50%_50%,rgb(42,67,233)_0deg,rgba(42,138,246,0)_360deg)]" />
+          <div className="absolute top-1/2 left-1/2 aspect-square w-[140%] -translate-x-1/2 -translate-y-1/2 animate-[spin_2s_linear_infinite] rounded-full bg-[conic-gradient(from_0deg_at_50%_50%,rgb(42,67,233)_0deg,rgba(42,138,246,0)_360deg)]" />
         </div>
       </div>
       {children}
-    </>
+    </div>
   );
 };
 
@@ -77,15 +60,15 @@ const StatusBorder = ({
   className?: string;
 }) => {
   return (
-    <>
+    <div className="relative">
       <div
         className={cn(
-          "absolute -top-px -left-px h-[calc(100%+2px)] w-[calc(100%+2px)] rounded-sm border",
+          "pointer-events-none absolute inset-0 z-10 rounded-sm border",
           className,
         )}
       />
       {children}
-    </>
+    </div>
   );
 };
 
