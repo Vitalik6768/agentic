@@ -10,6 +10,7 @@ import { openRouterChannel } from "./channels/open-router";
 import { telegramTriggerChannel } from "./channels/telegram-trigger";
 import { telegramMessageChannel } from "./channels/telegram-message";
 import { webhookTriggerChannel } from "./channels/webhook_trigger";
+import { interfaceTableChannel } from "./channels/interface-table";
 import type { Realtime } from "@inngest/realtime";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
@@ -50,6 +51,7 @@ export const executeWorkflow = inngest.createFunction(
       telegramMessageChannel(),
       openRouterChannel(),
       webhookTriggerChannel(),
+      interfaceTableChannel(),
     //   googleFormTriggerChannel(),
     //   geminiChannel(),
     //   openAiChannel(),

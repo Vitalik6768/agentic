@@ -83,6 +83,12 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/interface-text.svg",
     },
     {
+        type: NodeType.INTERFACE_TABLE,
+        label: "Interface Table",
+        description: "Use an interface table",
+        icon: "/logos/table-interface.svg",
+    },
+    {
         type: NodeType.DISCORD,
         label: "Discord",
         description: "Use Discord to send messages",
