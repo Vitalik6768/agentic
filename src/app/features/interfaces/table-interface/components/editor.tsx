@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Download, Loader2, Minus, Plus, RefreshCw, Save } from "lucide-react";
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 type SelectedCell = {
   row: number;
@@ -170,6 +170,7 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importTargetCell, setImportTargetCell] = useState<SelectedCell | null>(null);
   const [isRefreshingBindings, setIsRefreshingBindings] = useState(false);
+  const hasAutoRefreshedBindings = useRef(false);
 
   const updateCell = (
     rowIndex: number,
@@ -396,6 +397,16 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
       setIsRefreshingBindings(false);
     }
   };
+
+  useEffect(() => {
+    const bindingCount = tableData.bindings ? Object.keys(tableData.bindings).length : 0;
+    if (hasAutoRefreshedBindings.current || bindingCount === 0) {
+      return;
+    }
+
+    hasAutoRefreshedBindings.current = true;
+    void handleRefreshLinkedValues();
+  }, [tableData.bindings, handleRefreshLinkedValues]);
 
   return (
     <div className="space-y-4 h-full">
