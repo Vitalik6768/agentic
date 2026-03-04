@@ -42,6 +42,21 @@ export const interfacesRouter = createTRPCRouter({
                 },
               }
             : {}),
+          ...(input.type === InterfaceType.TABLE
+            ? {
+                table: {
+                  create: {
+                    dataJson: {
+                      version: 1,
+                      rows: [
+                        { id: "r_header", cells: ["Column 1", "Column 2"] },
+                        { id: "r_1", cells: ["", ""] },
+                      ],
+                    },
+                  },
+                },
+              }
+            : {}),
         },
       });
 

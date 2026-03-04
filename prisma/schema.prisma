@@ -226,6 +226,7 @@ model WorkflowSchedule {
 
 enum InterfaceType {
   TEXT
+  TABLE
   // CHAT
   // FORM
   // ...
@@ -245,6 +246,7 @@ model Interface {
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   text        TextInterface?
+  table       TableInterface?
   workflowLinks InterfaceWorkflow[]
   events      InterfaceEvent[]
 
@@ -260,6 +262,16 @@ model TextInterface {
   contentJson  Json?     // canonical editor document (TipTap JSON)
   contentHtml  String?   @db.Text // optional cache/export
   clientEmail  String?
+}
+
+model TableInterface {
+  interfaceId String    @id
+  interface   Interface @relation(fields: [interfaceId], references: [id], onDelete: Cascade)
+
+  dataJson    Json?     // rows + header JSON
+  title       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model InterfaceWorkflow {

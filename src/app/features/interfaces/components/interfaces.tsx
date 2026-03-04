@@ -37,6 +37,9 @@ const getInterfaceHref = (item: InterfaceItem) => {
   if (item.type === InterfaceType.TEXT) {
     return `/interfaces/text-interface/${item.id}`;
   }
+  if (item.type === InterfaceType.TABLE) {
+    return `/interfaces/table-interface/${item.id}`;
+  }
 
   return "/interfaces";
 };

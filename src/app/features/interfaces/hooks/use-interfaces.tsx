@@ -48,4 +48,9 @@ export const INTERFACE_TYPES = [
     label: "Text Interface",
     description: "Rich text editor interface",
   },
+  {
+    value: InterfaceType.TABLE,
+    label: "Table Interface",
+    description: "Spreadsheet-like rows and columns",
+  },
 ] as const;
