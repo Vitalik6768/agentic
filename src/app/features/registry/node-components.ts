@@ -11,6 +11,7 @@ import { InterfaceTableNode } from "../executions/nodes/interface-table-node/nod
 import { ScheduleTriggerNode } from "../triggers/schedule-trigger/node";
 import { TelegramTriggerNode } from "../triggers/telegram-trigger/node";
 import { WebhookTriggerNode } from "../triggers/webhook-trigger/node";
+import { ConditionNode } from "../executions/nodes/condition-node/node";
 // import { DiscordNode } from "@/features/executions/components/discord/node";
 // import { GeminiNode } from "@/features/executions/components/gemini/node";
 // import { HttpRequestNode } from "@/features/executions/components/http-request/node";
@@ -33,6 +34,7 @@ export const nodeComponents = {
   [NodeType.INTERFACE_TEXT]: InterfaceTextNode,
   [NodeType.INTERFACE_TABLE]: InterfaceTableNode,
   [NodeType.TELEGRAM_MESSAGE]: TelegramMessageNode,
+  [NodeType.CONDITION_NODE]: ConditionNode,
 //   [NodeType.GOOGLE_FORM_TRIGGER]: GoogleFormTriggerNode,
 //   [NodeType.GEMINI]: GeminiNode,
 //   [NodeType.OPENAI]: OpenAiNode,

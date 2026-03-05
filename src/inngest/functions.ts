@@ -12,6 +12,7 @@ import { telegramMessageChannel } from "./channels/telegram-message";
 import { webhookTriggerChannel } from "./channels/webhook_trigger";
 import { interfaceTableChannel } from "./channels/interface-table";
 import type { Realtime } from "@inngest/realtime";
+import { conditionNodeChannel } from "./channels/condition-node";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { ExecutionStatus, NodeType } from "@/generated/prisma";
@@ -52,6 +53,7 @@ export const executeWorkflow = inngest.createFunction(
       openRouterChannel(),
       webhookTriggerChannel(),
       interfaceTableChannel(),
+      conditionNodeChannel(),
     //   googleFormTriggerChannel(),
     //   geminiChannel(),
     //   openAiChannel(),
@@ -107,9 +109,32 @@ export const executeWorkflow = inngest.createFunction(
       ? (async () => undefined) as Realtime.PublishFn
       : publish;
 
-    //exucute nodes
+    const incomingConnectionsByNode = new Map<string, typeof workflow.connections>();
+    const outgoingConnectionsByNode = new Map<string, typeof workflow.connections>();
+    for (const connection of workflow.connections) {
+      const incoming = incomingConnectionsByNode.get(connection.toNodeId) ?? [];
+      incoming.push(connection);
+      incomingConnectionsByNode.set(connection.toNodeId, incoming);
 
+      const outgoing = outgoingConnectionsByNode.get(connection.fromNodeId) ?? [];
+      outgoing.push(connection);
+      outgoingConnectionsByNode.set(connection.fromNodeId, outgoing);
+    }
+
+    const activeNodeIds = new Set<string>();
     for (const node of sortedNodes) {
+      const incoming = incomingConnectionsByNode.get(node.id) ?? [];
+      if (incoming.length === 0) {
+        activeNodeIds.add(node.id);
+      }
+    }
+
+    // execute only activated nodes; branch outputs activate downstream nodes
+    for (const node of sortedNodes) {
+      if (!activeNodeIds.has(node.id)) {
+        continue;
+      }
+
       const executor = getExecutor(node.type);
       context = await executor({
         data: node.data as Record<string, unknown>,
@@ -119,6 +144,24 @@ export const executeWorkflow = inngest.createFunction(
         step,
         publish: publishFn,
       });
+
+      const outgoing = outgoingConnectionsByNode.get(node.id) ?? [];
+      const selectedOutput =
+        (context.condition as Record<string, unknown> | undefined)?.[node.id] &&
+        typeof (context.condition as Record<string, unknown>)[node.id] === "object"
+          ? ((context.condition as Record<string, unknown>)[node.id] as { route?: unknown }).route
+          : undefined;
+
+      for (const connection of outgoing) {
+        if (
+          typeof selectedOutput === "string" &&
+          selectedOutput.length > 0 &&
+          connection.fromOutput !== selectedOutput
+        ) {
+          continue;
+        }
+        activeNodeIds.add(connection.toNodeId);
+      }
     }
     await db.execution.update({
       where: {

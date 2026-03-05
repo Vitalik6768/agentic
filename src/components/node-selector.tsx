@@ -89,6 +89,12 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/table-interface.svg",
     },
     {
+        type: NodeType.CONDITION_NODE,
+        label: "Condition Node",
+        description: "Use a condition node",
+        icon: "/logos/condition-node.svg",
+    },
+    {
         type: NodeType.DISCORD,
         label: "Discord",
         description: "Use Discord to send messages",
