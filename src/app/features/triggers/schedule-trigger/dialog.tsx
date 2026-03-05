@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
 import z from "zod";
@@ -27,6 +27,86 @@ const formSchema = z.object({
 
 export type ScheduleTriggerFormValues = z.infer<typeof formSchema>;
 
+type TriggerInterval = "MINUTES" | "HOURS" | "DAYS";
+
+type CronBuilderState = {
+    interval: TriggerInterval;
+    every: number;
+    hour: number;
+    minute: number;
+};
+
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => {
+    const normalized = hour % 12 === 0 ? 12 : hour % 12;
+    const suffix = hour < 12 ? "am" : "pm";
+    return {
+        value: String(hour),
+        label: `${normalized}${suffix}`,
+    };
+});
+
+const clampNumber = (value: number, min: number, max: number) => {
+    if (Number.isNaN(value)) return min;
+    return Math.max(min, Math.min(max, value));
+};
+
+const toCronExpression = (state: CronBuilderState) => {
+    const every = Math.max(1, Math.floor(state.every));
+    const hour = clampNumber(Math.floor(state.hour), 0, 23);
+    const minute = clampNumber(Math.floor(state.minute), 0, 59);
+
+    switch (state.interval) {
+        case "MINUTES":
+            return `*/${every} * * * *`;
+        case "HOURS":
+            return `${minute} */${every} * * *`;
+        case "DAYS":
+            return `${minute} ${hour} */${every} * *`;
+        default:
+            return "*/5 * * * *";
+    }
+};
+
+const parseCronBuilder = (cronExpression: string): CronBuilderState | null => {
+    const parts = cronExpression.trim().split(/\s+/);
+    if (parts.length < 5) return null;
+    const minutePart = parts[0] ?? "";
+    const hourPart = parts[1] ?? "";
+    const dayPart = parts[2] ?? "";
+
+    const minuteEvery = /^\*\/(\d+)$/.exec(minutePart);
+    if (minuteEvery) {
+        return {
+            interval: "MINUTES",
+            every: Math.max(1, Number(minuteEvery[1])),
+            hour: 0,
+            minute: 0,
+        };
+    }
+
+    const hourEvery = /^\*\/(\d+)$/.exec(hourPart);
+    if (hourEvery && /^\d+$/.test(minutePart)) {
+        return {
+            interval: "HOURS",
+            every: Math.max(1, Number(hourEvery[1])),
+            hour: 0,
+            minute: clampNumber(Number(minutePart), 0, 59),
+        };
+    }
+
+    const dayEvery = /^\*\/(\d+)$/.exec(dayPart);
+    if (dayEvery && /^\d+$/.test(minutePart) && /^\d+$/.test(hourPart)) {
+        return {
+            interval: "DAYS",
+            every: Math.max(1, Number(dayEvery[1])),
+            hour: clampNumber(Number(hourPart), 0, 23),
+            minute: clampNumber(Number(minutePart), 0, 59),
+        };
+    }
+
+    return null;
+};
+
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -42,6 +122,12 @@ export const ScheduleTriggerDialog = ({
     defaultValues = {},
     executionStatus = "initial",
 }: Props) => {
+    const [builder, setBuilder] = useState<CronBuilderState>({
+        interval: "MINUTES",
+        every: 5,
+        hour: 0,
+        minute: 0,
+    });
     const form = useForm<ScheduleTriggerFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -55,8 +141,18 @@ export const ScheduleTriggerDialog = ({
 
     useEffect(() => {
         if (open) {
+            const cron = defaultValues.cronExpression ?? "*/5 * * * *";
+            const parsedBuilder = parseCronBuilder(cron);
+            setBuilder(
+                parsedBuilder ?? {
+                    interval: "MINUTES",
+                    every: 5,
+                    hour: 0,
+                    minute: 0,
+                },
+            );
             form.reset({
-                cronExpression: defaultValues.cronExpression ?? "*/5 * * * *",
+                cronExpression: cron,
                 timezone: defaultValues.timezone ?? "UTC",
                 enabled: defaultValues.enabled ?? true,
                 misfirePolicy: defaultValues.misfirePolicy ?? "SKIP_MISSED",
@@ -70,9 +166,16 @@ export const ScheduleTriggerDialog = ({
         onOpenChange(false);
     };
 
+    const applyBuilder = () => {
+        form.setValue("cronExpression", toCronExpression(builder), {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-3xl">
+            <DialogContent className="max-h-[90vh] sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Schedule Trigger</DialogTitle>
                     <DialogDescription>
@@ -80,6 +183,7 @@ export const ScheduleTriggerDialog = ({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-6 md:grid-cols-2">
+                    <div className="max-h-[72vh] overflow-y-auto pr-1">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
                             <FormField
@@ -112,6 +216,110 @@ export const ScheduleTriggerDialog = ({
                                     </FormItem>
                                 )}
                             />
+                            <div className="space-y-4 rounded-md border p-4">
+                                <p className="border-b pb-2 text-sm font-semibold">Trigger Rules</p>
+
+                                <div className="space-y-2">
+                                    <FormLabel>Trigger Interval</FormLabel>
+                                    <Select
+                                        value={builder.interval}
+                                        onValueChange={(value) =>
+                                            setBuilder((prev) => ({
+                                                ...prev,
+                                                interval: value as TriggerInterval,
+                                            }))
+                                        }
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="MINUTES">Minutes</SelectItem>
+                                            <SelectItem value="HOURS">Hours</SelectItem>
+                                            <SelectItem value="DAYS">Days</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <FormLabel>
+                                        {builder.interval === "MINUTES"
+                                            ? "Minutes Between Triggers"
+                                            : builder.interval === "HOURS"
+                                              ? "Hours Between Triggers"
+                                              : "Days Between Triggers"}
+                                    </FormLabel>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={builder.interval === "DAYS" ? 31 : 999}
+                                        value={builder.every}
+                                        onChange={(event) =>
+                                            setBuilder((prev) => ({
+                                                ...prev,
+                                                every: clampNumber(
+                                                    Number(event.target.value || 1),
+                                                    1,
+                                                    prev.interval === "DAYS" ? 31 : 999,
+                                                ),
+                                            }))
+                                        }
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Must be in range 1-{builder.interval === "DAYS" ? "31" : "999"}
+                                    </p>
+                                </div>
+
+                                {builder.interval !== "MINUTES" && (
+                                    <>
+                                        {builder.interval === "DAYS" && (
+                                            <div className="space-y-2">
+                                                <FormLabel>Trigger at Hour</FormLabel>
+                                                <Select
+                                                    value={String(builder.hour)}
+                                                    onValueChange={(value) =>
+                                                        setBuilder((prev) => ({
+                                                            ...prev,
+                                                            hour: clampNumber(Number(value), 0, 23),
+                                                        }))
+                                                    }
+                                                >
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {HOUR_OPTIONS.map((option) => (
+                                                            <SelectItem key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-2">
+                                            <FormLabel>Trigger at Minute</FormLabel>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                max={59}
+                                                value={builder.minute}
+                                                onChange={(event) =>
+                                                    setBuilder((prev) => ({
+                                                        ...prev,
+                                                        minute: clampNumber(Number(event.target.value || 0), 0, 59),
+                                                    }))
+                                                }
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                <Button type="button" variant="outline" className="w-full" onClick={applyBuilder}>
+                                    Apply Trigger Rules
+                                </Button>
+                            </div>
 
                             <FormField
                                 control={form.control}
@@ -180,6 +388,7 @@ export const ScheduleTriggerDialog = ({
                             </DialogFooter>
                         </form>
                     </Form>
+                    </div>
 
                     <div className="rounded-md border bg-muted/30 p-4">
                         <h3 className="mb-2 text-sm font-semibold">Status</h3>
