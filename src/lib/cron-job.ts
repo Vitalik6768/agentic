@@ -206,10 +206,17 @@ export const upsertScheduleCronJob = async ({
   executionUrl.searchParams.set("workflowId", workflowId);
 
   const schedule = cronExpressionToCronJobSchedule(cronExpression, timezone);
-  const existingSchedule = await db.workflowSchedule.findUnique({
-    where: { workflowId },
-    select: { cronJobId: true },
-  });
+  const [existingSchedule, remoteCronJob] = await Promise.all([
+    db.workflowSchedule.findUnique({
+      where: { workflowId },
+      select: { cronJobId: true },
+    }),
+    db.remoteCronJob.findFirst({
+      where: { workflowId },
+      select: { cronJobId: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   const jobPayload = {
     job: {
@@ -219,7 +226,7 @@ export const upsertScheduleCronJob = async ({
     },
   };
 
-  let cronJobId = existingSchedule?.cronJobId ?? null;
+  let cronJobId = existingSchedule?.cronJobId ?? remoteCronJob?.cronJobId ?? null;
 
   if (cronJobId) {
     await axios.patch(`${CRON_JOB_API_BASE_URL}/jobs/${cronJobId}`, jobPayload, {

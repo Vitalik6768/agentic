@@ -112,6 +112,7 @@ export async function PUT(request: NextRequest) {
       enabled?: unknown;
       misfirePolicy?: unknown;
       maxDelaySec?: unknown;
+      onlyIfExists?: unknown;
     };
 
     const workflowId =
@@ -124,6 +125,7 @@ export async function PUT(request: NextRequest) {
         { status: 400 },
       );
     }
+    const onlyIfExists = body.onlyIfExists === true;
 
     const parsed = parseScheduleConfig({
       cronExpression: body.cronExpression,
@@ -137,6 +139,33 @@ export async function PUT(request: NextRequest) {
         { success: false, message: "Invalid schedule config. cronExpression is required." },
         { status: 400 },
       );
+    }
+
+    if (onlyIfExists) {
+      const [existingSchedule, existingRemoteJob] = await Promise.all([
+        db.workflowSchedule.findUnique({
+          where: { workflowId },
+          select: { cronJobId: true },
+        }),
+        db.remoteCronJob.findFirst({
+          where: { workflowId },
+          select: { cronJobId: true },
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
+
+      const existingCronJobId = existingSchedule?.cronJobId ?? existingRemoteJob?.cronJobId ?? null;
+      if (!existingCronJobId) {
+        return NextResponse.json(
+          {
+            success: true,
+            skipped: true,
+            reason: "missing-existing-cron-job",
+            workflowId,
+          },
+          { status: 200 },
+        );
+      }
     }
 
     const apiKeyFromHeader = getApiKey(request) ?? undefined;
