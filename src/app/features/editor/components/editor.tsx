@@ -1,7 +1,6 @@
 "use client";
 
 import { ErrorView, LoadingView } from "@/components/entity-components";
-// import { useSuspenseWorkflow } from "@/app/features/workflows/hooks/use-workflows";
 import '@xyflow/react/dist/style.css';
 import { useCallback, useMemo, useState } from "react";
 import { addEdge, applyEdgeChanges, applyNodeChanges, Background, type Connection, Controls, type Edge, type EdgeChange, MiniMap, type Node, type NodeChange, Panel, Position, ReactFlow } from "@xyflow/react";
@@ -49,7 +48,8 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
         [],
     );
     const onConnect = useCallback(
-        (params: Connection) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
+        (params: Connection) =>
+            setEdges((edgesSnapshot) => addEdge({ ...params, type: "smoothstep" }, edgesSnapshot)),
         [],
     );
     const hasConfiguredTrigger = useMemo(() => {
