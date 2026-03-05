@@ -10,6 +10,7 @@ import { NodeType } from "generated/prisma";
 import { PAGINATIONS } from "@/config/constans";
 import { sendWorkflowExecution } from "@/inngest/utills";
 import { parseScheduleConfig } from "@/lib/workflow-schedule";
+import { deleteRemoteCronJobForWorkflow } from "@/lib/cron-job";
 // import type { Edge } from "@xyflow/react";
 
 export const workflowsRouter = createTRPCRouter({
@@ -61,6 +62,13 @@ export const workflowsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      try {
+        await deleteRemoteCronJobForWorkflow({
+          workflowId: input.id,
+        });
+      } catch (error) {
+        console.error("Failed to delete remote cron job before workflow removal", error);
+      }
       return db.workflow.delete({
         where: {
           id: input.id,

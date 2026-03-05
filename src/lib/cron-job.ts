@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosError } from "axios";
 import { MisfirePolicy } from "generated/prisma";
 import { db } from "@/server/db";
 import { computeNextRunAt } from "@/lib/workflow-schedule";
@@ -116,6 +116,75 @@ export type SetWorkflowCronEnabledInput = {
   apiKey?: string;
 };
 
+const isCronJobNotFoundError = (error: unknown): boolean => {
+  const axiosError = error as AxiosError<{ message?: string }>;
+  const status = axiosError.response?.status;
+  return status === 404;
+};
+
+const syncRemoteCronJob = async (workflowId: string, cronJobId: string) => {
+  await db.remoteCronJob.deleteMany({
+    where: { workflowId },
+  });
+  await db.remoteCronJob.create({
+    data: {
+      workflowId,
+      cronJobId,
+    },
+  });
+};
+
+export const deleteRemoteCronJobForWorkflow = async ({
+  workflowId,
+  apiKey,
+}: {
+  workflowId: string;
+  apiKey?: string;
+}) => {
+  const [remoteCron, existingSchedule] = await Promise.all([
+    db.remoteCronJob.findFirst({
+      where: { workflowId },
+      select: { cronJobId: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.workflowSchedule.findUnique({
+      where: { workflowId },
+      select: { cronJobId: true },
+    }),
+  ]);
+  const cronJobId = remoteCron?.cronJobId ?? existingSchedule?.cronJobId ?? null;
+  if (!cronJobId) {
+    await db.remoteCronJob.deleteMany({
+      where: { workflowId },
+    });
+    return { deleted: false, reason: "missing-cron-job-id" as const };
+  }
+
+  const resolvedApiKey = apiKey ?? process.env.CRONE_SECRET ?? process.env.CRON_SECRET;
+  if (!resolvedApiKey) {
+    return { deleted: false, reason: "missing-api-key" as const };
+  }
+
+  try {
+    await axios.delete(`${CRON_JOB_API_BASE_URL}/jobs/${cronJobId}`, {
+      headers: {
+        Authorization: `Bearer ${resolvedApiKey}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 15_000,
+    });
+  } catch (error) {
+    if (!isCronJobNotFoundError(error)) {
+      throw error;
+    }
+  }
+
+  await db.remoteCronJob.deleteMany({
+    where: { workflowId },
+  });
+  return { deleted: true, reason: "deleted" as const };
+};
+
 export const upsertScheduleCronJob = async ({
   workflowId,
   cronExpression,
@@ -198,6 +267,9 @@ export const upsertScheduleCronJob = async ({
       maxDelaySec,
     },
   });
+  if (cronJobId) {
+    await syncRemoteCronJob(workflowId, cronJobId);
+  }
 
   return {
     cronJobId,
@@ -239,6 +311,7 @@ export const setWorkflowCronEnabled = async ({
     where: { workflowId },
     data: { enabled },
   });
+  await syncRemoteCronJob(workflowId, existingSchedule.cronJobId);
 
   return {
     cronJobId: existingSchedule.cronJobId,

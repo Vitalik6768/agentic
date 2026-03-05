@@ -2,6 +2,7 @@ import axios, { type AxiosError } from "axios";
 import { type NextRequest, NextResponse } from "next/server";
 import { setWorkflowCronEnabled, upsertScheduleCronJob } from "@/lib/cron-job";
 import { parseScheduleConfig } from "@/lib/workflow-schedule";
+import { db } from "@/server/db";
 
 const CRON_JOB_API_BASE_URL = "https://api.cron-job.org";
 
@@ -254,6 +255,11 @@ export async function DELETE(request: NextRequest) {
         "Content-Type": "application/json",
       },
       timeout: 15_000,
+    });
+    await db.remoteCronJob.deleteMany({
+      where: {
+        cronJobId: String(jobId),
+      },
     });
     return NextResponse.json({ success: true, ...response.data }, { status: 200 });
   } catch (error) {

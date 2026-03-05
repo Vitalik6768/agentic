@@ -308,3 +308,11 @@ model InterfaceEvent {
 
   @@index([interfaceId, createdAt])
 }
+
+model RemoteCronJob{
+  id String @id @default(cuid())
+  cronJobId String?
+  workflowId String
+  createdAt DateTime @default(now())
+  @@unique([cronJobId])
+}
