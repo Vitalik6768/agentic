@@ -90,6 +90,20 @@ const extractModelText = (wrappedResult: unknown): string => {
 
   return "";
 };
+
+const renderTemplate = (
+  template: string,
+  context: Record<string, unknown>,
+  fieldLabel: "systemPrompt" | "userPrompt",
+): string => {
+  try {
+    return Handlebars.compile(template, { noEscape: true })(context);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown template error";
+    throw new NonRetriableError(`Invalid ${fieldLabel} template: ${message}`);
+  }
+};
+
 export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
   data,
   nodeId,
@@ -127,11 +141,15 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
     throw new NonRetriableError("User prompt is required");
   }
 
+  const safeContext = (context && typeof context === "object"
+    ? context
+    : {}) as Record<string, unknown>;
+
   const systemPromptBase = data.systemPrompt
-    ? Handlebars.compile(data.systemPrompt)(context)
+    ? renderTemplate(data.systemPrompt, safeContext, "systemPrompt")
     : "you are a helpful assistant";
   const systemPrompt = `${systemPromptBase}\n\nReturn only the final answer for the user. Do not include internal reasoning, analysis steps, or self-reflection.`;
-  const userPrompt = Handlebars.compile(data.userPrompt)(context);
+  const userPrompt = renderTemplate(data.userPrompt, safeContext, "userPrompt");
 
   const credential = await step.run("get-credential", async () => {
     return await db.credential.findUniqueOrThrow({
