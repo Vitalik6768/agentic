@@ -44,6 +44,7 @@ export const EntityHeader = ({
                 <Button
                     disabled={isCreating ?? disabled}
                     size="sm"
+                    className="bg-blue-600 text-white hover:bg-blue-700 rounded-xs hover:cursor-pointer hover:border-blue-800 shadow-sm"
                     onClick={onNew}>
                     <PlusIcon className="size-4" />
                     {newButtonLabel}
@@ -51,7 +52,11 @@ export const EntityHeader = ({
                 </Button>
             )}
             {newButtonHref && !onNew && (
-                <Button size="sm" asChild>
+                <Button
+                    size="sm"
+                    asChild
+                    className="bg-blue-600 text-white hover:bg-blue-700 rounded-xs hover:cursor-pointer hover:border-blue-800 shadow-sm"
+                >
                     <Link href={newButtonHref} prefetch>
                         <PlusIcon className="size-4" />
                         {newButtonLabel}

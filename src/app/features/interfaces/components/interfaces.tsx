@@ -173,11 +173,12 @@ export const InterfacesHeader = () => {
           <h1 className="text-lg font-semibold md:text-xl">Interfaces</h1>
           <p className="text-xs text-muted-foreground md:text-sm">Manage your created interfaces</p>
         </div>
-        <Button size="sm" onClick={() => setOpen(true)}>
+        <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700 rounded-xs hover:cursor-pointer hover:border-blue-800 shadow-sm" onClick={() => setOpen(true)}>
           <PlusIcon className="size-4" />
           New Interface
         </Button>
       </div>
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
