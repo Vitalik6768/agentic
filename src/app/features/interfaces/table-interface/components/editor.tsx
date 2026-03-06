@@ -409,7 +409,7 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
   }, [tableData.bindings, handleRefreshLinkedValues]);
 
   return (
-    <div className="space-y-4 h-full">
+    <div className="h-full space-y-4">
       <ImportFromWorkflowDialog
         open={importDialogOpen}
         onOpenChange={(open) => {
@@ -420,11 +420,30 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
         }}
         onImport={handleImportVariable}
       />
-      <Card className="p-4 border-0 shadow-none rounded-lg h-full flex flex-col">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-2xl font-semibold leading-none tracking-tight">{tableInterface.name}</h2>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={addColumn}>
+      <Card className="flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card/60 shadow-sm">
+        <div className="border-b bg-muted/20 px-4 py-4">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-semibold leading-none tracking-tight">{tableInterface.name}</h2>
+              <p className="text-xs text-muted-foreground">
+                Edit rows and columns, then save to persist changes.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border bg-background/80 px-2.5 py-1 text-xs text-muted-foreground">
+                {Math.max(0, tableData.rows.length - 1)} rows
+              </span>
+              <span className="rounded-full border bg-background/80 px-2.5 py-1 text-xs text-muted-foreground">
+                {tableData.rows[0]?.cells.length ?? 0} columns
+              </span>
+              <span className="rounded-full border bg-background/80 px-2.5 py-1 text-xs text-muted-foreground">
+                {tableData.bindings ? Object.keys(tableData.bindings).length : 0} linked
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={addColumn} className="bg-background">
               <Plus className="mr-1.5 size-4" />
               Column
             </Button>
@@ -433,11 +452,12 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
               size="sm"
               onClick={removeColumn}
               disabled={(tableData.rows[0]?.cells.length ?? 0) <= 1}
+              className="bg-background"
             >
               <Minus className="mr-1.5 size-4" />
               Remove Column
             </Button>
-            <Button variant="outline" size="sm" onClick={addRow}>
+            <Button variant="outline" size="sm" onClick={addRow} className="bg-background">
               <Plus className="mr-1.5 size-4" />
               Row
             </Button>
@@ -446,6 +466,7 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
               size="sm"
               onClick={() => void handleRefreshLinkedValues()}
               disabled={isRefreshingBindings || !tableData.bindings || Object.keys(tableData.bindings).length === 0}
+              className="bg-background"
             >
               {isRefreshingBindings ? (
                 <Loader2 className="mr-1.5 size-4 animate-spin" />
@@ -465,11 +486,18 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
           </div>
         </div>
 
-        <div className="overflow-auto rounded-md border" onKeyDown={handleGridKeyDown} tabIndex={0}>
-          <table className="w-full border-collapse text-sm">
+        <div className="flex-1 overflow-auto p-4" onKeyDown={handleGridKeyDown} tabIndex={0}>
+          <div className="overflow-auto rounded-lg border border-border/70 bg-background/70 shadow-xs">
+          <table className="w-full table-fixed border-collapse text-sm">
             <tbody>
               {tableData.rows.map((row, rowIndex) => (
-                <tr key={row.id} className={cn(rowIndex === 0 && "bg-muted/50")}>
+                <tr
+                  key={row.id}
+                  className={cn(
+                    rowIndex === 0 && "bg-muted/50",
+                    rowIndex > 0 && "odd:bg-background even:bg-muted/10",
+                  )}
+                >
                   {row.cells.map((cell, colIndex) => {
                     const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
                     const isEditing = editingCell?.row === rowIndex && editingCell?.col === colIndex;
@@ -479,7 +507,7 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
                         className={cn(
                           "group relative min-w-[140px] border p-0 align-top",
                           rowIndex === 0 && "font-medium",
-                          isSelected && "ring-2 ring-primary",
+                          isSelected && "ring-2 ring-primary ring-inset",
                         )}
                         onClick={() => setSelectedCell({ row: rowIndex, col: colIndex })}
                         onDoubleClick={() => startEdit(rowIndex, colIndex)}
@@ -500,17 +528,24 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
                                 setEditingCell(null);
                               }
                             }}
-                            className="h-10 w-full border-0 bg-background px-2 outline-none"
+                            className="block h-10 w-full border-0 bg-background px-2 py-2 text-foreground outline-none"
                           />
                         ) : (
-                          <div className="h-10 px-2 py-2 text-muted-foreground">{cell || "\u00A0"}</div>
+                          <div
+                            className={cn(
+                              "h-10 overflow-hidden px-2 py-2 text-ellipsis whitespace-nowrap",
+                              rowIndex === 0 ? "font-medium text-foreground" : "text-foreground/85",
+                            )}
+                          >
+                            {cell || "\u00A0"}
+                          </div>
                         )}
                         {rowIndex > 0 ? (
                           <Button
-                            variant="outline"
+                            variant="secondary"
                             size="icon"
                             className={cn(
-                              "absolute right-1 top-1 z-10 size-6 p-0 transition-opacity",
+                              "absolute right-1 top-1 z-10 size-6 p-0 shadow-sm transition-opacity",
                               isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
                             )}
                             onClick={(event) => {
@@ -532,6 +567,7 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </Card>
     </div>
