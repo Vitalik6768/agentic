@@ -8,6 +8,7 @@ import { decrypt } from "@/lib/encryption";
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import type { NodeExecutor } from "../../types";
 import { registerHandlebarsHelpers } from "@/lib/handlebars-helpers";
+import { DEFAULT_OPEN_ROUTER_MODEL, isOpenRouterModel } from "@/config/constans";
 
 registerHandlebarsHelpers();
 
@@ -16,6 +17,7 @@ type OpenRouterData = {
   credentialId: string;
   systemPrompt?: string;
   userPrompt: string;
+  model?: string;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
@@ -148,10 +150,14 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
   const openrouter = createOpenRouter({
     apiKey: decrypt(credential.value),
   });
+  const selectedModel =
+    data.model && isOpenRouterModel(data.model)
+      ? data.model
+      : DEFAULT_OPEN_ROUTER_MODEL;
   try {
     const text = await step.run("openrouter-generate-text", async () => {
       const result = await generateText({
-        model: openrouter("google/gemini-3.1-pro-preview"),
+        model: openrouter(selectedModel),
         prompt: userPrompt,
         system: systemPrompt,
         providerOptions: {

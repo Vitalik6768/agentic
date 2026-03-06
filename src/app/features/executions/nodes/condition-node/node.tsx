@@ -156,8 +156,8 @@ export const ConditionNode = memo((props: NodeProps<ConditionNodeType>) => {
         {...props}
         id={props.id}
         icon="/logos/condition-node.svg"
-        name="Condition If"
-        description={description}
+        // name="Condition If"
+        // description={description}
         onSettings={handleOpenSettings}
         onDoubleClick={handleOpenSettings}
       >
