@@ -20,8 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 import { InterfaceType } from "generated/prisma";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { Clock3Icon, FileTextIcon, PlusIcon, Table2Icon, Trash2Icon } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { INTERFACE_TYPES, useCreateInterface, useRemoveInterface, useSuspenseInterfaces } from "../hooks/use-interfaces";
@@ -42,6 +43,26 @@ const getInterfaceHref = (item: InterfaceItem) => {
   }
 
   return "/interfaces";
+};
+
+const getInterfaceMeta = (type: InterfaceType) => {
+  if (type === InterfaceType.TABLE) {
+    return {
+      label: "Table Interface",
+      Icon: Table2Icon,
+      iconClassName: "text-emerald-600",
+      cardClassName: "border-l-4 border-l-emerald-500 border-b-2 border-b-emerald-500/50 border-t-2 border-t-emerald-500/50 border-r-2 border-r-emerald-500/50",
+      badgeClassName: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+    };
+  }
+
+  return {
+    label: "Text Interface",
+    Icon: FileTextIcon,
+    iconClassName: "text-blue-600",
+    cardClassName: "border-l-4 border-l-blue-500 border-b-2 border-b-blue-500/50 border-t-2 border-t-blue-500/50 border-r-2 border-r-blue-500/50",
+    badgeClassName: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
+  };
 };
 
 export const InterfacesList = () => {
@@ -70,22 +91,39 @@ export const InterfacesList = () => {
 const InterfaceCard = ({ item }: { item: InterfaceItem }) => {
   const removeInterface = useRemoveInterface();
   const href = useMemo(() => getInterfaceHref(item), [item]);
+  const typeMeta = useMemo(() => getInterfaceMeta(item.type), [item.type]);
 
   const handleDelete = async () => {
     await removeInterface.mutateAsync({ id: item.id });
   };
 
   return (
-    <Link href={href} prefetch>
-      <Card className={cn("h-full cursor-pointer shadow-none transition hover:shadow-sm", removeInterface.isPending && "opacity-60")}>
-        <CardHeader className="flex flex-row items-start justify-between space-y-0">
-          <div className="space-y-1">
-            <CardTitle className="text-base font-semibold">{item.name}</CardTitle>
-            <CardDescription>{item.type}</CardDescription>
+    <Link href={href} prefetch className="group block h-full">
+      <Card
+        className={cn(
+          "h-full cursor-pointer border border-border/80 bg-muted/10 shadow-none group-hover:border-primary/60 group-hover:shadow-md",
+          typeMeta.cardClassName,
+          removeInterface.isPending && "opacity-60",
+        )}
+      >
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-background ring-1 ring-muted-foreground/10">
+              <typeMeta.Icon className={cn("size-4", typeMeta.iconClassName)} />
+            </div>
+            <div className="min-w-0 space-y-2">
+              <CardTitle className="truncate text-base font-semibold">{item.name}</CardTitle>
+              <CardDescription>
+                <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", typeMeta.badgeClassName)}>
+                  {typeMeta.label}
+                </span>
+              </CardDescription>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
+            className="shrink-0 text-muted-foreground hover:text-destructive"
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -96,8 +134,9 @@ const InterfaceCard = ({ item }: { item: InterfaceItem }) => {
             <Trash2Icon className="size-4" />
           </Button>
         </CardHeader>
-        <CardContent className="pt-0 text-xs text-muted-foreground">
-          Updated {new Date(item.updatedAt).toLocaleString()}
+        <CardContent className="flex items-center gap-1.5 pt-0 text-xs text-muted-foreground">
+          <Clock3Icon className="size-3.5" />
+          <span>Updated {formatDistanceToNow(item.updatedAt, { addSuffix: true })}</span>
         </CardContent>
       </Card>
     </Link>
@@ -109,6 +148,7 @@ export const InterfacesHeader = () => {
   const [name, setName] = useState("");
   const [type, setType] = useState<InterfaceType>(InterfaceType.TEXT);
   const createInterface = useCreateInterface();
+  const selectedTypeMeta = useMemo(() => getInterfaceMeta(type), [type]);
 
   const handleCreate = () => {
     createInterface.mutate(
@@ -140,40 +180,59 @@ export const InterfacesHeader = () => {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create Interface</DialogTitle>
-            <DialogDescription>Select interface type and optionally provide a name.</DialogDescription>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="space-y-3 rounded-lg border bg-muted/30 p-4">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <span className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <PlusIcon className="size-4" />
+              </span>
+              Create Interface
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              Select interface type and optionally provide a name.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-lg border bg-muted/20 p-4">
               <p className="text-sm font-medium">Type</p>
               <Select value={type} onValueChange={(value) => setType(value as InterfaceType)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select interface type" />
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue>
+                    <span className="inline-flex items-center gap-2">
+                      <selectedTypeMeta.Icon className={cn("size-4", selectedTypeMeta.iconClassName)} />
+                      <span>{selectedTypeMeta.label}</span>
+                    </span>
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {INTERFACE_TYPES.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
+                  {INTERFACE_TYPES.map((item) => {
+                    const itemMeta = getInterfaceMeta(item.value as InterfaceType);
+                    return (
+                      <SelectItem key={item.value} value={item.value}>
+                        <span className="inline-flex items-center gap-2">
+                          <itemMeta.Icon className={cn("size-4", itemMeta.iconClassName)} />
+                          <span>{item.label}</span>
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-lg border bg-muted/20 p-4">
               <p className="text-sm font-medium">Name (optional)</p>
               <Input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="marketing-landing-page"
+                className="bg-background"
               />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="rounded-lg border bg-muted/20 p-3 sm:justify-between">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
