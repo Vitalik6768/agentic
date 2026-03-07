@@ -20,6 +20,7 @@ interface BaseExecutionNodeProps extends NodeProps {
     onDoubleClick?: () => void;
     name?: string;
     description?: string;
+    bottomActions?: ReactNode;
     status: NodeStatus;
     icon?: React.ComponentType<{ className?: string }> | string;
 }
@@ -33,6 +34,7 @@ export const BaseExecutionNode = memo(({
     onDoubleClick,
     onSettings,
     onDelete,
+    bottomActions,
     status="initial",
     ...props
 }: BaseExecutionNodeProps) => {
@@ -55,6 +57,7 @@ export const BaseExecutionNode = memo(({
             description={description}
             onDelete={handleDelete}
             onSettings={onSettings}
+            bottomActions={bottomActions}
 
             {...props}
         >

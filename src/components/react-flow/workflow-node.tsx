@@ -14,6 +14,7 @@ interface WorkflowNodeProps extends NodeProps {
     onSettings?: () => void;
     name?: string;
     description?: string;
+    bottomActions?: ReactNode;
 
 }
 
@@ -24,6 +25,7 @@ export function WorkflowNode({
     onSettings,
     name,
     description,
+    bottomActions,
     ...props }: WorkflowNodeProps) {
 
     return (
@@ -54,6 +56,15 @@ export function WorkflowNode({
                 )}
             </NodeToolbar>
             }
+            {bottomActions && (
+                <NodeToolbar
+                    position={Position.Bottom}
+                    isVisible
+                    className="translate-y-10"
+                >
+                    {bottomActions}
+                </NodeToolbar>
+            )}
         </>
 
 

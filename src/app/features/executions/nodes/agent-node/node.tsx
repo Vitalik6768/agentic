@@ -12,11 +12,21 @@ import { DEFAULT_OPEN_ROUTER_MODEL } from "@/config/constans";
 import { useTRPC } from "@/trpc/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import {
     getAvailableVariables,
     getUpstreamVariableNodeOptions,
     type AvailableVariable,
 } from "@/lib/variable-picker";
+import {
+    AGENT_TOOL_CATALOG,
+    ToolsDialog,
+    TextInterfaceToolDialog,
+    type AgentToolId,
+    type AgentToolSettings,
+    type TextInterfaceToolConfig,
+} from "./tools";
 
 
 type AgentNodeData = {
@@ -24,6 +34,8 @@ type AgentNodeData = {
     credentialId: string;
     userPrompt: string;
     model?: string;
+    enabledTools?: AgentToolId[];
+    toolSettings?: Partial<AgentToolSettings>;
 }
 
 
@@ -40,6 +52,8 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
         refreshToken: fetchAgentNodeRealtimeToken,
     });
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [toolsDialogOpen, setToolsDialogOpen] = useState(false);
+    const [activeToolConfig, setActiveToolConfig] = useState<AgentToolId | null>(null);
     const [availableVariables, setAvailableVariables] = useState<AvailableVariable[]>([]);
     const [nodeOptions, setNodeOptions] = useState<AgentNodeVariableNodeOption[]>([]);
     const [selectedNodeId, setSelectedNodeId] = useState<string>("");
@@ -130,7 +144,49 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
             return node;
         }));
     }
+    const handleSaveTools = (enabledTools: AgentToolId[]) => {
+        setNodes((nodes) =>
+            nodes.map((node) => {
+                if (node.id !== props.id) {
+                    return node;
+                }
+
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        enabledTools,
+                    },
+                };
+            })
+        );
+    };
+
+    const handleSaveTextInterfaceToolConfig = (value: TextInterfaceToolConfig) => {
+        setNodes((nodes) =>
+            nodes.map((node) => {
+                if (node.id !== props.id) {
+                    return node;
+                }
+
+                const currentData = (node.data ?? {}) as AgentNodeData;
+                return {
+                    ...node,
+                    data: {
+                        ...currentData,
+                        toolSettings: {
+                            ...(currentData.toolSettings ?? {}),
+                            text_interface: value,
+                        },
+                    },
+                };
+            })
+        );
+    };
+
     const nodeData = props.data;
+    const enabledTools = nodeData?.enabledTools ?? [];
+    const enabledToolItems = AGENT_TOOL_CATALOG.filter((tool) => enabledTools.includes(tool.id));
     const selectedModel = nodeData?.model ?? DEFAULT_OPEN_ROUTER_MODEL;
     const description = nodeData?.userPrompt
         ? `${selectedModel} : ${nodeData.userPrompt.slice(0, 50)}...`
@@ -152,6 +208,20 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
                 selectedNodeId={selectedNodeId}
                 onSelectedNodeIdChange={setSelectedNodeId}
             />
+            <ToolsDialog
+                open={toolsDialogOpen}
+                onOpenChange={setToolsDialogOpen}
+                selectedTools={enabledTools}
+                onSave={handleSaveTools}
+            />
+            <TextInterfaceToolDialog
+                open={activeToolConfig === "text_interface"}
+                onOpenChange={(open) => {
+                    if (!open) setActiveToolConfig(null);
+                }}
+                defaultValue={nodeData?.toolSettings?.text_interface}
+                onSave={handleSaveTextInterfaceToolConfig}
+            />
             <BaseExecutionNode
                 status={nodeStatus}
                 {...props}
@@ -162,6 +232,48 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
                 onSettings={handleOpenSettings}
                 onDelete={() => undefined}
                 onDoubleClick={handleOpenSettings}
+                bottomActions={(
+                    <div className="flex items-center gap-1.5">
+                        {enabledToolItems.map((tool) => (
+                            <Button
+                                key={tool.id}
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 w-7 p-0"
+                                title={tool.label}
+                                onClick={() => {
+                                    if (tool.configurable) {
+                                        setActiveToolConfig(tool.id);
+                                        return;
+                                    }
+                                    setToolsDialogOpen(true);
+                                }}
+                            >
+                                {tool.icon ? (
+                                    <Image
+                                        src={tool.icon}
+                                        alt={tool.label}
+                                        width={14}
+                                        height={14}
+                                        className="h-3.5 w-3.5"
+                                    />
+                                ) : (
+                                    <span className="text-[10px]">{tool.label.slice(0, 1)}</span>
+                                )}
+                            </Button>
+                        ))}
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setToolsDialogOpen(true)}
+                            className="h-7 px-2 text-xs"
+                        >
+                            Add Tool
+                        </Button>
+                    </div>
+                )}
                 children={<></>}
             />
         </>

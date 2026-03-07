@@ -1,6 +1,6 @@
 import { NonRetriableError } from "inngest";
 import Handlebars from "handlebars";
-import { ToolLoopAgent, stepCountIs, tool } from "ai";
+import { ToolLoopAgent, stepCountIs, type ToolSet } from "ai";
 import {  db } from "@/server/db";
 import { decrypt } from "@/lib/encryption";
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
@@ -8,7 +8,8 @@ import type { NodeExecutor } from "../../types";
 import { registerHandlebarsHelpers } from "@/lib/handlebars-helpers";
 import { DEFAULT_OPEN_ROUTER_MODEL, isOpenRouterModel } from "@/config/constans";
 import { agentNodeChannel } from "@/inngest/channels/agent-node";
-import { z } from "zod";
+import { buildAgentTools } from "./tools/registry";
+import type { AgentToolId, AgentToolSettings } from "./tools/types";
 
 registerHandlebarsHelpers();
 
@@ -18,6 +19,8 @@ type AgentNodeData = {
   systemPrompt?: string;
   userPrompt: string;
   model?: string;
+  enabledTools?: AgentToolId[];
+  toolSettings?: Partial<AgentToolSettings>;
 };
 
 const renderTemplate = (
@@ -36,6 +39,7 @@ const renderTemplate = (
 export const agentNodeExecutor: NodeExecutor<AgentNodeData> = async ({
   data,
   nodeId,
+  userId,
   context,
   step,
   publish,
@@ -107,24 +111,12 @@ export const agentNodeExecutor: NodeExecutor<AgentNodeData> = async ({
         model: openrouter(selectedModel),
         instructions: systemPrompt,
         stopWhen: stepCountIs(5),
-        tools: {
-          get_context_variable: tool({
-            description: "Read a value from workflow execution context by key name",
-            inputSchema: z.object({
-              name: z.string().min(1),
-            }),
-            execute: async ({ name }) => {
-              return safeContext[name] ?? null;
-            },
-          }),
-          list_context_keys: tool({
-            description: "List available top-level keys in workflow execution context",
-            inputSchema: z.object({}),
-            execute: async () => {
-              return Object.keys(safeContext);
-            },
-          }),
-        },
+        tools: buildAgentTools({
+          safeContext,
+          userId,
+          enabledTools: data.enabledTools,
+          toolSettings: data.toolSettings,
+        }),
         providerOptions: {
           openrouter: {
             reasoning: { exclude: true },
