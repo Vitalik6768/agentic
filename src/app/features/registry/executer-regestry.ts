@@ -11,6 +11,7 @@ import { scheduleTriggerExecutor } from "../triggers/schedule-trigger/executor";
 import { interfaceTextNodeExecutor } from "../executions/nodes/interface-text-node/executor";
 import { interfaceTableNodeExecutor } from "../executions/nodes/interface-table-node/executor";
 import { conditionNodeExecutor } from "../executions/nodes/condition-node/executor";
+import { agentNodeExecutor } from "../executions/nodes/agent-node/executor";
 
 export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
@@ -25,6 +26,7 @@ export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.INTERFACE_TABLE]: interfaceTableNodeExecutor as NodeExecutor,
     [NodeType.TELEGRAM_MESSAGE]: telegramMessageExecutor as NodeExecutor,
     [NodeType.CONDITION_NODE]: conditionNodeExecutor as NodeExecutor,
+    [NodeType.AGENT_NODE]: agentNodeExecutor as NodeExecutor,
 }
 
 export const getExecutor = (type: NodeType): NodeExecutor => {

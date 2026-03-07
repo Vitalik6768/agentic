@@ -13,6 +13,7 @@ import { webhookTriggerChannel } from "./channels/webhook_trigger";
 import { interfaceTableChannel } from "./channels/interface-table";
 import type { Realtime } from "@inngest/realtime";
 import { conditionNodeChannel } from "./channels/condition-node";
+import { agentNodeChannel } from "./channels/agent-node";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { getExecutor } from "@/features/executions/lib/executer-regestry";
 // import { ExecutionStatus, NodeType } from "@/generated/prisma";
@@ -54,11 +55,7 @@ export const executeWorkflow = inngest.createFunction(
       webhookTriggerChannel(),
       interfaceTableChannel(),
       conditionNodeChannel(),
-    //   googleFormTriggerChannel(),
-    //   geminiChannel(),
-    //   openAiChannel(),
-    //   discordChannel(),
-    //   slackChannel(),
+      agentNodeChannel(),
     ],
   },
   // async ({ event, step, publish }) => {

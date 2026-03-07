@@ -89,6 +89,12 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/table-interface.svg",
     },
     {
+        type: NodeType.AGENT_NODE,
+        label: "Agent Node",
+        description: "Use an agent node",
+        icon: "/logos/agent-node.svg",
+    },
+    {
         type: NodeType.CONDITION_NODE,
         label: "Condition Node",
         description: "Use a condition node",

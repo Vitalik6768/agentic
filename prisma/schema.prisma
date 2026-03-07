@@ -135,6 +135,7 @@ enum NodeType {
   INTERFACE_TEXT
   INTERFACE_TABLE
   CONDITION_NODE
+  AGENT_NODE
 }
 
 model Node {

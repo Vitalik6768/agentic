@@ -12,15 +12,8 @@ import { ScheduleTriggerNode } from "../triggers/schedule-trigger/node";
 import { TelegramTriggerNode } from "../triggers/telegram-trigger/node";
 import { WebhookTriggerNode } from "../triggers/webhook-trigger/node";
 import { ConditionNode } from "../executions/nodes/condition-node/node";
-// import { DiscordNode } from "@/features/executions/components/discord/node";
-// import { GeminiNode } from "@/features/executions/components/gemini/node";
-// import { HttpRequestNode } from "@/features/executions/components/http-request/node";
-// import { OpenAiNode } from "@/features/executions/components/openai/node";
-// import { SlackNode } from "@/features/executions/components/slack/node";
-// import { GoogleFormTriggerNode } from "@/features/triggers/components/google-form-trigger/node";
-// import { ManualTriggerNode } from "@/features/triggers/components/manual-trigger/node";
-// import { NodeType } from "@/generated/prisma";
-// import { NodeTypes } from "@xyflow/react";
+import { AgentNode } from "../executions/nodes/agent-node/node";
+
 
 export const nodeComponents = {
   [NodeType.INITIAL]: InitialNode,
@@ -35,11 +28,8 @@ export const nodeComponents = {
   [NodeType.INTERFACE_TABLE]: InterfaceTableNode,
   [NodeType.TELEGRAM_MESSAGE]: TelegramMessageNode,
   [NodeType.CONDITION_NODE]: ConditionNode,
-//   [NodeType.GOOGLE_FORM_TRIGGER]: GoogleFormTriggerNode,
-//   [NodeType.GEMINI]: GeminiNode,
-//   [NodeType.OPENAI]: OpenAiNode,
-//   [NodeType.DISCORD]: DiscordNode,
-//   [NodeType.SLACK]: SlackNode,
+  [NodeType.AGENT_NODE]: AgentNode,
+
 } as const satisfies NodeTypes;
 
 export type RegisteredNodeType = keyof typeof nodeComponents;
