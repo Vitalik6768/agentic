@@ -228,7 +228,6 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
                 id={props.id}
                 icon="/logos/agent-node.svg"
                 name="Agent"
-                description={description}
                 onSettings={handleOpenSettings}
                 onDelete={() => undefined}
                 onDoubleClick={handleOpenSettings}
@@ -270,7 +269,7 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
                             onClick={() => setToolsDialogOpen(true)}
                             className="h-7 px-2 text-xs"
                         >
-                            Add Tool
+                            Add Tool +
                         </Button>
                     </div>
                 )}

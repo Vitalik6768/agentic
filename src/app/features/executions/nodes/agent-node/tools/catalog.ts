@@ -1,24 +1,24 @@
 import type { AgentToolCatalogItem } from "./types";
 
 export const AGENT_TOOL_CATALOG: readonly AgentToolCatalogItem[] = [
-  {
-    id: "get_context_variable",
-    label: "Get Context Variable",
-    description: "Read a specific top-level value from workflow context.",
-    category: "context",
-    enabledByDefault: true,
-    icon: "/logos/agent-node.svg",
-    configurable: false,
-  },
-  {
-    id: "list_context_keys",
-    label: "List Context Keys",
-    description: "List available top-level keys from workflow context.",
-    category: "context",
-    enabledByDefault: true,
-    icon: "/logos/agent-node.svg",
-    configurable: false,
-  },
+  // {
+  //   id: "get_context_variable",
+  //   label: "Get Context Variable",
+  //   description: "Read a specific top-level value from workflow context.",
+  //   category: "context",
+  //   enabledByDefault: true,
+  //   icon: "/logos/agent-node.svg",
+  //   configurable: false,
+  // },
+  // {
+  //   id: "list_context_keys",
+  //   label: "List Context Keys",
+  //   description: "List available top-level keys from workflow context.",
+  //   category: "context",
+  //   enabledByDefault: true,
+  //   icon: "/logos/agent-node.svg",
+  //   configurable: false,
+  // },
   {
     id: "text_interface",
     label: "Text Interface",
