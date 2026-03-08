@@ -28,6 +28,7 @@ const formSchema = z.object({
     credentialId: z.string().min(1, { message: "Credential is required" }),
     model: z.string().min(1, { message: "Model is required" }),
     forceJsonOutput: z.boolean(),
+    jsonOutputTemplate: z.string().optional(),
 })
 
 export type OpenRouterFormValues = z.infer<typeof formSchema>;
@@ -80,6 +81,7 @@ export const OpenRouterDialog = ({
             credentialId: defaultValues.credentialId ?? "",
             model: defaultValues.model ?? DEFAULT_OPEN_ROUTER_MODEL,
             forceJsonOutput: defaultValues.forceJsonOutput ?? false,
+            jsonOutputTemplate: defaultValues.jsonOutputTemplate ?? "",
         },
     })
 
@@ -92,6 +94,7 @@ export const OpenRouterDialog = ({
                 userPrompt: defaultValues.userPrompt ?? "",
                 model: defaultValues.model ?? DEFAULT_OPEN_ROUTER_MODEL,
                 forceJsonOutput: defaultValues.forceJsonOutput ?? false,
+                jsonOutputTemplate: defaultValues.jsonOutputTemplate ?? "",
             })
         }
 
@@ -150,177 +153,203 @@ export const OpenRouterDialog = ({
                         resetModeKey={open}
                         className="max-h-[72vh] overflow-hidden"
                     />
-               
+
                     <div className="max-h-[72vh] overflow-y-auto pr-1">
-                    <Form {...form}>
-                        <form
-                            onSubmit={form.handleSubmit(handleSubmit)}
-                            className="space-y-6"
-                        >
-                        <FormField
-                            control={form.control}
-                            name="varibleName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Variable Name</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="text"
-                                            placeholder="my_variable"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormDescription>
-                                        The name of the variable to store the Gemini response data.
-                                        Must be a valid JavaScript variable name.
-                                    </FormDescription>
-                                    <FormMessage />
+                        <Form {...form}>
+                            <form
+                                onSubmit={form.handleSubmit(handleSubmit)}
+                                className="space-y-6"
+                            >
+                                <FormField
+                                    control={form.control}
+                                    name="varibleName"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Variable Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="text"
+                                                    placeholder="my_variable"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormDescription>
+                                                The name of the variable to store the Gemini response data.
+                                                Must be a valid JavaScript variable name.
+                                            </FormDescription>
+                                            <FormMessage />
 
-                                </FormItem>
-                            )}
-                        />
-                        
-                        <FormField control={form.control} name="credentialId" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>OpenRouter Credential</FormLabel>
-                                <Select
-                                    onValueChange={field.onChange}
-                                    value={field.value}
-                                    disabled={isLoadingCredentials || !credentials?.length}
-                                >
-                                    <FormControl>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select a credential" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {credentials?.map((credential) => (
-                                            <SelectItem key={credential.id} value={credential.id}>
-                                                <div className="flex items-center gap-2">
-                                                    <Image src="/logos/openrouter.svg" 
-                                                    alt="OpenRouter"
-                                                    width={16} 
-                                                    height={16} />
-                                                    {credential.name}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
+                                        </FormItem>
+                                    )}
+                                />
 
-                        <FormField
-                            control={form.control}
-                            name="model"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Model</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Select a model" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {OPEN_ROUTER_MODELS.map((model) => (
-                                                <SelectItem key={model.value} value={model.value}>
-                                                    {model.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormDescription>
-                                        Select the model used by this OpenRouter node.
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="forceJsonOutput"
-                            render={({ field }) => (
-                                <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                                    <div className="space-y-0.5">
-                                        <FormLabel>Force JSON Output</FormLabel>
-                                        <FormDescription>
-                                            Require the model to return valid JSON only.
-                                        </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                       
-                        <FormField
-                            control={form.control}
-                            name="systemPrompt"
-                            render={({ field }) => {
-                                const { ref, ...fieldProps } = field;
-                                return (
+                                <FormField control={form.control} name="credentialId" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>System Prompt (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                ref={(element) => {
-                                                    ref(element);
-                                                    systemPromptRef.current = element;
-                                                }}
-                                                className="min-h-[80px] font-mono text-sm"
-                                                placeholder="you are a helpful assistant"
-                                                onFocus={() => setActiveTarget("systemPrompt")}
-                                                {...fieldProps}
-                                            />
-                                        </FormControl>
-                                        <FormDescription>
-                                            Set The Behavior Of The Assistant.
-                                        </FormDescription>
+                                        <FormLabel>OpenRouter Credential</FormLabel>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value}
+                                            disabled={isLoadingCredentials || !credentials?.length}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select a credential" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {credentials?.map((credential) => (
+                                                    <SelectItem key={credential.id} value={credential.id}>
+                                                        <div className="flex items-center gap-2">
+                                                            <Image src="/logos/openrouter.svg"
+                                                                alt="OpenRouter"
+                                                                width={16}
+                                                                height={16} />
+                                                            {credential.name}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
-                                );
-                            }}
-                        />
+                                )} />
 
-                        <FormField
-                            control={form.control}
-                            name="userPrompt"
-                            render={({ field }) => {
-                                const { ref, ...fieldProps } = field;
-                                return (
-                                    <FormItem>
-                                        <FormLabel>User Prompt</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                ref={(element) => {
-                                                    ref(element);
-                                                    userPromptRef.current = element;
-                                                }}
-                                                className="min-h-[80px] font-mono text-sm"
-                                                placeholder="What is the capital of France?"
-                                                onFocus={() => setActiveTarget("userPrompt")}
-                                                {...fieldProps}
-                                            />
-                                        </FormControl>
-                                        <FormDescription>
-                                            The Prompt To Send To The Assistant.
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                );
-                            }}
-                        />
+                                <FormField
+                                    control={form.control}
+                                    name="model"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Model</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Select a model" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {OPEN_ROUTER_MODELS.map((model) => (
+                                                        <SelectItem key={model.value} value={model.value}>
+                                                            {model.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormDescription>
+                                                Select the model used by this OpenRouter node.
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
 
-                        <DialogFooter className="mt-4">
+                                <FormField
+                                    control={form.control}
+                                    name="systemPrompt"
+                                    render={({ field }) => {
+                                        const { ref, ...fieldProps } = field;
+                                        return (
+                                            <FormItem>
+                                                <FormLabel>System Prompt (Optional)</FormLabel>
+                                                <FormControl>
+                                                    <Textarea
+                                                        ref={(element) => {
+                                                            ref(element);
+                                                            systemPromptRef.current = element;
+                                                        }}
+                                                        className="min-h-[80px] font-mono text-sm"
+                                                        placeholder="you are a helpful assistant"
+                                                        onFocus={() => setActiveTarget("systemPrompt")}
+                                                        {...fieldProps}
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Set The Behavior Of The Assistant.
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        );
+                                    }}
+                                />
 
-                            <Button className="w-full" type="submit">Save</Button>
-                        </DialogFooter>
-                        </form>
-                    </Form>
+                                <FormField
+                                    control={form.control}
+                                    name="userPrompt"
+                                    render={({ field }) => {
+                                        const { ref, ...fieldProps } = field;
+                                        return (
+                                            <FormItem>
+                                                <FormLabel>User Prompt</FormLabel>
+                                                <FormControl>
+                                                    <Textarea
+                                                        ref={(element) => {
+                                                            ref(element);
+                                                            userPromptRef.current = element;
+                                                        }}
+                                                        className="min-h-[80px] font-mono text-sm"
+                                                        placeholder="What is the capital of France?"
+                                                        onFocus={() => setActiveTarget("userPrompt")}
+                                                        {...fieldProps}
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    The Prompt To Send To The Assistant.
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        );
+                                    }}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="forceJsonOutput"
+                                    render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                                            <div className="space-y-0.5">
+                                                <FormLabel>Force JSON Output</FormLabel>
+                                                <FormDescription>
+                                                    Require the model to return valid JSON only.
+                                                </FormDescription>
+                                            </div>
+                                            <FormControl>
+                                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {form.watch("forceJsonOutput") && (
+                                    <FormField
+                                        control={form.control}
+                                        name="jsonOutputTemplate"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>JSON Output Template (Optional)</FormLabel>
+                                                <FormControl>
+                                                    <Textarea
+                                                        className="min-h-[80px] font-mono text-sm"
+                                                        placeholder='{"key": "value"}'
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Describe the JSON shape you expect from the model.
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+
+
+
+
+                                <DialogFooter className="mt-4">
+
+                                    <Button className="w-full" type="submit">Save</Button>
+                                </DialogFooter>
+                            </form>
+                        </Form>
                     </div>
                     <div className="rounded-md border bg-muted/30 p-4">
                         <div className="mb-3 flex items-center justify-between">

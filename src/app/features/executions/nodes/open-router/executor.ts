@@ -1,4 +1,3 @@
-// import type { NodeExecutor } from "@/features/executions/types";
 import { NonRetriableError } from "inngest";
 import Handlebars from "handlebars";
 import { generateText } from "ai";
@@ -19,6 +18,7 @@ type OpenRouterData = {
   userPrompt: string;
   model?: string;
   forceJsonOutput?: boolean;
+  jsonOutputTemplate?: string;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
@@ -157,8 +157,16 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
   const systemPromptBase = data.systemPrompt
     ? renderTemplate(data.systemPrompt, safeContext, "systemPrompt")
     : "you are a helpful assistant";
+  const jsonTemplateInstruction =
+    data.forceJsonOutput && data.jsonOutputTemplate?.trim()
+      ? `\n\nExpected JSON shape:\n${renderTemplate(
+          data.jsonOutputTemplate,
+          safeContext,
+          "systemPrompt",
+        )}`
+      : "";
   const systemPrompt = data.forceJsonOutput
-    ? `${systemPromptBase}\n\nReturn only valid JSON. Do not include markdown, code fences, or any additional text outside the JSON object.`
+    ? `${systemPromptBase}\n\nReturn only valid JSON. Do not include markdown, code fences, or any additional text outside the JSON object.${jsonTemplateInstruction}`
     : `${systemPromptBase}\n\nReturn only the final answer for the user. Do not include internal reasoning, analysis steps, or self-reflection.`;
   const userPrompt = renderTemplate(data.userPrompt, safeContext, "userPrompt");
 
@@ -242,9 +250,4 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
     );
     throw error;
   }
-
-  //   const result = await step.run(
-  //     `execute http request ${nodeId}`,
-  //     async () => context
-  //   );
 };
