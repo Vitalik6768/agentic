@@ -68,14 +68,14 @@ export const BaseExecutionNode = memo(({
             >
             <BaseNode
                 onDoubleClick={onDoubleClick}
-                className="relative h-15 w-16 rounded-none border-slate-500 bg-card"
+                className="relative h-13 w-14 rounded-none border-slate-500 bg-card"
                 status={status}
             >
                 <BaseNodeContent className="relative flex h-full w-full items-center justify-center p-0">
                     {typeof Icon === "string" ? (
                         <img src={Icon} alt={name} width={28} height={28} className="mt-1 h-7 w-7 object-contain" />
                     ) : Icon ? (
-                        <Icon className="mt-1 size-7 object-contain rounded-sm text-muted-foreground" />
+                        <Icon className="mt-1 size-5 object-contain rounded-sm text-muted-foreground" />
                     ) : null}
                     {status === "success" ? (
                         <div className="absolute right-1.5 bottom-0.5 rounded-full bg-background p-0.5 text-green-500">

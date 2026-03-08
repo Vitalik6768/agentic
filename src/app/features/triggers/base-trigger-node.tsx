@@ -65,14 +65,14 @@ export const BaseTriggerNode = memo(({
             >
                 <BaseNode
                     onDoubleClick={onDoubleClick}
-                    className="rounded-l-2xl relative group h-15 w-15 border-slate-500"
+                    className="rounded-l-2xl relative group h-13 w-14 border-slate-500"
                     status={status as NodeStatus}
                 >
                     <BaseNodeContent className="relative items-center">
                         {typeof Icon === "string" ? (
                             <img src={Icon} alt={name} width={24} height={24} className="object-contain mt-1" />
                         ) : Icon ? (
-                            <Icon className="size-6 object-contain rounded-sm mt-1" />
+                            <Icon className="mt-1 size-5.5 object-contain rounded-sm" />
                         ) : null}
                         {status === "success" ? (
                             <div className="absolute right-1.5 bottom-0.5 rounded-full bg-background p-0.5 text-green-500">
