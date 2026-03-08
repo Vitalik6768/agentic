@@ -107,7 +107,7 @@ const renderTemplate = (
 
 const parseJsonOutput = (rawText: string): string => {
   try {
-    const parsed = JSON.parse(rawText.trim());
+    const parsed: unknown = JSON.parse(rawText.trim());
     return JSON.stringify(parsed);
   } catch {
     throw new NonRetriableError("Model did not return valid JSON");
