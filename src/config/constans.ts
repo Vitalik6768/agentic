@@ -10,6 +10,8 @@ export const OPEN_ROUTER_MODELS = [
   { value: "openai/gpt-4o-mini", label: "OpenAI GPT-4o Mini" },
   { value: "openai/gpt-4.1-mini", label: "OpenAI GPT-4.1 Mini" },
   { value: "google/gemini-3-flash-preview", label: "Google Gemini 3 Flash Preview" },
+  { value: "openai/gpt-4o-mini-search-preview", label: "OpenAI GPT-4o Mini Search Preview" }
+
 ] as const;
 
 export type OpenRouterModel = (typeof OPEN_ROUTER_MODELS)[number]["value"];
