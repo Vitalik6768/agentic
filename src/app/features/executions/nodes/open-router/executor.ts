@@ -18,6 +18,7 @@ type OpenRouterData = {
   systemPrompt?: string;
   userPrompt: string;
   model?: string;
+  forceJsonOutput?: boolean;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
@@ -104,6 +105,15 @@ const renderTemplate = (
   }
 };
 
+const parseJsonOutput = (rawText: string): string => {
+  try {
+    const parsed = JSON.parse(rawText.trim());
+    return JSON.stringify(parsed);
+  } catch {
+    throw new NonRetriableError("Model did not return valid JSON");
+  }
+};
+
 export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
   data,
   nodeId,
@@ -148,7 +158,9 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
   const systemPromptBase = data.systemPrompt
     ? renderTemplate(data.systemPrompt, safeContext, "systemPrompt")
     : "you are a helpful assistant";
-  const systemPrompt = `${systemPromptBase}\n\nReturn only the final answer for the user. Do not include internal reasoning, analysis steps, or self-reflection.`;
+  const systemPrompt = data.forceJsonOutput
+    ? `${systemPromptBase}\n\nReturn only valid JSON. Do not include markdown, code fences, or any additional text outside the JSON object.`
+    : `${systemPromptBase}\n\nReturn only the final answer for the user. Do not include internal reasoning, analysis steps, or self-reflection.`;
   const userPrompt = renderTemplate(data.userPrompt, safeContext, "userPrompt");
 
   const credential = await step.run("get-credential", async () => {
@@ -173,7 +185,7 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
       ? data.model
       : DEFAULT_OPEN_ROUTER_MODEL;
   try {
-    const text = await step.run("openrouter-generate-text", async () => {
+    let text = await step.run("openrouter-generate-text", async () => {
       const result = await generateText({
         model: openrouter(selectedModel),
         prompt: userPrompt,
@@ -189,6 +201,9 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
 
       return extractModelText(result);
     });
+    if (data.forceJsonOutput) {
+      text = parseJsonOutput(text);
+    }
     await publish(
       openRouterChannel().result({
         nodeId,

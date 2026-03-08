@@ -27,6 +27,7 @@ type OpenRouterNodeData = {
     credentialId: string;
     userPrompt: string;
     model?: string;
+    forceJsonOutput?: boolean;
 }
 
 
@@ -119,6 +120,7 @@ export const OpenRouterNode = memo((props: NodeProps<OpenRouterNodeType>) => {
         systemPrompt?: string;
         userPrompt: string;
         model: string;
+        forceJsonOutput: boolean;
     }) => {
         setNodes((nodes) => nodes.map((node) => {
             if (node.id === props.id) {

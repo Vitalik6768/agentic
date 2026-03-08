@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
@@ -26,6 +27,7 @@ const formSchema = z.object({
     userPrompt: z.string().min(1, { message: "User prompt is required" }),
     credentialId: z.string().min(1, { message: "Credential is required" }),
     model: z.string().min(1, { message: "Model is required" }),
+    forceJsonOutput: z.boolean(),
 })
 
 export type OpenRouterFormValues = z.infer<typeof formSchema>;
@@ -77,6 +79,7 @@ export const OpenRouterDialog = ({
             userPrompt: defaultValues.userPrompt ?? "",
             credentialId: defaultValues.credentialId ?? "",
             model: defaultValues.model ?? DEFAULT_OPEN_ROUTER_MODEL,
+            forceJsonOutput: defaultValues.forceJsonOutput ?? false,
         },
     })
 
@@ -88,6 +91,7 @@ export const OpenRouterDialog = ({
                 systemPrompt: defaultValues.systemPrompt ?? "",
                 userPrompt: defaultValues.userPrompt ?? "",
                 model: defaultValues.model ?? DEFAULT_OPEN_ROUTER_MODEL,
+                forceJsonOutput: defaultValues.forceJsonOutput ?? false,
             })
         }
 
@@ -231,6 +235,24 @@ export const OpenRouterDialog = ({
                                         Select the model used by this OpenRouter node.
                                     </FormDescription>
                                     <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="forceJsonOutput"
+                            render={({ field }) => (
+                                <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                                    <div className="space-y-0.5">
+                                        <FormLabel>Force JSON Output</FormLabel>
+                                        <FormDescription>
+                                            Require the model to return valid JSON only.
+                                        </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
                                 </FormItem>
                             )}
                         />
