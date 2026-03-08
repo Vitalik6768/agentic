@@ -105,10 +105,9 @@ const renderTemplate = (
   }
 };
 
-const parseJsonOutput = (rawText: string): string => {
+const parseJsonOutput = (rawText: string): unknown => {
   try {
-    const parsed: unknown = JSON.parse(rawText.trim());
-    return JSON.stringify(parsed);
+    return JSON.parse(rawText.trim());
   } catch {
     throw new NonRetriableError("Model did not return valid JSON");
   }
@@ -201,8 +200,11 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
 
       return extractModelText(result);
     });
+    let contextValue: unknown = text;
     if (data.forceJsonOutput) {
-      text = parseJsonOutput(text);
+      const parsedOutput = parseJsonOutput(text);
+      contextValue = parsedOutput;
+      text = JSON.stringify(parsedOutput);
     }
     await publish(
       openRouterChannel().result({
@@ -219,7 +221,7 @@ export const openRouterExecutor: NodeExecutor<OpenRouterData> = async ({
     );
     return { 
       ...context,
-      [data.varibleName]: text,
+      [data.varibleName]: contextValue,
 
     };
 
