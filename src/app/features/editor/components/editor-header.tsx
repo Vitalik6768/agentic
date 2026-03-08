@@ -2,13 +2,15 @@
 
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 // import { useSuspenseWorkflow, useUpdateWorkflow, useUpdateWorkflowName } from "@/app/features/workflows/hooks/use-workflows";
 import { useAtomValue } from "jotai";
 import { useSuspenseWorkflow, useUpdateWorkflow, useUpdateWorkflowName } from "@/app/features/workflows/hooks/use-workflows";
+import { buildExportTemplate, buildImportGraph } from "@/lib/workflow-template";
 
-import { LoaderCircleIcon, SaveIcon } from "lucide-react";
+import { DownloadIcon, LoaderCircleIcon, MenuIcon, SaveIcon, UploadIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -33,22 +35,113 @@ export const EditorSaveButton = ({ workflowId }: { workflowId: string }) => {
       
     }
     return (
-        <div className="ml-auto">
-            <Button
-                onClick={handleSave}
-                disabled={saveWorkflow.isPending}
-                className="gap-2 bg-blue-600 px-5 font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-lg hover:cursor-pointer"
-            >
-                {saveWorkflow.isPending ? (
-                    <LoaderCircleIcon className="size-4 animate-spin" />
-                ) : (
-                    <SaveIcon className="size-4" />
-                )}
-                {saveWorkflow.isPending ? "Saving..." : "Save"}
-            </Button>
-        </div>
+        <Button
+            onClick={handleSave}
+            disabled={saveWorkflow.isPending}
+            size="xs"
+            className="gap-2 bg-blue-600 px-5 font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-lg hover:cursor-pointer rounded-xs"
+        >
+            {saveWorkflow.isPending ? (
+                <LoaderCircleIcon className="size-4 animate-spin" />
+            ) : (
+                <SaveIcon className="size-3" />
+            )}
+            {saveWorkflow.isPending ? "Saving..." : "Save"}
+        </Button>
 
     )
+}
+
+export const EditorTemplateMenu = ({ workflowId }: { workflowId: string }) => {
+    const editor = useAtomValue(editorAtom);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { data: workflow } = useSuspenseWorkflow(workflowId);
+
+    const handleExport = () => {
+        if (!editor) {
+            toast.error("Editor is not ready yet");
+            return;
+        }
+
+        const template = buildExportTemplate({
+            name: workflow.name ?? "workflow-template",
+            nodes: editor.getNodes(),
+            edges: editor.getEdges(),
+        });
+
+        const blob = new Blob([JSON.stringify(template, null, 2)], {
+            type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${template.name.replace(/\s+/g, "-").toLowerCase() || "workflow-template"}.json`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        toast.success("Template exported");
+    };
+
+    const handleImportClick = () => {
+        if (!editor) {
+            toast.error("Editor is not ready yet");
+            return;
+        }
+        fileInputRef.current?.click();
+    };
+
+    const handleImportChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+
+        if (!file) {
+            return;
+        }
+
+        if (!window.confirm("Import will replace your current canvas. Continue?")) {
+            return;
+        }
+
+        try {
+            const jsonText = await file.text();
+            const json = JSON.parse(jsonText) as unknown;
+            const imported = buildImportGraph(json);
+
+            editor?.setNodes(imported.nodes);
+            editor?.setEdges(imported.edges);
+            toast.success(`Imported "${imported.templateName}"`);
+        } catch {
+            toast.error("Invalid template JSON");
+        }
+    };
+
+    return (
+        <>
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json,.json"
+                onChange={handleImportChange}
+                className="hidden"
+            />
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button type="button" size="icon-xs" variant="ghost" className="hover:cursor-pointer" aria-label="Template actions">
+                        <MenuIcon className="size-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={handleImportClick}>
+                        <UploadIcon className="size-4" />
+                        Import JSON
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleExport}>
+                        <DownloadIcon className="size-4" />
+                        Export JSON
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </>
+    );
 }
 export const EditorNameInput = ({ workflowId }: { workflowId: string }) => {
     const { data: workflow } = useSuspenseWorkflow(workflowId);
@@ -146,7 +239,12 @@ export const EditorHeader = ({ workflowId }: { workflowId: string }) => {
             <SidebarTrigger />
             <div className="flex flex-1 items-center justify-between gap-x-4 w-full">
                 <EditorBreadcrumbs workflowId={workflowId} />
-                <EditorSaveButton workflowId={workflowId} />
+                <div className="ml-auto flex items-center gap-2">
+                    <EditorSaveButton workflowId={workflowId} />
+                    <div className="h-5 w-px bg-gray-500" aria-hidden="true" />
+                    <EditorTemplateMenu workflowId={workflowId} />
+
+                </div>
 
             </div>
         </header>
