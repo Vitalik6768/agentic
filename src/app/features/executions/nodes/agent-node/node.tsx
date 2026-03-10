@@ -21,10 +21,12 @@ import {
 } from "@/lib/variable-picker";
 import {
     AGENT_TOOL_CATALOG,
+    TableInterfaceToolDialog,
     ToolsDialog,
     TextInterfaceToolDialog,
     type AgentToolId,
     type AgentToolSettings,
+    type TableInterfaceToolConfig,
     type TextInterfaceToolConfig,
 } from "./tools";
 
@@ -184,6 +186,28 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
         );
     };
 
+    const handleSaveTableInterfaceToolConfig = (value: TableInterfaceToolConfig) => {
+        setNodes((nodes) =>
+            nodes.map((node) => {
+                if (node.id !== props.id) {
+                    return node;
+                }
+
+                const currentData = (node.data ?? {}) as AgentNodeData;
+                return {
+                    ...node,
+                    data: {
+                        ...currentData,
+                        toolSettings: {
+                            ...(currentData.toolSettings ?? {}),
+                            table_interface: value,
+                        },
+                    },
+                };
+            })
+        );
+    };
+
     const nodeData = props.data;
     const enabledTools = nodeData?.enabledTools ?? [];
     const enabledToolItems = AGENT_TOOL_CATALOG.filter((tool) => enabledTools.includes(tool.id));
@@ -221,6 +245,14 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
                 }}
                 defaultValue={nodeData?.toolSettings?.text_interface}
                 onSave={handleSaveTextInterfaceToolConfig}
+            />
+            <TableInterfaceToolDialog
+                open={activeToolConfig === "table_interface"}
+                onOpenChange={(open) => {
+                    if (!open) setActiveToolConfig(null);
+                }}
+                defaultValue={nodeData?.toolSettings?.table_interface}
+                onSave={handleSaveTableInterfaceToolConfig}
             />
             <BaseExecutionNode
                 status={nodeStatus}

@@ -1,6 +1,7 @@
 import { DEFAULT_AGENT_TOOLS } from "./catalog";
 import type { ToolSet } from "ai";
 import { createContextTools } from "./implementations/context";
+import { createTableInterfaceTool } from "./implementations/table-interface";
 import { createTextInterfaceTool } from "./implementations/text-interface";
 import { isAgentToolId, type BuildAgentToolsParams } from "./types";
 
@@ -32,6 +33,14 @@ export const buildAgentTools = ({
       userId,
       safeContext,
       config: toolSettings?.text_interface,
+    });
+  }
+
+  if (enabledSet.has("table_interface")) {
+    tools.table_interface = createTableInterfaceTool({
+      userId,
+      safeContext,
+      config: toolSettings?.table_interface,
     });
   }
 

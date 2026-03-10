@@ -28,6 +28,15 @@ export const AGENT_TOOL_CATALOG: readonly AgentToolCatalogItem[] = [
     icon: "/logos/interface-text.svg",
     configurable: true,
   },
+  {
+    id: "table_interface",
+    label: "Table Interface",
+    description: "Read or append content from an Interface Table document.",
+    category: "integration",
+    enabledByDefault: false,
+    icon: "/logos/table-interface.svg",
+    configurable: true,
+  },
 ] as const;
 
 export const DEFAULT_AGENT_TOOLS = AGENT_TOOL_CATALOG

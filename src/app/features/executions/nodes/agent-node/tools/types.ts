@@ -2,6 +2,7 @@ export const AGENT_TOOL_IDS = [
   "get_context_variable",
   "list_context_keys",
   "text_interface",
+  "table_interface",
 ] as const;
 
 export type AgentToolId = (typeof AGENT_TOOL_IDS)[number];
@@ -25,8 +26,19 @@ export type TextInterfaceToolConfig = {
   body?: string;
 };
 
+export type TableInterfaceToolConfig = {
+  interfaceId: string;
+  operation: "GET_CONTENT" | "ADD_CONTENT" | "APPEND_CONTENT" | "UPDATE_CONTENT";
+  contentSource?: "TEMPLATE" | "AGENT_INPUT";
+  body?: string;
+  matchField?: string;
+  matchValue?: string;
+  updateField?: string;
+  updateValue?: string;
+};
 export type AgentToolSettings = {
   text_interface?: TextInterfaceToolConfig;
+  table_interface?: TableInterfaceToolConfig;
 };
 
 export type AgentToolsRuntime = {
