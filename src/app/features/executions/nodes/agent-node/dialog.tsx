@@ -26,9 +26,27 @@ const formSchema = z.object({
     userPrompt: z.string().min(1, { message: "User prompt is required" }),
     credentialId: z.string().min(1, { message: "Credential is required" }),
     model: z.string().min(1, { message: "Model is required" }),
-})
+    chatMode: z.enum(["OFF", "MEMORY"]).default("OFF"),
+    maxMemoryMessages: z.preprocess(
+        (value) => {
+            if (value === "" || value === undefined || value === null) return undefined;
+            const parsed = Number(value);
+            return Number.isNaN(parsed) ? undefined : parsed;
+        },
+        z.number().int().min(5, { message: "Minimum is 5 messages" }).max(10, { message: "Maximum is 10 messages" }).optional()
+    ),
+}).superRefine((values, ctx) => {
+    if (values.chatMode === "MEMORY" && values.maxMemoryMessages === undefined) {
+        ctx.addIssue({
+            path: ["maxMemoryMessages"],
+            code: "custom",
+            message: "Max memory messages is required when chat mode is enabled.",
+        });
+    }
+});
 
-export type AgentNodeFormValues = z.infer<typeof formSchema>;
+type AgentNodeFormInput = z.input<typeof formSchema>;
+export type AgentNodeFormValues = z.output<typeof formSchema>;
 export type AgentNodeVariableNodeOption = {
     nodeId: string;
     nodeType: string;
@@ -38,7 +56,7 @@ export type AgentNodeVariableNodeOption = {
 interface Props {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSubmit: (values: z.infer<typeof formSchema>) => void;
+    onSubmit: (values: AgentNodeFormValues) => void;
     defaultValues?: Partial<AgentNodeFormValues>;
     executionStatus?: NodeStatus;
     executionOutput?: string;
@@ -69,7 +87,7 @@ export const AgentNodeDialog = ({
     const userPromptRef = useRef<HTMLTextAreaElement | null>(null);
     const { data: credentials, isLoading: isLoadingCredentials } = useGetCredentialsByType(CredentialType.OPENROUTER);
 
-    const form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm<AgentNodeFormInput, unknown, AgentNodeFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             varibleName: defaultValues.varibleName ?? "",
@@ -77,6 +95,8 @@ export const AgentNodeDialog = ({
             userPrompt: defaultValues.userPrompt ?? "",
             credentialId: defaultValues.credentialId ?? "",
             model: defaultValues.model ?? DEFAULT_OPEN_ROUTER_MODEL,
+            chatMode: defaultValues.chatMode ?? "OFF",
+            maxMemoryMessages: defaultValues.maxMemoryMessages ?? 10,
         },
     })
 
@@ -88,12 +108,14 @@ export const AgentNodeDialog = ({
                 systemPrompt: defaultValues.systemPrompt ?? "",
                 userPrompt: defaultValues.userPrompt ?? "",
                 model: defaultValues.model ?? DEFAULT_OPEN_ROUTER_MODEL,
+                chatMode: defaultValues.chatMode ?? "OFF",
+                maxMemoryMessages: defaultValues.maxMemoryMessages ?? 10,
             })
         }
 
     }, [defaultValues, open, form])
 
-    const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    const handleSubmit = (values: AgentNodeFormValues) => {
         onSubmit(values);
         onOpenChange(false)
     }
@@ -125,6 +147,7 @@ export const AgentNodeDialog = ({
     const handleInsertVariable = (token: string) => {
         insertAtCursor(activeTarget, token);
     };
+    const selectedChatMode = form.watch("chatMode");
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -234,6 +257,65 @@ export const AgentNodeDialog = ({
                                 </FormItem>
                             )}
                         />
+
+                        <FormField
+                            control={form.control}
+                            name="chatMode"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Chat Mode</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Select chat mode" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="OFF">Off</SelectItem>
+                                            <SelectItem value="MEMORY">Memory</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormDescription>
+                                        Memory mode stores recent turns and adds them to the next prompt.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        {selectedChatMode === "MEMORY" && (
+                            <FormField
+                                control={form.control}
+                                name="maxMemoryMessages"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Max Memory Messages</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="number"
+                                                min={5}
+                                                max={10}
+                                                step={1}
+                                                placeholder="10"
+                                                value={
+                                                    typeof field.value === "number" || typeof field.value === "string"
+                                                        ? field.value
+                                                        : ""
+                                                }
+                                                onChange={(event) => {
+                                                    const nextRawValue = event.target.value;
+                                                    field.onChange(nextRawValue === "" ? undefined : Number(nextRawValue));
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            Number of recent messages to keep (5 to 10).
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
                        
                         <FormField
                             control={form.control}

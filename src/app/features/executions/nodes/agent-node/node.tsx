@@ -36,6 +36,8 @@ type AgentNodeData = {
     credentialId: string;
     userPrompt: string;
     model?: string;
+    chatMode?: "OFF" | "MEMORY";
+    maxMemoryMessages?: number;
     enabledTools?: AgentToolId[];
     toolSettings?: Partial<AgentToolSettings>;
 }
@@ -132,6 +134,8 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
         systemPrompt?: string;
         userPrompt: string;
         model: string;
+        chatMode: "OFF" | "MEMORY";
+        maxMemoryMessages?: number;
     }) => {
         setNodes((nodes) => nodes.map((node) => {
             if (node.id === props.id) {

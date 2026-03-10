@@ -115,6 +115,7 @@ model Workflow {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   executions  Execution[]
   interfaceWorkflows InterfaceWorkflow[]
+  agentMemoryMessages AgentMemoryMessage[]
 }
 
 enum NodeType {
@@ -152,6 +153,7 @@ model Node {
   inputConnections  Connection[] @relation("ToNode")
   credentialId      String?
   credential        Credential?  @relation(fields: [credentialId], references: [id])
+  agentMemoryMessages AgentMemoryMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -316,4 +318,30 @@ model RemoteCronJob{
   workflowId String
   createdAt DateTime @default(now())
   @@unique([cronJobId])
+}
+
+enum AgentMemoryRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model AgentMemoryMessage {
+  id         String          @id @default(cuid())
+  workflowId String
+  workflow   Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  nodeId     String
+  node       Node            @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  // Optional conversation partition key (e.g., telegram chat id).
+  // Keep null when memory grouping is not needed.
+  memoryKey  String?
+  role       AgentMemoryRole
+  content    String          @db.Text
+  metadata   Json?
+  createdAt  DateTime        @default(now())
+
+  @@index([workflowId, nodeId, memoryKey, createdAt])
+  @@index([workflowId, createdAt])
+  @@map("agent_memory_message")
 }
