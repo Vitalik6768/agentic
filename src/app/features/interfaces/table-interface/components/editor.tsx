@@ -70,10 +70,7 @@ const createRow = (columnCount: number) => ({
 
 const getDefaultTableData = (): TableDataJson => ({
   version: 1,
-  rows: [
-    { id: "r_header", cells: ["Column 1", "Column 2"] },
-    { id: "r_1", cells: ["", ""] },
-  ],
+  rows: [{ id: "r_header", cells: ["Column 1", "Column 2"] }],
 });
 
 const normalizeTableData = (input: unknown): TableDataJson => {
@@ -281,6 +278,56 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
     }));
   };
 
+  const removeRow = () => {
+    if (tableData.rows.length <= 1) return;
+
+    const preferredRowIndex =
+      selectedCell && selectedCell.row > 0 ? selectedCell.row : tableData.rows.length - 1;
+
+    setTableData((prev) => {
+      if (prev.rows.length <= 1 || preferredRowIndex <= 0 || preferredRowIndex >= prev.rows.length) {
+        return prev;
+      }
+
+      const removedRowId = prev.rows[preferredRowIndex]?.id;
+      if (!removedRowId) return prev;
+
+      const nextRows = prev.rows.filter((_, index) => index !== preferredRowIndex);
+      const nextBindings = prev.bindings
+        ? Object.fromEntries(
+            Object.entries(prev.bindings).filter(([key]) => {
+              const [rowId] = key.split(":");
+              return rowId !== removedRowId;
+            }),
+          )
+        : undefined;
+
+      return {
+        ...prev,
+        rows: nextRows,
+        ...(nextBindings && Object.keys(nextBindings).length > 0 ? { bindings: nextBindings } : {}),
+      };
+    });
+
+    setSelectedCell((prev) => {
+      if (!prev) return prev;
+      if (prev.row === preferredRowIndex) {
+        return preferredRowIndex - 1 >= 0 ? { row: preferredRowIndex - 1, col: prev.col } : null;
+      }
+      if (prev.row > preferredRowIndex) {
+        return { row: prev.row - 1, col: prev.col };
+      }
+      return prev;
+    });
+
+    setEditingCell((prev) => {
+      if (!prev) return prev;
+      if (prev.row === preferredRowIndex) return null;
+      if (prev.row > preferredRowIndex) return { row: prev.row - 1, col: prev.col };
+      return prev;
+    });
+  };
+
   const handleGridKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!selectedCell || editingCell) return;
 
@@ -464,6 +511,16 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
             <Button
               variant="outline"
               size="sm"
+              onClick={removeRow}
+              disabled={tableData.rows.length <= 1}
+              className="bg-background"
+            >
+              <Minus className="mr-1.5 size-4" />
+              Remove Row
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => void handleRefreshLinkedValues()}
               disabled={isRefreshingBindings || !tableData.bindings || Object.keys(tableData.bindings).length === 0}
               className="bg-background"
@@ -533,7 +590,7 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
                         ) : (
                           <div
                             className={cn(
-                              "h-10 overflow-hidden px-2 py-2 text-ellipsis whitespace-nowrap",
+                              "min-h-10 px-2 py-2 whitespace-pre-wrap wrap-break-word",
                               rowIndex === 0 ? "font-medium text-foreground" : "text-foreground/85",
                             )}
                           >
