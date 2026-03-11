@@ -59,6 +59,12 @@ const executionNodes: NodeTypeOption[] = [
         icon: GlobeIcon,
     },
     {
+        type: NodeType.SERP_API_NODE,
+        label: "SERP API Node",
+        description: "Use the SERP API to search the web",
+        icon: "/logos/serp-api.svg",
+    },
+    {
         type: NodeType.SET_NODE,
         label: "Set Node",
         description: "Set a variable in the context",
@@ -99,18 +105,6 @@ const executionNodes: NodeTypeOption[] = [
         label: "Condition Node",
         description: "Use a condition node",
         icon: "/logos/condition-node.svg",
-    },
-    {
-        type: NodeType.DISCORD,
-        label: "Discord",
-        description: "Use Discord to send messages",
-        icon: "/logos/discord.svg",
-    },
-    {
-        type: NodeType.SLACK,
-        label: "Slack",
-        description: "Use Slack to send messages",
-        icon: "/logos/slack.svg",
     },
 ]
 

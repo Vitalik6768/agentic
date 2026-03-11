@@ -14,16 +14,8 @@ import { interfaceTableChannel } from "./channels/interface-table";
 import type { Realtime } from "@inngest/realtime";
 import { conditionNodeChannel } from "./channels/condition-node";
 import { agentNodeChannel } from "./channels/agent-node";
-// import { getExecutor } from "@/features/executions/lib/executer-regestry";
-// import { getExecutor } from "@/features/executions/lib/executer-regestry";
-// import { ExecutionStatus, NodeType } from "@/generated/prisma";
-// import { httpRequestChannel } from "./channels/http-request";
-// import { manualTriggerChannel } from "./channels/manual-trigger";
-// import { googleFormTriggerChannel } from "./channels/google-form-trigger";
-// import { geminiChannel } from "./channels/gemini";
-// import { openAiChannel } from "./channels/openai";
-// import { discordChannel } from "./channels/discord";
-// import { slackChannel } from "./channels/slack";
+import { serpApiNodeChannel } from "./channels/serp-api-node";
+
 
 export const executeWorkflow = inngest.createFunction(
   {
@@ -56,6 +48,7 @@ export const executeWorkflow = inngest.createFunction(
       interfaceTableChannel(),
       conditionNodeChannel(),
       agentNodeChannel(),
+      serpApiNodeChannel(),
     ],
   },
   // async ({ event, step, publish }) => {

@@ -99,6 +99,7 @@ enum CredentialType {
   OPENROUTER
   SET_NODE
   TELEGRAM_BOT
+  SERP_API_NODE
 }
 
 model Workflow {
@@ -128,8 +129,6 @@ enum NodeType {
   GOOGLE_FORM_TRIGGER
   OPENAI
   GEMINI
-  DISCORD
-  SLACK
   OPENROUTER
   TELEGRAM_MESSAGE
   WEBHOOK_TRIGGER
@@ -137,6 +136,7 @@ enum NodeType {
   INTERFACE_TABLE
   CONDITION_NODE
   AGENT_NODE
+  SERP_API_NODE
 }
 
 model Node {
