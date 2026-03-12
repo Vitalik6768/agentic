@@ -15,6 +15,7 @@ import type { Realtime } from "@inngest/realtime";
 import { conditionNodeChannel } from "./channels/condition-node";
 import { agentNodeChannel } from "./channels/agent-node";
 import { serpApiNodeChannel } from "./channels/serp-api-node";
+import { extractorNodeChannel } from "./channels/extractor-node";
 
 
 export const executeWorkflow = inngest.createFunction(
@@ -49,6 +50,7 @@ export const executeWorkflow = inngest.createFunction(
       conditionNodeChannel(),
       agentNodeChannel(),
       serpApiNodeChannel(),
+      extractorNodeChannel(),
     ],
   },
   // async ({ event, step, publish }) => {

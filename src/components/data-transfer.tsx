@@ -184,7 +184,7 @@ export const VariablePickerPanel = ({
               onClick={() => {
                 const insertValue =
                   allowPathMode && insertMode === "path"
-                    ? item.token.replace(/^\{\{\s*/, "").replace(/\s*\}\}$/, "")
+                    ? item.key
                     : item.token;
                 onInsertVariable(insertValue);
               }}

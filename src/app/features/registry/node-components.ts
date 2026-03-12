@@ -14,6 +14,7 @@ import { WebhookTriggerNode } from "../triggers/webhook-trigger/node";
 import { ConditionNode } from "../executions/nodes/condition-node/node";
 import { AgentNode } from "../executions/nodes/agent-node/node";
 import { SerpApiNode } from "../executions/nodes/serp-api-node/node";
+import { ExtractorNode } from "../executions/nodes/extractor-node/node";
 
 
 export const nodeComponents = {
@@ -31,6 +32,7 @@ export const nodeComponents = {
   [NodeType.CONDITION_NODE]: ConditionNode,
   [NodeType.AGENT_NODE]: AgentNode,
   [NodeType.SERP_API_NODE]: SerpApiNode,
+  [NodeType.EXTRACTOR_NODE]: ExtractorNode,
 } as const satisfies NodeTypes;
 
 export type RegisteredNodeType = keyof typeof nodeComponents;

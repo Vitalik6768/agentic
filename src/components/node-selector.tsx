@@ -1,6 +1,6 @@
 "use client";
 
-import { GlobeIcon, MousePointer2Icon } from "lucide-react";
+import { FilterIcon, GlobeIcon, MousePointer2Icon } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import React, { useCallback } from "react";
 import { Separator } from "./ui/separator";
@@ -69,6 +69,12 @@ const executionNodes: NodeTypeOption[] = [
         label: "Set Node",
         description: "Set a variable in the context",
         icon: "/logos/set-node.svg",
+    },
+    {
+        type: NodeType.EXTRACTOR_NODE,
+        label: "Extractor",
+        description: "Extract and transform specific values",
+        icon: FilterIcon,
     },
     {
         type: NodeType.TELEGRAM_MESSAGE,

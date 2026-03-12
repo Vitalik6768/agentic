@@ -13,6 +13,7 @@ import { interfaceTableNodeExecutor } from "../executions/nodes/interface-table-
 import { conditionNodeExecutor } from "../executions/nodes/condition-node/executor";
 import { agentNodeExecutor } from "../executions/nodes/agent-node/executor";
 import { serpApiNodeExecutor } from "../executions/nodes/serp-api-node/executor";
+import { extractorNodeExecutor } from "../executions/nodes/extractor-node/executor";
 
 export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
@@ -29,6 +30,7 @@ export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.CONDITION_NODE]: conditionNodeExecutor as NodeExecutor,
     [NodeType.AGENT_NODE]: agentNodeExecutor as NodeExecutor,
     [NodeType.SERP_API_NODE]: serpApiNodeExecutor as NodeExecutor,
+    [NodeType.EXTRACTOR_NODE]: extractorNodeExecutor as NodeExecutor,
 }
 
 export const getExecutor = (type: NodeType): NodeExecutor => {

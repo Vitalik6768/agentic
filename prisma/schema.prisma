@@ -137,6 +137,7 @@ enum NodeType {
   CONDITION_NODE
   AGENT_NODE
   SERP_API_NODE
+  EXTRACTOR_NODE
 }
 
 model Node {
