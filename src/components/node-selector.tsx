@@ -74,7 +74,7 @@ const executionNodes: NodeTypeOption[] = [
         type: NodeType.EXTRACTOR_NODE,
         label: "Extractor",
         description: "Extract and transform specific values",
-        icon: FilterIcon,
+        icon: "/logos/extractor-node.svg",
     },
     {
         type: NodeType.TELEGRAM_MESSAGE,

@@ -183,7 +183,7 @@ export const ExtractorNode = memo((props: NodeProps<ExtractorNodeType>) => {
                 status={nodeStatus}
                 {...props}
                 id={props.id}
-                icon={FilterIcon}
+                icon="/logos/extractor-node.svg"
                 name="Extractor"
                 description={description}
                 onSettings={handleOpenSettings}
