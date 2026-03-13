@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 // import { useExecuteWorkflow } from "@/features/workflows/hooks/use-workflows";
-import { FlaskConicalIcon, LoaderCircleIcon } from "lucide-react"
+import { FlaskConicalIcon, LoaderCircleIcon, ZapIcon } from "lucide-react"
 import { useExecuteWorkflow, useUpdateWorkflow } from "../../workflows/hooks/use-workflows";
 import { useAtomValue } from "jotai";
 import { editorAtom } from "../store/atoms";
@@ -39,7 +39,7 @@ export const ExecuteWorkflowButton = ({workflow}:{workflow:string}) => {
             {executeWorkflow.isPending || saveWorkflow.isPending ? (
                 <LoaderCircleIcon className="size-4 animate-spin" />
             ) : (
-                <FlaskConicalIcon className="size-4" />
+                <ZapIcon className="size-4" />
             )}
             {saveWorkflow.isPending
                 ? "Saving..."
