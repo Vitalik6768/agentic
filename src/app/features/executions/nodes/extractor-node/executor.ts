@@ -101,33 +101,38 @@ const normalizeFields = (data: ExtractorNodeData): NormalizedExtractorField[] =>
   ];
 };
 
-const findValueByKeyName = (value: unknown, keyName: string): unknown => {
-  if (value === null || value === undefined) return undefined;
+const collectValuesByKeyName = (value: unknown, keyName: string, results: unknown[]): void => {
+  if (value === null || value === undefined) return;
   if (Array.isArray(value)) {
     for (const item of value) {
-      const found = findValueByKeyName(item, keyName);
-      if (found !== undefined) return found;
+      collectValuesByKeyName(item, keyName, results);
     }
-    return undefined;
+    return;
   }
-  if (typeof value !== "object") return undefined;
+  if (typeof value !== "object") return;
 
   const record = value as Record<string, unknown>;
   if (Object.prototype.hasOwnProperty.call(record, keyName)) {
-    return record[keyName];
+    results.push(record[keyName]);
   }
+
   for (const nestedValue of Object.values(record)) {
-    const found = findValueByKeyName(nestedValue, keyName);
-    if (found !== undefined) return found;
+    collectValuesByKeyName(nestedValue, keyName, results);
   }
-  return undefined;
 };
 
-const findValueByValue = (value: unknown, target: string): unknown => {
-  if (value === null || value === undefined) return undefined;
+const findValuesByKeyName = (value: unknown, keyName: string): unknown[] => {
+  const results: unknown[] = [];
+  collectValuesByKeyName(value, keyName, results);
+  return results;
+};
+
+const collectValuesByValue = (value: unknown, target: string, results: unknown[]): void => {
+  if (value === null || value === undefined) return;
   if (typeof value !== "object") {
     if (typeof value === "string") {
-      return value === target ? value : undefined;
+      if (value === target) results.push(value);
+      return;
     }
     if (
       typeof value === "number" ||
@@ -135,23 +140,27 @@ const findValueByValue = (value: unknown, target: string): unknown => {
       typeof value === "bigint" ||
       typeof value === "symbol"
     ) {
-      return value.toString() === target ? value : undefined;
+      if (value.toString() === target) results.push(value);
     }
-    return undefined;
+    return;
   }
+
   if (Array.isArray(value)) {
     for (const item of value) {
-      const found = findValueByValue(item, target);
-      if (found !== undefined) return found;
+      collectValuesByValue(item, target, results);
     }
-    return undefined;
+    return;
   }
 
   for (const nestedValue of Object.values(value as Record<string, unknown>)) {
-    const found = findValueByValue(nestedValue, target);
-    if (found !== undefined) return found;
+    collectValuesByValue(nestedValue, target, results);
   }
-  return undefined;
+};
+
+const findValuesByValue = (value: unknown, target: string): unknown[] => {
+  const results: unknown[] = [];
+  collectValuesByValue(value, target, results);
+  return results;
 };
 
 const applyOperation = (
@@ -287,8 +296,8 @@ export const extractorNodeExecutor: NodeExecutor<ExtractorNodeData> = async ({
         field.lookupMode === "path"
           ? getByPath(context, field.sourcePath)
           : field.lookupMode === "key_name"
-            ? findValueByKeyName(scope, field.lookupValue)
-            : findValueByValue(scope, field.lookupValue);
+            ? findValuesByKeyName(scope, field.lookupValue)
+            : findValuesByValue(scope, field.lookupValue);
       const transformedValue = applyOperation(extractedValue, field.operation, field.separator);
       extractedObject[field.outputKey] = castType(transformedValue, field.outputType);
     }
