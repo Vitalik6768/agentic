@@ -13,8 +13,10 @@ type InterfaceTableNodeData = {
   variableName?: string;
   varibleName?: string;
   interfaceId?: string;
-  operation?: "GET_DATA" | "UPDATE_DATA";
+  operation?: "GET_DATA" | "APPEND_DATA" | "UPDATE_DATA";
   method?: "ADD" | "GET";
+  /** Per-column Handlebars templates for APPEND_DATA (same order as table header row). */
+  appendColumnValues?: string[];
   matchField?: string;
   matchValue?: string;
   updateField?: string;
@@ -144,6 +146,7 @@ export const interfaceTableNodeExecutor: NodeExecutor<InterfaceTableNodeData> = 
   }
 
   const operation = data.operation ?? (data.method === "ADD" ? "UPDATE_DATA" : "GET_DATA");
+
   if (
     operation === "UPDATE_DATA" &&
     (!data.matchField?.trim() ||
@@ -197,6 +200,68 @@ export const interfaceTableNodeExecutor: NodeExecutor<InterfaceTableNodeData> = 
             headers,
             rows: rowsToObjects(dataRows, headers),
             totalRows: dataRows.length,
+          },
+        };
+
+        return {
+          ...context,
+          [variableName]: responsePayload,
+        };
+      }
+
+      if (operation === "APPEND_DATA") {
+        if (headers.length === 0) {
+          throw new NonRetriableError("Table has no header columns");
+        }
+
+        const templates = data.appendColumnValues ?? [];
+        const addedCells = headers.map((_, index) => {
+          const raw = templates[index] ?? "";
+          return Handlebars.compile(raw)(context);
+        });
+
+        const addedRowId = `r_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const nextRows: TableRow[] = [...currentTableData.rows, { id: addedRowId, cells: addedCells }];
+        const nextTableData: TableDataJson = {
+          ...currentTableData,
+          rows: nextRows,
+        };
+
+        await db.$transaction(async (tx) => {
+          await tx.tableInterface.upsert({
+            where: {
+              interfaceId: item.id,
+            },
+            create: {
+              interfaceId: item.id,
+              dataJson: nextTableData,
+            },
+            update: {
+              dataJson: nextTableData,
+            },
+          });
+
+          await tx.interface.update({
+            where: {
+              id: item.id,
+            },
+            data: {
+              updatedAt: new Date(),
+            },
+          });
+        });
+
+        const addedRowObject = rowsToObjects([{ id: addedRowId, cells: addedCells }], headers)[0];
+
+        const responsePayload = {
+          interfaceTable: {
+            interfaceId: item.id,
+            interfaceName: item.name,
+            operation,
+            headers,
+            addedRow: addedRowObject,
+            rows: rowsToObjects(nextRows.slice(1), headers),
+            totalRows: nextRows.length - 1,
           },
         };
 

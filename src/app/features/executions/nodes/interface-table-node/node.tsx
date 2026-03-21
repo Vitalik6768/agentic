@@ -24,8 +24,9 @@ type InterfaceTableNodeData = {
     variableName?: string;
     varibleName?: string;
     interfaceId?: string;
-    operation?: "GET_DATA" | "UPDATE_DATA";
+    operation?: "GET_DATA" | "APPEND_DATA" | "UPDATE_DATA";
     method?: "ADD" | "GET";
+    appendColumnValues?: string[];
     matchField?: string;
     matchValue?: string;
     updateField?: string;
@@ -94,7 +95,8 @@ export const InterfaceTableNode = memo((props: NodeProps<InterfaceTableNodeType>
     const handleSubmit = (values: {
         variableName: string;
         interfaceId: string;
-        operation: "GET_DATA" | "UPDATE_DATA";
+        operation: "GET_DATA" | "APPEND_DATA" | "UPDATE_DATA";
+        appendColumnValues?: string[];
         matchField?: string;
         matchValue?: string;
         updateField?: string;
@@ -137,10 +139,15 @@ export const InterfaceTableNode = memo((props: NodeProps<InterfaceTableNodeType>
             error?: string;
         })
         : null;
-    const operation = nodeData?.operation ?? (nodeData?.method === "GET" ? "GET_DATA" : "UPDATE_DATA");
-    const description = nodeData?.interfaceId
-        ? `${operation === "GET_DATA" ? "Get" : "Update"} table data`
-        : "NOT CONFIGURED";
+    const operation =
+        nodeData?.operation ?? (nodeData?.method === "GET" ? "GET_DATA" : "UPDATE_DATA");
+    const operationLabel =
+        operation === "GET_DATA"
+            ? "Get table data"
+            : operation === "APPEND_DATA"
+              ? "Append table row"
+              : "Update table data";
+    const description = nodeData?.interfaceId ? operationLabel : "NOT CONFIGURED";
     return (
         <>
             <InterfaceTableDialog
