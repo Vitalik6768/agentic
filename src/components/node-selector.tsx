@@ -51,6 +51,34 @@ const triggerNodes: NodeTypeOption[] = [
     },
 ]
 
+const dataTransformationNodes: NodeTypeOption[] = [
+    {
+        type: NodeType.LOOP_NODE,
+        label: "Loop Node",
+        description: "Loop through a list of items",
+        icon: "/logos/loop-node.svg",
+    },
+    {
+        type: NodeType.EXTRACTOR_NODE,
+        label: "Extractor Node",
+        description: "Extract and transform specific values",
+        icon: "/logos/extractor-node.svg",
+    },
+    {
+        type: NodeType.SET_NODE,
+        label: "Set Node",
+        description: "Set a variable in the context",
+        icon: "/logos/set-node.svg",
+    },
+    {
+        type: NodeType.CONDITION_NODE,
+        label: "Condition Node",
+        description: "Use a condition node",
+        icon: "/logos/condition-node.svg",
+    },
+    
+]
+
 const executionNodes: NodeTypeOption[] = [
     {
         type: NodeType.HTTP_REQUEST,
@@ -63,24 +91,6 @@ const executionNodes: NodeTypeOption[] = [
         label: "SERP API Node",
         description: "Use the SERP API to search the web",
         icon: "/logos/serp-api.svg",
-    },
-    {
-        type: NodeType.SET_NODE,
-        label: "Set Node",
-        description: "Set a variable in the context",
-        icon: "/logos/set-node.svg",
-    },
-    {
-        type: NodeType.EXTRACTOR_NODE,
-        label: "Extractor",
-        description: "Extract and transform specific values",
-        icon: "/logos/extractor-node.svg",
-    },
-    {
-        type: NodeType.LOOP_NODE,
-        label: "Loop Node",
-        description: "Loop through a list of items",
-        icon: "/logos/loop-node.svg",
     },
     {
         type: NodeType.TELEGRAM_MESSAGE,
@@ -112,12 +122,7 @@ const executionNodes: NodeTypeOption[] = [
         description: "Use an agent node",
         icon: "/logos/agent-node.svg",
     },
-    {
-        type: NodeType.CONDITION_NODE,
-        label: "Condition Node",
-        description: "Use a condition node",
-        icon: "/logos/condition-node.svg",
-    },
+
 ]
 
 interface NodeSelectorProps {
@@ -183,7 +188,7 @@ export function NodeSelector({ open, onOpenChange, children }: NodeSelectorProps
                     {triggerNodes.map((nodeType) => {
                         const icon = typeof nodeType.icon === "string" ? nodeType.icon : React.createElement(nodeType.icon, { className: "size-6" });
                         return (
-                            <div key={nodeType.type} className="w-full justify-start h-auto py-5 px-4 rounded-none curser-pointer border-l-2 border-transparent hover:border-primary"
+                            <div key={nodeType.type} className="w-full justify-start h-auto py-5 px-4 rounded-none cursor-pointer border-l-2 border-transparent hover:border-primary hover:bg-muted transition-colors"
                                 onClick={() =>  handleNodeSelect(nodeType.type)}
                             >
                                 <div className="flex items-center gap-6 w-full overflow-hidden">
@@ -214,7 +219,38 @@ export function NodeSelector({ open, onOpenChange, children }: NodeSelectorProps
                     {executionNodes.map((nodeType) => {
                         const icon = typeof nodeType.icon === "string" ? nodeType.icon : React.createElement(nodeType.icon, { className: "size-6" });
                         return (
-                            <div key={nodeType.type} className="w-full justify-start h-auto py-5 px-4 rounded-none curser-pointer border-l-2 border-transparent hover:border-primary"
+                            <div key={nodeType.type} className="w-full justify-start h-auto py-5 px-4 rounded-none cursor-pointer border-l-2 border-transparent hover:border-primary hover:bg-muted/50 transition-colors"
+                                onClick={() => handleNodeSelect(nodeType.type)}
+                            >
+                                <div className="flex items-center gap-6 w-full overflow-hidden">
+                                    {typeof icon === "string" ? (
+                                        <img
+                                            src={icon}
+                                            alt={nodeType.label}
+                                            className="size-5 object-contain rounded-sm"
+                                        />
+                                    ) : (
+                                        icon
+                                    )}
+                                    <div className="flex flex-col items-start text-left">
+                                        <span className="font-medium text-sm">
+                                            {nodeType.label}
+                                        </span>
+                                        <span className="text-muted-foreground text-xs">
+                                            {nodeType.description}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+                <Separator />
+                <div>
+                    {dataTransformationNodes.map((nodeType) => {
+                        const icon = typeof nodeType.icon === "string" ? nodeType.icon : React.createElement(nodeType.icon, { className: "size-6" });
+                        return (
+                            <div key={nodeType.type} className="w-full justify-start h-auto py-5 px-4 rounded-none cursor-pointer border-l-2 border-transparent hover:border-primary hover:bg-muted/50 transition-colors"
                                 onClick={() => handleNodeSelect(nodeType.type)}
                             >
                                 <div className="flex items-center gap-6 w-full overflow-hidden">
