@@ -159,7 +159,7 @@ export const LoopNode = memo((props: NodeProps<LoopNodeType>) => {
                 status={nodeStatus}
                 {...props}
                 id={props.id}
-                icon={RepeatIcon}
+                icon="/logos/loop-node.svg"
                 name="Loop"
                 description={description}
                 onSettings={handleOpenSettings}
