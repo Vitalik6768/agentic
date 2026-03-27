@@ -156,6 +156,39 @@ export const getAvailableVariables = (
       continue;
     }
     const runtimeValue = context?.[key];
+
+    // Improve Loop node UX: expose runtime iteration aliases directly in picker.
+    if (
+      isRecord(runtimeValue) &&
+      Array.isArray(runtimeValue.items) &&
+      typeof runtimeValue.count === "number"
+    ) {
+      const loopCurrentPath = `${key}.current`;
+      const loopIndexPath = `${key}.index`;
+
+      const currentValue = runtimeValue.current;
+      const indexValue = runtimeValue.index;
+
+      variables.push({
+        key: loopCurrentPath,
+        token: toToken(loopCurrentPath, currentValue),
+        nodeId: sourceMeta.nodeId,
+        nodeType: sourceMeta.nodeType,
+        variableRoot: key,
+        preview: getPreview(currentValue),
+        valueType: getValueType(currentValue),
+      });
+      variables.push({
+        key: loopIndexPath,
+        token: toToken(loopIndexPath, indexValue),
+        nodeId: sourceMeta.nodeId,
+        nodeType: sourceMeta.nodeType,
+        variableRoot: key,
+        preview: getPreview(indexValue),
+        valueType: getValueType(indexValue),
+      });
+    }
+
     const paths =
       runtimeValue === undefined
         ? [{ path: key, value: undefined }]

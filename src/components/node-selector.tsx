@@ -77,6 +77,12 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/extractor-node.svg",
     },
     {
+        type: NodeType.LOOP_NODE,
+        label: "Loop Node",
+        description: "Loop through a list of items",
+        icon: "/logos/loop-node.svg",
+    },
+    {
         type: NodeType.TELEGRAM_MESSAGE,
         label: "Telegram Message",
         description: "Send a message to a Telegram chat",

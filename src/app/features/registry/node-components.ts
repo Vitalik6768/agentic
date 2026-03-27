@@ -15,6 +15,7 @@ import { ConditionNode } from "../executions/nodes/condition-node/node";
 import { AgentNode } from "../executions/nodes/agent-node/node";
 import { SerpApiNode } from "../executions/nodes/serp-api-node/node";
 import { ExtractorNode } from "../executions/nodes/extractor-node/node";
+import { LoopNode } from "../executions/nodes/loop-node/node";
 
 
 export const nodeComponents = {
@@ -33,6 +34,7 @@ export const nodeComponents = {
   [NodeType.AGENT_NODE]: AgentNode,
   [NodeType.SERP_API_NODE]: SerpApiNode,
   [NodeType.EXTRACTOR_NODE]: ExtractorNode,
+  [NodeType.LOOP_NODE]: LoopNode,
 } as const satisfies NodeTypes;
 
 export type RegisteredNodeType = keyof typeof nodeComponents;

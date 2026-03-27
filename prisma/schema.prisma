@@ -138,6 +138,7 @@ enum NodeType {
   AGENT_NODE
   SERP_API_NODE
   EXTRACTOR_NODE
+  LOOP_NODE
 }
 
 model Node {

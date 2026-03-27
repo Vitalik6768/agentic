@@ -16,6 +16,7 @@ import { conditionNodeChannel } from "./channels/condition-node";
 import { agentNodeChannel } from "./channels/agent-node";
 import { serpApiNodeChannel } from "./channels/serp-api-node";
 import { extractorNodeChannel } from "./channels/extractor-node";
+import { loopNodeChannel } from "./channels/loop-node";
 
 
 export const executeWorkflow = inngest.createFunction(
@@ -51,6 +52,7 @@ export const executeWorkflow = inngest.createFunction(
       agentNodeChannel(),
       serpApiNodeChannel(),
       extractorNodeChannel(),
+      loopNodeChannel(),
     ],
   },
   // async ({ event, step, publish }) => {
@@ -121,6 +123,57 @@ export const executeWorkflow = inngest.createFunction(
       }
     }
 
+    // LOOP NODE LOGIC
+    const getSelectedOutput = (currentContext: Record<string, unknown>, nodeId: string) =>
+      (currentContext.condition as Record<string, unknown> | undefined)?.[nodeId] &&
+      typeof (currentContext.condition as Record<string, unknown>)[nodeId] === "object"
+        ? ((currentContext.condition as Record<string, unknown>)[nodeId] as { route?: unknown }).route
+        : undefined;
+
+    const activateOutgoingNodes = (
+      nodeId: string,
+      currentContext: Record<string, unknown>,
+      targetActiveNodeIds: Set<string>,
+    ) => {
+      const outgoing = outgoingConnectionsByNode.get(nodeId) ?? [];
+      const selectedOutput = getSelectedOutput(currentContext, nodeId);
+      for (const connection of outgoing) {
+        if (
+          typeof selectedOutput === "string" &&
+          selectedOutput.length > 0 &&
+          connection.fromOutput !== selectedOutput
+        ) {
+          continue;
+        }
+        targetActiveNodeIds.add(connection.toNodeId);
+      }
+    };
+
+    const executeActivatedNodes = async (
+      initialContext: Record<string, unknown>,
+      initialActiveNodeIds: Set<string>,
+    ): Promise<Record<string, unknown>> => {
+      let scopedContext = initialContext;
+      for (const scopedNode of sortedNodes) {
+        if (!initialActiveNodeIds.has(scopedNode.id)) {
+          continue;
+        }
+        const scopedExecutor = getExecutor(scopedNode.type);
+        scopedContext = await scopedExecutor({
+          data: scopedNode.data as Record<string, unknown>,
+          nodeId: scopedNode.id,
+          userId,
+          context: scopedContext,
+          step,
+          publish: publishFn,
+        });
+        activateOutgoingNodes(scopedNode.id, scopedContext, initialActiveNodeIds);
+      }
+      return scopedContext;
+    };
+
+    // LOOP NODE LOGIC END
+
     // execute only activated nodes; branch outputs activate downstream nodes
     for (const node of sortedNodes) {
       if (!activeNodeIds.has(node.id)) {
@@ -137,23 +190,55 @@ export const executeWorkflow = inngest.createFunction(
         publish: publishFn,
       });
 
-      const outgoing = outgoingConnectionsByNode.get(node.id) ?? [];
-      const selectedOutput =
-        (context.condition as Record<string, unknown> | undefined)?.[node.id] &&
-        typeof (context.condition as Record<string, unknown>)[node.id] === "object"
-          ? ((context.condition as Record<string, unknown>)[node.id] as { route?: unknown }).route
-          : undefined;
+      if (node.type === "LOOP_NODE") {
+        const loopNodeData = node.data as { variableName?: unknown; varibleName?: unknown };
+        const loopVariableCandidate = loopNodeData.variableName ?? loopNodeData.varibleName;
+        const loopVariableName =
+          typeof loopVariableCandidate === "string" && loopVariableCandidate.trim()
+            ? loopVariableCandidate.trim()
+            : undefined;
+        const loopValue =
+          loopVariableName && typeof context[loopVariableName] === "object" && context[loopVariableName] !== null
+            ? (context[loopVariableName] as Record<string, unknown>)
+            : undefined;
+        const loopItems: unknown[] = Array.isArray(loopValue?.items)
+          ? (loopValue.items as unknown[])
+          : [];
 
-      for (const connection of outgoing) {
-        if (
-          typeof selectedOutput === "string" &&
-          selectedOutput.length > 0 &&
-          connection.fromOutput !== selectedOutput
-        ) {
-          continue;
+        for (let index = 0; index < loopItems.length; index += 1) {
+          const item: unknown = loopItems[index];
+          const scopedActiveNodeIds = new Set<string>();
+          const scopedContext = {
+            ...context,
+            ...(loopVariableName
+              ? {
+                  [loopVariableName]: {
+                    ...(loopValue ?? {}),
+                    current: item,
+                    index,
+                  },
+                }
+              : {}),
+            loop: {
+              ...(typeof context.loop === "object" && context.loop !== null
+                ? (context.loop as Record<string, unknown>)
+                : {}),
+              [node.id]: {
+                index,
+                item,
+                total: loopItems.length,
+                variableName: loopVariableName,
+              },
+            },
+          };
+
+          activateOutgoingNodes(node.id, scopedContext, scopedActiveNodeIds);
+          await executeActivatedNodes(scopedContext, scopedActiveNodeIds);
         }
-        activeNodeIds.add(connection.toNodeId);
+        continue;
       }
+
+      activateOutgoingNodes(node.id, context, activeNodeIds);
     }
     await db.execution.update({
       where: {
