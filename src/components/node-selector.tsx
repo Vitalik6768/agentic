@@ -76,6 +76,12 @@ const dataTransformationNodes: NodeTypeOption[] = [
         description: "Use a condition node",
         icon: "/logos/condition-node.svg",
     },
+    {
+        type: NodeType.BREAK_NODE,
+        label: "Break node",
+        description: "Continue the workflow only after the loop’s last iteration",
+        icon: "/logos/break-node.svg",
+    },
     
 ]
 

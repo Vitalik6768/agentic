@@ -139,6 +139,7 @@ enum NodeType {
   SERP_API_NODE
   EXTRACTOR_NODE
   LOOP_NODE
+  BREAK_NODE
 }
 
 model Node {

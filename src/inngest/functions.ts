@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { inngest } from "./client";
 import { NonRetriableError } from "inngest";
-import { ExecutionStatus, type NodeType, type Prisma } from "generated/prisma";
+import { ExecutionStatus, NodeType, type Prisma } from "generated/prisma";
 import { httpRequestChannel } from "./channels/http-request";
 import { manualTriggerChannel } from "./channels/manual-trigger";
 import { getExecutor } from "@/app/features/registry/executer-regestry";
@@ -17,12 +17,20 @@ import { agentNodeChannel } from "./channels/agent-node";
 import { serpApiNodeChannel } from "./channels/serp-api-node";
 import { extractorNodeChannel } from "./channels/extractor-node";
 import { loopNodeChannel } from "./channels/loop-node";
+import { breakNodeChannel } from "./channels/break-node";
 
 
+/**
+ * Runs a workflow graph in topological order. Nodes with no incoming edges start
+ * as "active"; after each node runs, its outgoing edges activate downstream nodes.
+ * Condition nodes stash the chosen route on `context.condition[nodeId].route` so
+ * only edges from that output handle are followed.
+ */
 export const executeWorkflow = inngest.createFunction(
   {
     id: "execute-workflow",
     retries: 0,
+    // Persist failure on the execution row when the function throws (retries are off).
     onFailure: async ({ event, step }) => {
       await step.run("update-execution", async () => {
         return await db.execution.update({
@@ -53,9 +61,9 @@ export const executeWorkflow = inngest.createFunction(
       serpApiNodeChannel(),
       extractorNodeChannel(),
       loopNodeChannel(),
+      breakNodeChannel(),
     ],
   },
-  // async ({ event, step, publish }) => {
   async ({ event, step, publish }) => {
     const inngestEventId = event.id;
     const workflowId = event.data.id;
@@ -95,7 +103,9 @@ export const executeWorkflow = inngest.createFunction(
     ) as unknown as typeof workflow.nodes;
     const userId = workflow.userId;
 
+    // Shared JSON bag passed through executors; each node may read/write keys.
     let context = event.data.initialData ?? {};
+    // Skip Inngest Realtime publishes for published workflows or when callers opt out (e.g. tests).
     const disableRealtimeFromEvent =
       (event.data.initialData as { meta?: { disableRealtime?: unknown } } | undefined)?.meta?.disableRealtime === true;
     const disableRealtime = workflow.published === true || disableRealtimeFromEvent;
@@ -103,6 +113,7 @@ export const executeWorkflow = inngest.createFunction(
       ? (async () => undefined) as Realtime.PublishFn
       : publish;
 
+    // Index edges by target/source so we can find entry nodes and follow branches efficiently.
     const incomingConnectionsByNode = new Map<string, typeof workflow.connections>();
     const outgoingConnectionsByNode = new Map<string, typeof workflow.connections>();
     for (const connection of workflow.connections) {
@@ -115,6 +126,7 @@ export const executeWorkflow = inngest.createFunction(
       outgoingConnectionsByNode.set(connection.fromNodeId, outgoing);
     }
 
+    // Nodes with no incoming connections are workflow entry points.
     const activeNodeIds = new Set<string>();
     for (const node of sortedNodes) {
       const incoming = incomingConnectionsByNode.get(node.id) ?? [];
@@ -123,12 +135,37 @@ export const executeWorkflow = inngest.createFunction(
       }
     }
 
-    // LOOP NODE LOGIC
+    // --- Loop body: run only the subgraph activated from the loop node's outputs, once per item ---
     const getSelectedOutput = (currentContext: Record<string, unknown>, nodeId: string) =>
       (currentContext.condition as Record<string, unknown> | undefined)?.[nodeId] &&
       typeof (currentContext.condition as Record<string, unknown>)[nodeId] === "object"
         ? ((currentContext.condition as Record<string, unknown>)[nodeId] as { route?: unknown }).route
         : undefined;
+
+    // Mark downstream nodes as runnable. If a condition already picked a branch,
+    // only edges whose `fromOutput` matches that route are activated.
+    /** Break nodes only activate downstream edges on the last iteration of the selected loop. */
+    const shouldActivateBreakOutgoing = (
+      currentContext: Record<string, unknown>,
+      loopNodeId: string,
+    ): boolean => {
+      const loopBag =
+        typeof currentContext.loop === "object" && currentContext.loop !== null
+          ? (currentContext.loop as Record<string, unknown>)
+          : undefined;
+      const state = loopBag?.[loopNodeId];
+      if (!state || typeof state !== "object") {
+        return false;
+      }
+      const { index, total } = state as { index?: unknown; total?: unknown };
+      if (typeof index !== "number" || typeof total !== "number") {
+        return false;
+      }
+      if (total <= 0) {
+        return false;
+      }
+      return index === total - 1;
+    };
 
     const activateOutgoingNodes = (
       nodeId: string,
@@ -149,6 +186,8 @@ export const executeWorkflow = inngest.createFunction(
       }
     };
 
+    // Walk the full sorted list but only execute nodes present in `initialActiveNodeIds`,
+    // mutating that set as each node completes so newly reachable nodes run in order.
     const executeActivatedNodes = async (
       initialContext: Record<string, unknown>,
       initialActiveNodeIds: Set<string>,
@@ -167,14 +206,23 @@ export const executeWorkflow = inngest.createFunction(
           step,
           publish: publishFn,
         });
-        activateOutgoingNodes(scopedNode.id, scopedContext, initialActiveNodeIds);
+        if (scopedNode.type === NodeType.BREAK_NODE) {
+          const loopNodeId = (scopedNode.data as { loopNodeId?: unknown }).loopNodeId;
+          if (
+            typeof loopNodeId === "string" &&
+            loopNodeId.length > 0 &&
+            shouldActivateBreakOutgoing(scopedContext, loopNodeId)
+          ) {
+            activateOutgoingNodes(scopedNode.id, scopedContext, initialActiveNodeIds);
+          }
+        } else {
+          activateOutgoingNodes(scopedNode.id, scopedContext, initialActiveNodeIds);
+        }
       }
       return scopedContext;
     };
 
-    // LOOP NODE LOGIC END
-
-    // execute only activated nodes; branch outputs activate downstream nodes
+    // --- Main pass: same activation rules as above; loop nodes expand into per-iteration subgraph runs ---
     for (const node of sortedNodes) {
       if (!activeNodeIds.has(node.id)) {
         continue;
@@ -190,7 +238,9 @@ export const executeWorkflow = inngest.createFunction(
         publish: publishFn,
       });
 
-      if (node.type === "LOOP_NODE") {
+      if (node.type === NodeType.LOOP_NODE) {
+        // Reads `items` from context under the configured variable; for each element,
+        // downstream nodes see `current`/`index` on that variable and `context.loop[nodeId]`.
         const loopNodeData = node.data as { variableName?: unknown; varibleName?: unknown };
         const loopVariableCandidate = loopNodeData.variableName ?? loopNodeData.varibleName;
         const loopVariableName =
@@ -207,6 +257,7 @@ export const executeWorkflow = inngest.createFunction(
 
         for (let index = 0; index < loopItems.length; index += 1) {
           const item: unknown = loopItems[index];
+          // Fresh activation set per iteration so branches do not leak across items.
           const scopedActiveNodeIds = new Set<string>();
           const scopedContext = {
             ...context,
@@ -238,7 +289,18 @@ export const executeWorkflow = inngest.createFunction(
         continue;
       }
 
-      activateOutgoingNodes(node.id, context, activeNodeIds);
+      if (node.type === NodeType.BREAK_NODE) {
+        const loopNodeId = (node.data as { loopNodeId?: unknown }).loopNodeId;
+        if (
+          typeof loopNodeId === "string" &&
+          loopNodeId.length > 0 &&
+          shouldActivateBreakOutgoing(context, loopNodeId)
+        ) {
+          activateOutgoingNodes(node.id, context, activeNodeIds);
+        }
+      } else {
+        activateOutgoingNodes(node.id, context, activeNodeIds);
+      }
     }
     await db.execution.update({
       where: {
