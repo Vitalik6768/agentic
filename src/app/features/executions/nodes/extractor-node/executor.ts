@@ -1,15 +1,21 @@
 import type { NodeExecutor } from "../../types";
 import { NonRetriableError } from "inngest";
 import { extractorNodeChannel } from "@/inngest/channels/extractor-node";
+import Handlebars from "handlebars";
+import { registerHandlebarsHelpers } from "@/lib/handlebars-helpers";
+
+registerHandlebarsHelpers();
 
 type ExtractorNodeData = {
   variableName?: string;
   varibleName?: string;
   fields?: Array<{
     outputKey?: string;
-    lookupMode?: "path" | "key_name" | "key_value";
+    lookupMode?: "path" | "key_name" | "key_value" | "object_where";
     sourcePath?: string;
     lookupValue?: string;
+    matchKey?: string;
+    matchValue?: string;
     outputType?: "string" | "number" | "boolean" | "object" | "array";
     operation?: "as_is" | "first" | "join" | "count";
     separator?: string;
@@ -18,6 +24,17 @@ type ExtractorNodeData = {
   sourcePath?: string;
   operation?: "as_is" | "first" | "join" | "count";
   separator?: string;
+};
+
+const renderTemplate = (template: string, context: Record<string, unknown>): string => {
+  const trimmed = template.trim();
+  if (!trimmed) return "";
+  try {
+    return Handlebars.compile(trimmed)(context).trim();
+  } catch {
+    // If template compilation fails, treat it as a literal.
+    return trimmed;
+  }
 };
 
 const getByPath = (source: unknown, path: string): unknown => {
@@ -55,9 +72,11 @@ const getByPath = (source: unknown, path: string): unknown => {
 
 type NormalizedExtractorField = {
   outputKey: string;
-  lookupMode: "path" | "key_name" | "key_value";
+  lookupMode: "path" | "key_name" | "key_value" | "object_where";
   sourcePath: string;
   lookupValue: string;
+  matchKey: string;
+  matchValue: string;
   outputType: "string" | "number" | "boolean" | "object" | "array";
   operation: "as_is" | "first" | "join" | "count";
   separator: string;
@@ -70,13 +89,22 @@ const normalizeFields = (data: ExtractorNodeData): NormalizedExtractorField[] =>
       const lookupMode = field.lookupMode ?? "path";
       const sourcePath = field.sourcePath?.trim() ?? "";
       const lookupValue = field.lookupValue?.trim() ?? "";
-      const hasLookupInput = lookupMode === "path" ? sourcePath.length > 0 : lookupValue.length > 0;
+      const matchKey = field.matchKey?.trim() ?? "";
+      const matchValue = field.matchValue?.trim() ?? "";
+      const hasLookupInput =
+        lookupMode === "path"
+          ? sourcePath.length > 0
+          : lookupMode === "object_where"
+            ? sourcePath.length > 0 && matchKey.length > 0 && matchValue.length > 0
+            : lookupValue.length > 0;
       if (!outputKey || !hasLookupInput) return null;
       return {
         outputKey,
         lookupMode,
         sourcePath,
         lookupValue,
+        matchKey,
+        matchValue,
         outputType: field.outputType ?? "string",
         operation: field.operation ?? "as_is",
         separator: field.separator ?? ", ",
@@ -94,6 +122,8 @@ const normalizeFields = (data: ExtractorNodeData): NormalizedExtractorField[] =>
       lookupMode: "path",
       sourcePath: legacySourcePath,
       lookupValue: "",
+      matchKey: "",
+      matchValue: "",
       outputType: "string",
       operation: data.operation ?? "as_is",
       separator: data.separator ?? ", ",
@@ -161,6 +191,37 @@ const findValuesByValue = (value: unknown, target: string): unknown[] => {
   const results: unknown[] = [];
   collectValuesByValue(value, target, results);
   return results;
+};
+
+const findObjectWhere = (
+  scope: unknown,
+  matchKey: string,
+  matchValue: string,
+): Record<string, unknown> | undefined => {
+  if (!Array.isArray(scope)) return undefined;
+
+  for (const item of scope) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    const candidate = record[matchKey];
+    if (candidate === null || candidate === undefined) continue;
+
+    if (typeof candidate === "string") {
+      if (candidate === matchValue) return record;
+      continue;
+    }
+
+    if (
+      typeof candidate === "number" ||
+      typeof candidate === "boolean" ||
+      typeof candidate === "bigint" ||
+      typeof candidate === "symbol"
+    ) {
+      if (candidate.toString() === matchValue) return record;
+    }
+  }
+
+  return undefined;
 };
 
 const applyOperation = (
@@ -297,7 +358,13 @@ export const extractorNodeExecutor: NodeExecutor<ExtractorNodeData> = async ({
           ? getByPath(context, field.sourcePath)
           : field.lookupMode === "key_name"
             ? findValuesByKeyName(scope, field.lookupValue)
-            : findValuesByValue(scope, field.lookupValue);
+            : field.lookupMode === "key_value"
+              ? findValuesByValue(scope, field.lookupValue)
+              : findObjectWhere(
+                  scope,
+                  field.matchKey,
+                  renderTemplate(field.matchValue, context),
+                );
       const transformedValue = applyOperation(extractedValue, field.operation, field.separator);
       extractedObject[field.outputKey] = castType(transformedValue, field.outputType);
     }

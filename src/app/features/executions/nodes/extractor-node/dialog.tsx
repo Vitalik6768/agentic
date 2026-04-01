@@ -16,9 +16,11 @@ import { cn } from "@/lib/utils";
 
 const fieldSchema = z.object({
     outputKey: z.string().trim().min(1, { message: "Field key is required" }).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid key" }),
-    lookupMode: z.enum(["path", "key_name", "key_value"]),
+    lookupMode: z.enum(["path", "key_name", "key_value", "object_where"]),
     sourcePath: z.string().optional(),
     lookupValue: z.string().optional(),
+    matchKey: z.string().optional(),
+    matchValue: z.string().optional(),
     outputType: z.enum(["string", "number", "boolean", "object", "array"]),
     operation: z.enum(["as_is", "first", "join", "count"]),
     separator: z.string().optional(),
@@ -36,6 +38,29 @@ const fieldSchema = z.object({
             path: ["lookupValue"],
             message: value.lookupMode === "key_name" ? "Key name is required" : "Value is required",
         });
+    }
+    if (value.lookupMode === "object_where") {
+        if (!value.sourcePath?.trim()) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["sourcePath"],
+                message: "Source path (array) is required",
+            });
+        }
+        if (!value.matchKey?.trim()) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["matchKey"],
+                message: "Match key is required",
+            });
+        }
+        if (!value.matchValue?.trim()) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["matchValue"],
+                message: "Match value is required",
+            });
+        }
     }
 });
 
@@ -105,6 +130,8 @@ export const ExtractorNodeDialog = ({
         lookupMode: "path",
         sourcePath: "",
         lookupValue: "",
+        matchKey: "",
+        matchValue: "",
         outputType: "string",
         operation: "as_is",
         separator: ", ",
@@ -117,6 +144,8 @@ export const ExtractorNodeDialog = ({
                 lookupMode: field.lookupMode ?? "path",
                 sourcePath: field.sourcePath?.trim() ?? "",
                 lookupValue: field.lookupValue?.trim() ?? "",
+                matchKey: (field as Partial<ExtractorFieldDialogValue>).matchKey?.trim() ?? "",
+                matchValue: (field as Partial<ExtractorFieldDialogValue>).matchValue?.trim() ?? "",
                 outputType: field.outputType ?? "string",
                 operation: field.operation ?? "as_is",
                 separator: field.separator ?? ", ",
@@ -128,6 +157,8 @@ export const ExtractorNodeDialog = ({
                 lookupMode: "path",
                 sourcePath: defaultValues.sourcePath,
                 lookupValue: "",
+                matchKey: "",
+                matchValue: "",
                 outputType: "string",
                 operation: defaultValues.operation ?? "as_is",
                 separator: defaultValues.separator ?? ", ",
@@ -318,6 +349,7 @@ export const ExtractorNodeDialog = ({
                                                                 <SelectItem value="path">Path</SelectItem>
                                                                 <SelectItem value="key_name">Key Name</SelectItem>
                                                                 <SelectItem value="key_value">Key Value</SelectItem>
+                                                                <SelectItem value="object_where">Object where</SelectItem>
                                                             </SelectContent>
                                                         </Select>
                                                         <FormMessage />
@@ -331,7 +363,13 @@ export const ExtractorNodeDialog = ({
                                                     const { ref, ...fieldProps } = field;
                                                     return (
                                                         <FormItem>
-                                                            <FormLabel>{lookupMode === "path" ? "Source Path" : "Source Path (optional scope)"}</FormLabel>
+                                                            <FormLabel>
+                                                                {lookupMode === "path"
+                                                                    ? "Source Path"
+                                                                    : lookupMode === "object_where"
+                                                                        ? "Source Path (array)"
+                                                                        : "Source Path (optional scope)"}
+                                                            </FormLabel>
                                                             <FormControl>
                                                                 <Input
                                                                     ref={(element) => {
@@ -348,7 +386,7 @@ export const ExtractorNodeDialog = ({
                                                     );
                                                 }}
                                             />
-                                            {lookupMode !== "path" ? (
+                                            {(lookupMode === "key_name" || lookupMode === "key_value") ? (
                                                 <FormField
                                                     control={form.control}
                                                     name={`fields.${index}.lookupValue`}
@@ -365,6 +403,36 @@ export const ExtractorNodeDialog = ({
                                                         </FormItem>
                                                     )}
                                                 />
+                                            ) : null}
+                                            {lookupMode === "object_where" ? (
+                                                <div className="grid gap-3 md:grid-cols-2">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`fields.${index}.matchKey`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Match Key</FormLabel>
+                                                                <FormControl>
+                                                                    <Input placeholder="link" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`fields.${index}.matchValue`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Match Value</FormLabel>
+                                                                <FormControl>
+                                                                    <Input placeholder="https://example.com or {{myVar}}" {...field} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
                                             ) : null}
                                             <div className="grid gap-3 md:grid-cols-2">
                                                 <FormField

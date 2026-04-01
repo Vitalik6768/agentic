@@ -29,9 +29,11 @@ type ExtractorNodeNodeData = {
     varibleName?: string;
     fields?: Array<{
         outputKey?: string;
-        lookupMode?: "path" | "key_name" | "key_value";
+        lookupMode?: "path" | "key_name" | "key_value" | "object_where";
         sourcePath?: string;
         lookupValue?: string;
+        matchKey?: string;
+        matchValue?: string;
         outputType?: "string" | "number" | "boolean" | "object" | "array";
         operation?: "as_is" | "first" | "join" | "count";
         separator?: string;
@@ -98,6 +100,8 @@ export const ExtractorNode = memo((props: NodeProps<ExtractorNodeType>) => {
         lookupMode: field.lookupMode ?? "path",
         sourcePath: field.sourcePath?.trim() ?? "",
         lookupValue: field.lookupValue?.trim() ?? "",
+        matchKey: field.matchKey?.trim() ?? "",
+        matchValue: field.matchValue?.trim() ?? "",
         outputType: field.outputType ?? "string",
         operation: field.operation ?? "as_is",
         separator: field.separator ?? ", ",
