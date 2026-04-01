@@ -11,6 +11,7 @@ type HttpRequestData = {
   varibleName: string;
   endpoint: string;
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
+  queryParams?: { name: string; value?: string }[];
   body?: string;
   authType?: "NONE" | "BEARER" | "BASIC" | "API_KEY";
   bearerToken?: string;
@@ -66,6 +67,7 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
   try {
     const result = await step.run(`http-request-${nodeId}`, async () => {
       const endpoint = Handlebars.compile(data.endpoint)(context);
+      const endpointUrl = new URL(endpoint);
       const method = data.method;
       const options: KyOptions = { method };
       const headers: Record<string, string> = {};
@@ -77,6 +79,14 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
           options.body = resolvedBody;
           headers["Content-Type"] = "application/json";
         }
+      }
+
+      for (const p of data.queryParams ?? []) {
+        const name = Handlebars.compile(p.name ?? "")(context).trim();
+        const value = Handlebars.compile(p.value ?? "")(context).trim();
+        if (!name) continue;
+        if (!value) continue;
+        endpointUrl.searchParams.set(name, value);
       }
 
       const authType = data.authType ?? "NONE";
@@ -101,7 +111,7 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
       if (Object.keys(headers).length > 0) {
         options.headers = headers;
       }
-      const response = await ky(endpoint, options);
+      const response = await ky(endpointUrl.toString(), options);
       const contentType = response.headers.get("content-type") ?? "";
       const responseData = contentType.includes("application/json")
         ? await response.json().catch(() => response.text())

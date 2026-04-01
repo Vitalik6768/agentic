@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Trash2Icon } from "lucide-react";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import z from "zod";
 
 
@@ -16,6 +17,14 @@ const formSchema = z.object({
     varibleName: z.string().min(1, { message: "Variable name is required" }).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
     endpoint: z.string().url({ message: "Invalid please enter a valid URL" }),
     method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"]),
+    queryParams: z
+        .array(
+            z.object({
+                name: z.string().trim().min(1, { message: "Name is required" }),
+                value: z.string().optional(),
+            })
+        )
+        .default([]),
     body: z.string().optional(),
     authType: z.enum(["NONE", "BEARER", "BASIC", "API_KEY"]),
     bearerToken: z.string().optional(),
@@ -67,12 +76,13 @@ const formSchema = z.object({
     }
 });
 
-export type HttpRequestFormValues = z.infer<typeof formSchema>;
+type HttpRequestFormInput = z.input<typeof formSchema>;
+export type HttpRequestFormValues = z.output<typeof formSchema>;
 
 interface Props {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSubmit: (values: z.infer<typeof formSchema>) => void;
+    onSubmit: (values: HttpRequestFormValues) => void;
     defaultValues?: Partial<HttpRequestFormValues>;
 
 }
@@ -83,12 +93,13 @@ export const HttpRequestDialog = ({
     onSubmit, 
     defaultValues = {} }: Props) => {
 
-    const form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm<HttpRequestFormInput, unknown, HttpRequestFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             varibleName: defaultValues.varibleName ?? "",
             endpoint: defaultValues.endpoint ?? "",
             method: defaultValues.method ?? "GET",
+            queryParams: defaultValues.queryParams ?? [],
             body: defaultValues.body ?? "",
             authType: defaultValues.authType ?? "NONE",
             bearerToken: defaultValues.bearerToken ?? "",
@@ -105,6 +116,7 @@ export const HttpRequestDialog = ({
                 varibleName: defaultValues.varibleName ?? "",
                 endpoint: defaultValues.endpoint ?? "",
                 method: defaultValues.method ?? "GET",
+                queryParams: defaultValues.queryParams ?? [],
                 body: defaultValues.body ?? "",
                 authType: defaultValues.authType ?? "NONE",
                 bearerToken: defaultValues.bearerToken ?? "",
@@ -121,8 +133,12 @@ export const HttpRequestDialog = ({
     const watchMethod = form.watch("method");
     const watchAuthType = form.watch("authType");
     const showBodyField = ["POST", "PUT", "PATCH"].includes(watchMethod);
+    const queryParamsArray = useFieldArray({
+        control: form.control,
+        name: "queryParams" as const,
+    });
 
-    const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    const handleSubmit = (values: HttpRequestFormValues) => {
         onSubmit(values);
         onOpenChange(false)
     }
@@ -221,6 +237,75 @@ export const HttpRequestDialog = ({
                                 </FormItem>
                             )}
                         />
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="space-y-0.5">
+                                    <div className="text-sm font-medium leading-none">Query parameters</div>
+                                    <div className="text-sm text-muted-foreground">
+                                        Add query string parameters (name/value) to the request URL.
+                                    </div>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => queryParamsArray.append({ name: "", value: "" })}
+                                >
+                                    Add parameter
+                                </Button>
+                            </div>
+
+                            {queryParamsArray.fields.length === 0 ? (
+                                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                                    No query parameters.
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {queryParamsArray.fields.map((item, index) => (
+                                        <div key={item.id} className="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                                            <FormField
+                                                control={form.control}
+                                                name={`queryParams.${index}.name`}
+                                                render={({ field }) => (
+                                                    <FormItem className="sm:col-span-5">
+                                                        <FormLabel>Name</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="text" placeholder="q" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name={`queryParams.${index}.value`}
+                                                render={({ field }) => (
+                                                    <FormItem className="sm:col-span-6">
+                                                        <FormLabel>Value</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="text" placeholder="search term" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <div className="sm:col-span-1 sm:flex sm:items-end">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="w-full cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                    onClick={() => queryParamsArray.remove(index)}
+                                                    aria-label="Remove parameter"
+                                                    title="Remove parameter"
+                                                >
+                                                    <Trash2Icon className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                         <FormField
                             control={form.control}
                             name="authType"

@@ -15,6 +15,7 @@ type HttpRequestNodeData = {
     varibleName?: string;
     endpoint?: string;
     method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
+    queryParams?: { name: string; value?: string }[];
     body?: string;
     authType?: "NONE" | "BEARER" | "BASIC" | "API_KEY";
     bearerToken?: string;
@@ -43,6 +44,7 @@ export const HttpRequestNode = memo((props: NodeProps<HttpRequestNodeType>) => {
         varibleName: string;
         endpoint: string;
         method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
+        queryParams?: { name: string; value?: string }[];
         body?: string;
         authType?: "NONE" | "BEARER" | "BASIC" | "API_KEY";
         bearerToken?: string;
