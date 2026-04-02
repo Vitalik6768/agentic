@@ -298,6 +298,16 @@ const castType = (
   throw new NonRetriableError("Expected array value");
 };
 
+const fallbackForType = (
+  outputType: "string" | "number" | "boolean" | "object" | "array",
+): unknown => {
+  if (outputType === "string") return "not found";
+  if (outputType === "number") return 0;
+  if (outputType === "boolean") return false;
+  if (outputType === "array") return [];
+  return { status: "not found" };
+};
+
 export const extractorNodeExecutor: NodeExecutor<ExtractorNodeData> = async ({
   data,
   nodeId,
@@ -365,7 +375,8 @@ export const extractorNodeExecutor: NodeExecutor<ExtractorNodeData> = async ({
                   field.matchKey,
                   renderTemplate(field.matchValue, context),
                 );
-      const transformedValue = applyOperation(extractedValue, field.operation, field.separator);
+      const valueOrFallback = extractedValue === undefined ? fallbackForType(field.outputType) : extractedValue;
+      const transformedValue = applyOperation(valueOrFallback, field.operation, field.separator);
       extractedObject[field.outputKey] = castType(transformedValue, field.outputType);
     }
 
