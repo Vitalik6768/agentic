@@ -6,13 +6,13 @@ import { getSubscriptionToken, type Realtime } from "@inngest/realtime";
 
 
 export type HttpRequestToken = Realtime.Token<typeof httpRequestChannel,
-["status"]
+["status", "result"]
 >;
 
 export async function fetchHttpRequestRealtimeToken(): Promise<HttpRequestToken> {
     const token = await getSubscriptionToken(inngest, {
         channel: httpRequestChannel(),
-        topics: ["status"],
+        topics: ["status", "result"],
     })
     return token;
 }

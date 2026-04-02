@@ -40,6 +40,13 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
         status: "error",
       })
     );
+    await publish(
+      httpRequestChannel().result({
+        nodeId,
+        status: "error",
+        error: "Endpoint is required",
+      })
+    );
     throw new NonRetriableError("Endpoint is required");
   }
   if (!data.varibleName) {
@@ -47,6 +54,13 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
       httpRequestChannel().status({
         nodeId,
         status: "error",
+      })
+    );
+    await publish(
+      httpRequestChannel().result({
+        nodeId,
+        status: "error",
+        error: "Variable name is required",
       })
     );
     throw new NonRetriableError("Variable name is required");
@@ -58,6 +72,13 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
         status: "error",
       })
     );
+    await publish(
+      httpRequestChannel().result({
+        nodeId,
+        status: "error",
+        error: "Method is required",
+      })
+    );
     throw new NonRetriableError("Method is required");
   }
   //   const result = await step.run(
@@ -65,6 +86,7 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
   //     async () => context
   //   );
   try {
+    let lastResponsePayload: unknown = undefined;
     const result = await step.run(`http-request-${nodeId}`, async () => {
       const endpoint = Handlebars.compile(data.endpoint)(context);
       const endpointUrl = new URL(endpoint);
@@ -123,6 +145,7 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
           data: responseData,
         },
       };
+      lastResponsePayload = responsePayload;
       if (data.varibleName) {
         return { ...context, [data.varibleName]: responsePayload };
       }
@@ -132,6 +155,13 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
       };
     });
     await publish(
+      httpRequestChannel().result({
+        nodeId,
+        status: "success",
+        output: JSON.stringify(lastResponsePayload ?? null, null, 2),
+      })
+    );
+    await publish(
       httpRequestChannel().status({
         nodeId,
         status: "success",
@@ -139,6 +169,14 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
     );
     return result;
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "HTTP request failed";
+    await publish(
+      httpRequestChannel().result({
+        nodeId,
+        status: "error",
+        error: errorMessage,
+      })
+    );
     await publish(
       httpRequestChannel().status({
         nodeId,
