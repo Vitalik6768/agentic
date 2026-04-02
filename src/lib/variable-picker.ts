@@ -22,6 +22,7 @@ export type AvailableVariable = {
   nodeId: string;
   nodeType: string;
   variableRoot: string;
+  value?: unknown;
   preview?: string;
   valueType: PickerValueType;
 };
@@ -175,6 +176,7 @@ export const getAvailableVariables = (
         nodeId: sourceMeta.nodeId,
         nodeType: sourceMeta.nodeType,
         variableRoot: key,
+        value: currentValue,
         preview: getPreview(currentValue),
         valueType: getValueType(currentValue),
       });
@@ -184,6 +186,7 @@ export const getAvailableVariables = (
         nodeId: sourceMeta.nodeId,
         nodeType: sourceMeta.nodeType,
         variableRoot: key,
+        value: indexValue,
         preview: getPreview(indexValue),
         valueType: getValueType(indexValue),
       });
@@ -201,6 +204,7 @@ export const getAvailableVariables = (
         nodeId: sourceMeta.nodeId,
         nodeType: sourceMeta.nodeType,
         variableRoot: key,
+        value: item.value,
         preview: getPreview(item.value),
         valueType: getValueType(item.value),
       });
