@@ -18,6 +18,7 @@ import { serpApiNodeChannel } from "./channels/serp-api-node";
 import { extractorNodeChannel } from "./channels/extractor-node";
 import { loopNodeChannel } from "./channels/loop-node";
 import { breakNodeChannel } from "./channels/break-node";
+import { delayNodeChannel } from "./channels/delay-node";
 
 
 /**
@@ -62,6 +63,7 @@ export const executeWorkflow = inngest.createFunction(
       extractorNodeChannel(),
       loopNodeChannel(),
       breakNodeChannel(),
+      delayNodeChannel(),
     ],
   },
   async ({ event, step, publish }) => {

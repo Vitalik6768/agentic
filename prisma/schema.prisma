@@ -140,6 +140,7 @@ enum NodeType {
   EXTRACTOR_NODE
   LOOP_NODE
   BREAK_NODE
+  DELAY_NODE
 }
 
 model Node {

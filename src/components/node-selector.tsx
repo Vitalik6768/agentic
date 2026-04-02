@@ -82,7 +82,12 @@ const dataTransformationNodes: NodeTypeOption[] = [
         description: "Continue the workflow only after the loop’s last iteration",
         icon: "/logos/break-node.svg",
     },
-    
+    {
+        type: NodeType.DELAY_NODE,
+        label: "Delay Node",
+        description: "Delay the execution of the next node",
+        icon: "/logos/delay-node.svg",
+    },
 ]
 
 const executionNodes: NodeTypeOption[] = [

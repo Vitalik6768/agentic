@@ -16,6 +16,7 @@ import { serpApiNodeExecutor } from "../executions/nodes/serp-api-node/executor"
 import { extractorNodeExecutor } from "../executions/nodes/extractor-node/executor";
 import { loopExecutor } from "../executions/nodes/loop-node/executor";
 import { breakNodeExecutor } from "../executions/nodes/break-node/executor";
+import { delayNodeExecutor } from "../executions/nodes/delay-node/executor";
 
 export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
@@ -35,6 +36,7 @@ export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.EXTRACTOR_NODE]: extractorNodeExecutor as NodeExecutor,
     [NodeType.LOOP_NODE]: loopExecutor as NodeExecutor,
     [NodeType.BREAK_NODE]: breakNodeExecutor as NodeExecutor,
+    [NodeType.DELAY_NODE]: delayNodeExecutor as NodeExecutor,
 }
 
 export const getExecutor = (type: NodeType): NodeExecutor => {

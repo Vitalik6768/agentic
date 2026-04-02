@@ -9,11 +9,10 @@ import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef, type ComponentProps } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
-import { cn } from "@/lib/utils";
-import { isTemplateSegment, splitTemplateSegments } from "@/lib/template-highlight";
+import { TemplateHighlightInput } from "@/lib/template-highlight";
 import type { AvailableVariable, UpstreamVariableNodeOption } from "@/lib/variable-picker";
 
 
@@ -87,51 +86,6 @@ const formSchema = z.object({
 });
 
 export type SerpApiNodeFormValues = z.infer<typeof formSchema>;
-
-const TemplateHighlightInput = ({
-    value,
-    className,
-    placeholder,
-    ...props
-}: Omit<ComponentProps<"input">, "value"> & { value?: string }) => {
-    const source = value ?? "";
-    const segments = splitTemplateSegments(source);
-
-    return (
-        <div className="relative">
-            <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 z-0 flex items-center overflow-hidden px-3 text-sm"
-            >
-                {source.length > 0 ? (
-                    <span className="w-full truncate whitespace-pre">
-                        {segments.map((segment, index) => {
-                            return (
-                                <span
-                                    key={`${segment}-${index}`}
-                                    className={isTemplateSegment(segment) ? "text-sky-500 dark:text-sky-400" : "text-foreground"}
-                                >
-                                    {segment}
-                                </span>
-                            );
-                        })}
-                    </span>
-                ) : (
-                    <span className="text-muted-foreground">{placeholder}</span>
-                )}
-            </div>
-            <Input
-                {...props}
-                value={source}
-                placeholder={placeholder}
-                className={cn(
-                    "relative z-10 bg-transparent text-transparent caret-foreground placeholder:text-transparent",
-                    className
-                )}
-            />
-        </div>
-    );
-};
 
 interface Props {
     open: boolean

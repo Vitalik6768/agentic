@@ -17,6 +17,7 @@ import { SerpApiNode } from "../executions/nodes/serp-api-node/node";
 import { ExtractorNode } from "../executions/nodes/extractor-node/node";
 import { LoopNode } from "../executions/nodes/loop-node/node";
 import { BreakNodeNode } from "../executions/nodes/break-node/node";
+import { DelayNode } from "../executions/nodes/delay-node/node";
 
 
 export const nodeComponents = {
@@ -37,6 +38,7 @@ export const nodeComponents = {
   [NodeType.EXTRACTOR_NODE]: ExtractorNode,
   [NodeType.LOOP_NODE]: LoopNode,
   [NodeType.BREAK_NODE]: BreakNodeNode,
+  [NodeType.DELAY_NODE]: DelayNode,
 } as const satisfies NodeTypes;
 
 export type RegisteredNodeType = keyof typeof nodeComponents;
