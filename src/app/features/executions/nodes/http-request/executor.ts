@@ -137,7 +137,7 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
       const contentType = response.headers.get("content-type") ?? "";
       const responseData = contentType.includes("application/json")
         ? await response.json().catch(() => response.text())
-        : response.text();
+        : await response.text();
       const responsePayload = {
         httpResponse: {
           status: response.status,
@@ -154,11 +154,15 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
         ...responsePayload,
       };
     });
+    const outputPayload =
+      data.varibleName && typeof result === "object" && result !== null
+        ? (result as Record<string, unknown>)[data.varibleName]
+        : lastResponsePayload;
     await publish(
       httpRequestChannel().result({
         nodeId,
         status: "success",
-        output: JSON.stringify(lastResponsePayload ?? null, null, 2),
+        output: JSON.stringify(outputPayload ?? null, null, 2),
       })
     );
     await publish(
