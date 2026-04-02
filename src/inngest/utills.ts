@@ -16,18 +16,6 @@ export const topologicalSort = (
     const edges:[string,string][] = connections.map((connection) => 
         [connection.fromNodeId, connection.toNodeId]);
 
-    const connectedNodeIds = new Set<string>();
-    for(const conn of connections) {
-        connectedNodeIds.add(conn.fromNodeId);
-        connectedNodeIds.add(conn.toNodeId);
-    }
-
-    for(const node of nodes) {
-        if(!connectedNodeIds.has(node.id)) {
-            edges.push([node.id, node.id]);
-        }
-    }
-
     let sortedNodesIds:string[];
     try {
         sortedNodesIds = topoSort(edges);
@@ -40,8 +28,17 @@ export const topologicalSort = (
     }
 
   const nodeMap = new Map(nodes.map((node) => [node.id, node]));
-  return sortedNodesIds.map((nodeId) => nodeMap.get(nodeId)!)
-  .filter(Boolean);
+
+  // `toposort` only returns nodes referenced in edges. Append any remaining nodes
+  // (including totally-disconnected nodes) to keep a stable total ordering without
+  // introducing artificial self-cycles.
+  const sortedSet = new Set(sortedNodesIds);
+  const remainingNodeIds = nodes.map((n) => n.id).filter((id) => !sortedSet.has(id));
+  const finalNodeIds = [...sortedNodesIds, ...remainingNodeIds];
+
+  return finalNodeIds
+    .map((nodeId) => nodeMap.get(nodeId)!)
+    .filter(Boolean);
 };
 
 
