@@ -20,18 +20,32 @@ export const workflowsRouter = createTRPCRouter({
       id: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const workflow = await db.workflow.findUniqueOrThrow({
-        where: {
-          id: input.id,
-          userId: ctx.session.user.id,
-        },
-        select: {
-          published: true,
-        },
-      });
+      const [workflow, manualStartNode] = await Promise.all([
+        db.workflow.findUniqueOrThrow({
+          where: {
+            id: input.id,
+            userId: ctx.session.user.id,
+          },
+          select: {
+            published: true,
+          },
+        }),
+        db.node.findFirst({
+          where: {
+            workflowId: input.id,
+            type: {
+              in: [NodeType.MANUAL_TRIGGER, NodeType.INITIAL],
+            },
+          },
+          select: {
+            id: true,
+          },
+        }),
+      ]);
       await sendWorkflowExecution({
         workflowId: input.id,
         userId: ctx.session.user.id,
+        startNodeId: manualStartNode?.id,
         initialData: {
           meta: {
             disableRealtime: workflow.published === true,

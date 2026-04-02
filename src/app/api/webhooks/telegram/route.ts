@@ -1,5 +1,6 @@
 import { sendWorkflowExecution } from "@/inngest/utills";
 import { db } from "@/server/db";
+import { NodeType } from "generated/prisma";
 import { type NextRequest, NextResponse } from "next/server";
 
 type TelegramUpdate = {
@@ -58,10 +59,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const workflow = await db.workflow.findUnique({
-      where: { id: workflowId },
-      select: { userId: true, published: true },
-    });
+    const [workflow, telegramTriggerNode] = await Promise.all([
+      db.workflow.findUnique({
+        where: { id: workflowId },
+        select: { userId: true, published: true },
+      }),
+      db.node.findFirst({
+        where: { workflowId, type: NodeType.TELEGRAM_TRIGGER },
+        select: { id: true },
+      }),
+    ]);
 
     if (!workflow) {
       return NextResponse.json(
@@ -96,6 +103,7 @@ export async function POST(request: NextRequest) {
     await sendWorkflowExecution({
       workflowId,
       userId: workflow.userId,
+      startNodeId: telegramTriggerNode?.id,
       initialData: {
         meta: {
           disableRealtime: workflow.published === true,

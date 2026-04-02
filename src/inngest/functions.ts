@@ -126,27 +126,23 @@ export const executeWorkflow = inngest.createFunction(
       outgoingConnectionsByNode.set(connection.fromNodeId, outgoing);
     }
 
-    // Seed execution from the workflow trigger only (ignore disconnected nodes).
-    const triggerSource =
-      (event.data.initialData as { meta?: { triggerSource?: unknown } } | undefined)?.meta?.triggerSource;
-    const triggerTypes: NodeType[] =
-      triggerSource === "webhook" || triggerSource === "prod-webhook"
-        ? [NodeType.WEBHOOK_TRIGGER]
-        : triggerSource === "telegram"
-          ? [NodeType.TELEGRAM_TRIGGER]
-          : triggerSource === "schedule"
-            ? [NodeType.SCHEDULE_TRIGGER]
-            : // manual or unknown defaults (includes INITIAL for older graphs)
-              [NodeType.MANUAL_TRIGGER, NodeType.INITIAL];
+    // Seed execution from the caller-selected start node(s).
+    const startNodeId = (event.data as { startNodeId?: unknown } | undefined)?.startNodeId;
+    const startNodeIds = (event.data as { startNodeIds?: unknown } | undefined)?.startNodeIds;
+
+    const requestedStartNodeIds: string[] = [
+      ...(typeof startNodeId === "string" && startNodeId.length > 0 ? [startNodeId] : []),
+      ...(Array.isArray(startNodeIds)
+        ? startNodeIds.filter((id): id is string => typeof id === "string" && id.length > 0)
+        : []),
+    ];
 
     const activeNodeIds = new Set<string>();
-    for (const node of sortedNodes) {
-      if (triggerTypes.includes(node.type)) {
-        activeNodeIds.add(node.id);
-      }
+    for (const nodeId of requestedStartNodeIds) {
+      activeNodeIds.add(nodeId);
     }
 
-    // Fallback: if we didn't find an explicit trigger node, run from "real" entry points
+    // Fallback: if callers didn't provide a start node, run from "real" entry points
     // (nodes with no incoming edges, but at least one outgoing edge). This prevents
     // totally-disconnected nodes from executing.
     if (activeNodeIds.size === 0) {

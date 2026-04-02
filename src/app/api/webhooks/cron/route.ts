@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
     await sendWorkflowExecution({
       workflowId,
       userId: workflow.userId,
+      startNodeId: scheduleTriggerNode.id,
       initialData: {
         meta: {
           disableRealtime: true,

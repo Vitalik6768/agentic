@@ -46,6 +46,8 @@ export const sendWorkflowExecution = async (data: {
     workflowId: string;
     userId: string;
     initialData?: Record<string, unknown>;
+    startNodeId?: string;
+    startNodeIds?: string[];
 }) => {
     console.log("sending workflow execution", data.workflowId);
   const { workflowId, ...rest } = data;

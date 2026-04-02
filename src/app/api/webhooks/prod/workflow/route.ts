@@ -54,6 +54,7 @@ const handleWebhook = async (request: NextRequest) => {
         type: NodeType.WEBHOOK_TRIGGER,
       },
       select: {
+        id: true,
         data: true,
       },
     });
@@ -97,6 +98,7 @@ const handleWebhook = async (request: NextRequest) => {
     await sendWorkflowExecution({
       workflowId,
       userId: workflow.userId,
+      startNodeId: webhookTriggerNode?.id,
       initialData: {
         meta: {
           disableRealtime: true,
