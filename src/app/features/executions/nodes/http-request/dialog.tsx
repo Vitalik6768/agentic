@@ -7,17 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
-import { VariablePickerPanel } from "@/components/data-transfer";
+import { DataTransferPanel, ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
+import {
+    NodeDialogNameField,
+    type NodeDialogNameFieldHandle,
+} from "@/components/node-dialog-name-field";
 import type { AvailableVariable, UpstreamVariableNodeOption } from "@/lib/variable-picker";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Trash2Icon } from "lucide-react";
+import { Globe, Play, Trash2Icon, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import z from "zod";
 
 
 const formSchema = z.object({
-    varibleName: z.string().min(1, { message: "Variable name is required" }).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
     endpoint: z.string().url({ message: "Invalid please enter a valid URL" }),
     method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"]),
     queryParams: z
@@ -82,11 +85,15 @@ const formSchema = z.object({
 type HttpRequestFormInput = z.input<typeof formSchema>;
 export type HttpRequestFormValues = z.output<typeof formSchema>;
 
+export type HttpRequestDialogSubmitValues = HttpRequestFormValues & {
+    varibleName: string;
+};
+
 interface Props {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSubmit: (values: HttpRequestFormValues) => void;
-    defaultValues?: Partial<HttpRequestFormValues>;
+    onSubmit: (values: HttpRequestDialogSubmitValues) => void;
+    defaultValues?: Partial<HttpRequestDialogSubmitValues>;
     executionStatus?: NodeStatus;
     executionOutput?: string;
     executionError?: string;
@@ -116,7 +123,6 @@ export const HttpRequestDialog = ({
     const form = useForm<HttpRequestFormInput, unknown, HttpRequestFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            varibleName: defaultValues.varibleName ?? "",
             endpoint: defaultValues.endpoint ?? "",
             method: defaultValues.method ?? "GET",
             queryParams: defaultValues.queryParams ?? [],
@@ -133,7 +139,6 @@ export const HttpRequestDialog = ({
     useEffect(() => {
         if (open) {
             form.reset({
-                varibleName: defaultValues.varibleName ?? "",
                 endpoint: defaultValues.endpoint ?? "",
                 method: defaultValues.method ?? "GET",
                 queryParams: defaultValues.queryParams ?? [],
@@ -156,13 +161,21 @@ export const HttpRequestDialog = ({
     const [activeTarget, setActiveTarget] = useState<"endpoint" | "body" | "queryName" | "queryValue">("endpoint");
     const endpointRef = useRef<HTMLInputElement | null>(null);
     const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+    const nameFieldRef = useRef<NodeDialogNameFieldHandle>(null);
     const queryParamsArray = useFieldArray({
         control: form.control,
         name: "queryParams" as const,
     });
 
     const handleSubmit = (values: HttpRequestFormValues) => {
-        onSubmit(values);
+        const err = nameFieldRef.current?.validate();
+        if (err) {
+            nameFieldRef.current?.enterEditMode();
+            nameFieldRef.current?.focusNameInput();
+            return;
+        }
+        const name = nameFieldRef.current?.getTrimmedName() ?? "";
+        onSubmit({ ...values, varibleName: name });
         onOpenChange(false)
     }
 
@@ -196,368 +209,371 @@ export const HttpRequestDialog = ({
         }
         insertAtCursor("endpoint", token);
     };
+
+    const initialName = defaultValues.varibleName ?? "";
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-6xl">
+            <DialogContent className="max-h-[90vh] w-[98vw] overflow-hidden rounded-2xl border border-border bg-background p-0 shadow-lg sm:max-w-7xl">
                 <DialogHeader>
-                    <DialogTitle>HTTP Request</DialogTitle>
-                    <DialogDescription>
-                        Configure the HTTP Request trigger.
-                    </DialogDescription>
+                    <div className="w-full rounded-t-2xl border-b bg-linear-to-r from-indigo-100/80 via-indigo-50/40 to-indigo-50/20 px-6 py-5 dark:from-indigo-950/55 dark:via-indigo-950/25 dark:to-background">
+                        <DialogTitle className="sr-only">HTTP Request</DialogTitle>
+                        <div className="flex items-start gap-4">
+                            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-600 to-violet-500 text-white shadow-lg shadow-indigo-600/20">
+                                <Globe className="h-6 w-6 opacity-95" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <NodeDialogNameField
+                                    ref={nameFieldRef}
+                                    open={open}
+                                    initialName={initialName}
+                                    variant="header"
+                                    placeholder="httpRequest1"
+                                    helpText="Canvas label and variable for this step’s response."
+                                />
+                                <DialogDescription className="pt-2">
+                                    Configure an HTTP request and store the response for downstream nodes.
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </div>
                 </DialogHeader>
-                <div className="grid items-start gap-6 md:grid-cols-3">
-                    <VariablePickerPanel
-                        items={availableVariables}
-                        isLoading={isLoadingVariables}
-                        nodeOptions={nodeOptions}
-                        selectedNodeId={selectedNodeId}
-                        onSelectedNodeIdChange={onSelectedNodeIdChange}
-                        onInsertVariable={handleInsertVariable}
-                        resetModeKey={open}
-                        className="max-h-[72vh] overflow-hidden"
-                    />
+                <div className="grid h-[calc(90vh-88px)] items-start gap-6 overflow-hidden bg-background px-6 py-6 md:grid-cols-3 md:gap-8">
+                    <div className="flex h-full flex-col overflow-y-auto">
+                        <VariablePickerPanel
+                            items={availableVariables}
+                            isLoading={isLoadingVariables}
+                            nodeOptions={nodeOptions}
+                            selectedNodeId={selectedNodeId}
+                            onSelectedNodeIdChange={onSelectedNodeIdChange}
+                            onInsertVariable={handleInsertVariable}
+                            resetModeKey={open}
+                            className="flex-1 rounded-2xl border border-emerald-200 bg-white p-4"
+                        />
+                    </div>
 
-                    <div className="max-h-[72vh] overflow-y-auto pr-1">
-                        <Form {...form}>
-                            <form
-                                onSubmit={form.handleSubmit(handleSubmit)}
-                                className="space-y-6 mt-2"
-                            >
-                                <FormField
-                                    control={form.control}
-                                    name="varibleName"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Variable Name</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="text"
-                                                    placeholder="my_variable"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    control={form.control}
-                                    name="method"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Method</FormLabel>
-                                            <Select
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select a method" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="GET">GET</SelectItem>
-                                                    <SelectItem value="POST">POST</SelectItem>
-                                                    <SelectItem value="PUT">PUT</SelectItem>
-                                                    <SelectItem value="DELETE">DELETE</SelectItem>
-                                                    <SelectItem value="PATCH">PATCH</SelectItem>
-                                                    <SelectItem value="HEAD">HEAD</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormDescription>
-                                                Select the HTTP method to use for the request.
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    control={form.control}
-                                    name="endpoint"
-                                    render={({ field }) => {
-                                        const { ref, ...fieldProps } = field;
-                                        return (
-                                            <FormItem>
-                                                <FormLabel>Endpoint Url</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        ref={(el) => {
-                                                            ref(el);
-                                                            endpointRef.current = el;
-                                                        }}
-                                                        type="url"
-                                                        placeholder="https://api.example.com/users/{{user.id}}"
-                                                        onFocus={() => setActiveTarget("endpoint")}
-                                                        {...fieldProps}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        );
-                                    }}
-                                />
-
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="space-y-0.5">
-                                            <div className="text-sm font-medium leading-none">Query parameters</div>
-                                            <div className="text-sm text-muted-foreground">
-                                                Add query string parameters (name/value) to the request URL.
-                                            </div>
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => queryParamsArray.append({ name: "", value: "" })}
-                                        >
-                                            Add parameter
-                                        </Button>
-                                    </div>
-
-                                    {queryParamsArray.fields.length === 0 ? (
-                                        <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                                            No query parameters.
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {queryParamsArray.fields.map((item, index) => (
-                                                <div key={item.id} className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-                                                    <FormField
-                                                        control={form.control}
-                                                        name={`queryParams.${index}.name`}
-                                                        render={({ field }) => (
-                                                            <FormItem className="sm:col-span-5">
-                                                                <FormLabel>Name</FormLabel>
-                                                                <FormControl>
-                                                                    <Input type="text" placeholder="q" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                    <FormField
-                                                        control={form.control}
-                                                        name={`queryParams.${index}.value`}
-                                                        render={({ field }) => (
-                                                            <FormItem className="sm:col-span-6">
-                                                                <FormLabel>Value</FormLabel>
-                                                                <FormControl>
-                                                                    <Input type="text" placeholder="search term" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                    <div className="sm:col-span-1 sm:flex sm:items-end">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="w-full cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                            onClick={() => queryParamsArray.remove(index)}
-                                                            aria-label="Remove parameter"
-                                                            title="Remove parameter"
-                                                        >
-                                                            <Trash2Icon className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <FormField
-                                    control={form.control}
-                                    name="authType"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Auth Type</FormLabel>
-                                            <Select
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select auth type" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="NONE">None</SelectItem>
-                                                    <SelectItem value="BEARER">Bearer Token</SelectItem>
-                                                    <SelectItem value="BASIC">Basic Auth</SelectItem>
-                                                    <SelectItem value="API_KEY">API Key Header</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormDescription>
-                                                Choose how to authenticate this request.
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                {watchAuthType === "BEARER" && (
-                                    <FormField
-                                        control={form.control}
-                                        name="bearerToken"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Bearer Token</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="password"
-                                                        placeholder="sk-..."
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    Token value used in the Authorization header.
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                )}
-
-                                {watchAuthType === "BASIC" && (
-                                    <>
+                    <div className="flex h-full min-h-0 flex-col">
+                        <DataTransferPanel
+                            title="HTTP Request Settings"
+                            subtitle="Configure endpoint, auth, and payload"
+                            icon={<Zap className="h-4 w-4 text-violet-600" />}
+                            className="flex-1 min-h-0 rounded-2xl border border-indigo-200 bg-white p-4"
+                        >
+                            <div className="flex h-full min-h-0 flex-col">
+                                <Form {...form}>
+                                    <form
+                                        onSubmit={form.handleSubmit(handleSubmit)}
+                                        className="flex h-full min-h-0 flex-1 flex-col"
+                                    >
+                                        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pr-1 pb-20">
                                         <FormField
                                             control={form.control}
-                                            name="basicUsername"
+                                            name="method"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Basic Auth Username</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="text"
-                                                            placeholder="username"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="basicPassword"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Basic Auth Password</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="password"
-                                                            placeholder="password"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </>
-                                )}
-
-                                {watchAuthType === "API_KEY" && (
-                                    <>
-                                        <FormField
-                                            control={form.control}
-                                            name="apiKeyHeaderName"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Header Name</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="text"
-                                                            placeholder="x-api-key"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="apiKeyValue"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>API Key</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="password"
-                                                            placeholder="your-api-key"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </>
-                                )}
-
-                                {showBodyField && (
-                                    <FormField
-                                        control={form.control}
-                                        name="body"
-                                        render={({ field }) => {
-                                            const { ref, ...fieldProps } = field;
-                                            return (
-                                                <FormItem>
-                                                    <FormLabel>Request body</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea
-                                                            ref={(el) => {
-                                                                ref(el);
-                                                                bodyRef.current = el;
-                                                            }}
-                                                            className="min-h-[120px] font-mono text-sm"
-                                                            placeholder='{"hello":"world"}'
-                                                            onFocus={() => setActiveTarget("body")}
-                                                            {...fieldProps}
-                                                        />
-                                                    </FormControl>
+                                                    <FormLabel>Method</FormLabel>
+                                                    <Select
+                                                        onValueChange={field.onChange}
+                                                        defaultValue={field.value}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Select a method" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="GET">GET</SelectItem>
+                                                            <SelectItem value="POST">POST</SelectItem>
+                                                            <SelectItem value="PUT">PUT</SelectItem>
+                                                            <SelectItem value="DELETE">DELETE</SelectItem>
+                                                            <SelectItem value="PATCH">PATCH</SelectItem>
+                                                            <SelectItem value="HEAD">HEAD</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                     <FormDescription>
-                                                        Enter the request body in JSON format.
+                                                        Select the HTTP method to use for the request.
                                                     </FormDescription>
                                                     <FormMessage />
                                                 </FormItem>
-                                            );
-                                        }}
-                                    />
-                                )}
+                                            )}
+                                        />
 
-                                <DialogFooter className="mt-4">
-                                    <Button className="w-full" type="submit">Save</Button>
-                                </DialogFooter>
-                            </form>
-                        </Form>
+                                        <FormField
+                                            control={form.control}
+                                            name="endpoint"
+                                            render={({ field }) => {
+                                                const { ref, ...fieldProps } = field;
+                                                return (
+                                                    <FormItem>
+                                                        <FormLabel>Endpoint Url</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                ref={(el) => {
+                                                                    ref(el);
+                                                                    endpointRef.current = el;
+                                                                }}
+                                                                type="url"
+                                                                placeholder="https://api.example.com/users/{{user.id}}"
+                                                                onFocus={() => setActiveTarget("endpoint")}
+                                                                {...fieldProps}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                );
+                                            }}
+                                        />
+
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="space-y-0.5">
+                                                    <div className="text-sm font-medium leading-none">Query parameters</div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        Add query string parameters (name/value) to the request URL.
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => queryParamsArray.append({ name: "", value: "" })}
+                                                >
+                                                    Add parameter
+                                                </Button>
+                                            </div>
+
+                                            {queryParamsArray.fields.length === 0 ? (
+                                                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                                                    No query parameters.
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    {queryParamsArray.fields.map((item, index) => (
+                                                        <div key={item.id} className="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                                                            <FormField
+                                                                control={form.control}
+                                                                name={`queryParams.${index}.name`}
+                                                                render={({ field }) => (
+                                                                    <FormItem className="sm:col-span-5">
+                                                                        <FormLabel>Name</FormLabel>
+                                                                        <FormControl>
+                                                                            <Input type="text" placeholder="q" {...field} />
+                                                                        </FormControl>
+                                                                        <FormMessage />
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+                                                            <FormField
+                                                                control={form.control}
+                                                                name={`queryParams.${index}.value`}
+                                                                render={({ field }) => (
+                                                                    <FormItem className="sm:col-span-6">
+                                                                        <FormLabel>Value</FormLabel>
+                                                                        <FormControl>
+                                                                            <Input type="text" placeholder="search term" {...field} />
+                                                                        </FormControl>
+                                                                        <FormMessage />
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+                                                            <div className="sm:col-span-1 sm:flex sm:items-end">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="w-full cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                                    onClick={() => queryParamsArray.remove(index)}
+                                                                    aria-label="Remove parameter"
+                                                                    title="Remove parameter"
+                                                                >
+                                                                    <Trash2Icon className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <FormField
+                                            control={form.control}
+                                            name="authType"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Auth Type</FormLabel>
+                                                    <Select
+                                                        onValueChange={field.onChange}
+                                                        defaultValue={field.value}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Select auth type" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="NONE">None</SelectItem>
+                                                            <SelectItem value="BEARER">Bearer Token</SelectItem>
+                                                            <SelectItem value="BASIC">Basic Auth</SelectItem>
+                                                            <SelectItem value="API_KEY">API Key Header</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormDescription>
+                                                        Choose how to authenticate this request.
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        {watchAuthType === "BEARER" && (
+                                            <FormField
+                                                control={form.control}
+                                                name="bearerToken"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Bearer Token</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="password"
+                                                                placeholder="sk-..."
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            Token value used in the Authorization header.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )}
+
+                                        {watchAuthType === "BASIC" && (
+                                            <>
+                                                <FormField
+                                                    control={form.control}
+                                                    name="basicUsername"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Basic Auth Username</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="text"
+                                                                    placeholder="username"
+                                                                    {...field}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="basicPassword"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Basic Auth Password</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="password"
+                                                                    placeholder="password"
+                                                                    {...field}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </>
+                                        )}
+
+                                        {watchAuthType === "API_KEY" && (
+                                            <>
+                                                <FormField
+                                                    control={form.control}
+                                                    name="apiKeyHeaderName"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Header Name</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="text"
+                                                                    placeholder="x-api-key"
+                                                                    {...field}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="apiKeyValue"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>API Key</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="password"
+                                                                    placeholder="your-api-key"
+                                                                    {...field}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </>
+                                        )}
+
+                                        {showBodyField && (
+                                            <FormField
+                                                control={form.control}
+                                                name="body"
+                                                render={({ field }) => {
+                                                    const { ref, ...fieldProps } = field;
+                                                    return (
+                                                        <FormItem>
+                                                            <FormLabel>Request body</FormLabel>
+                                                            <FormControl>
+                                                                <Textarea
+                                                                    ref={(el) => {
+                                                                        ref(el);
+                                                                        bodyRef.current = el;
+                                                                    }}
+                                                                    className="min-h-[120px] font-mono text-sm"
+                                                                    placeholder='{"hello":"world"}'
+                                                                    onFocus={() => setActiveTarget("body")}
+                                                                    {...fieldProps}
+                                                                />
+                                                            </FormControl>
+                                                            <FormDescription>
+                                                                Enter the request body in JSON format.
+                                                            </FormDescription>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    );
+                                                }}
+                                            />
+                                        )}
+                                            <DialogFooter className="pt-2">
+                                                <Button className="w-full gap-2 bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30" type="submit">
+                                                    Save Changes
+                                                </Button>
+                                            </DialogFooter>
+                                        </div>
+                                    </form>
+                                </Form>
+                            </div>
+                        </DataTransferPanel>
                     </div>
 
-                    <div className="rounded-md border bg-muted/30 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-semibold">Execution Output</h3>
-                            <span className="text-xs text-muted-foreground">
-                                {executionStatus === "loading" ? "Running..." : executionStatus === "success" ? "Completed" : executionStatus === "error" ? "Failed" : "Idle"}
-                            </span>
-                        </div>
-                        {executionStatus === "success" && executionOutput ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap">
-                                {executionOutput}
-                            </pre>
-                        ) : executionStatus === "error" ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap text-red-500">
-                                {executionError ?? "Execution failed"}
-                            </pre>
-                        ) : (
-                            <div className="flex min-h-[180px] items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-                                Execute this workflow to view the latest HTTP response output here.
-                            </div>
-                        )}
+                    <div className="flex h-full min-h-0 flex-col">
+                        <ExecutionOutputPanel
+                            executionStatus={executionStatus}
+                            executionOutput={executionOutput}
+                            executionError={executionError}
+                            idleMessage="Execute this workflow to view the latest HTTP response output here."
+                            className="flex-1 min-h-0 rounded-2xl border border-amber-200 bg-white p-4"
+                        />
                     </div>
                 </div>
             </DialogContent>

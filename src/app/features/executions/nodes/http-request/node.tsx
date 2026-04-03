@@ -2,9 +2,9 @@
 
 import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
 import { GlobeIcon } from "lucide-react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
-import { HttpRequestDialog, type HttpRequestFormValues } from "./dialog";
+import { HttpRequestDialog, type HttpRequestDialogSubmitValues } from "./dialog";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { HTTP_REQUEST_CHANNEL_NAME } from "@/inngest/channels/http-request";
 import { fetchHttpRequestRealtimeToken } from "./actions";
@@ -18,9 +18,13 @@ import {
     type AvailableVariable,
     type UpstreamVariableNodeOption,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
 // import { useNodeStatus } from "../../hooks/use-node-status";
 // import { fetchHttpRequestRealtimeToken } from "./actions";
 // import { HTTP_REQUEST_CHANNEL_NAME } from "@/inngest/channels/http-request";
+
+const HTTP_REQUEST_VARIABLE_BASE = "httpRequest";
+
 type HttpRequestNodeData = {
     varibleName?: string;
     endpoint?: string;
@@ -119,33 +123,72 @@ export const HttpRequestNode = memo((props: NodeProps<HttpRequestNodeType>) => {
         setAvailableVariables(vars);
         setDialogOpen(true);
     }
-    const handleSubmit = (values: {
-        varibleName: string;
-        endpoint: string;
-        method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
-        queryParams?: { name: string; value?: string }[];
-        body?: string;
-        authType?: "NONE" | "BEARER" | "BASIC" | "API_KEY";
-        bearerToken?: string;
-        basicUsername?: string;
-        basicPassword?: string;
-        apiKeyHeaderName?: string;
-        apiKeyValue?: string;
-    }) => {
-        setNodes((nodes) => nodes.map((node) => {
-            if (node.id === props.id) {
-                return {
-                    ...node,
-                    data: {
-                        ...node.data,
-                        ...values,
-                    }
-                };
-            }
-            return node;
-        }));
-    }
+
     const nodeData = props.data;
+
+    const suggestedName = useMemo(() => {
+        const trimmed = nodeData.varibleName?.trim();
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(HTTP_REQUEST_VARIABLE_BASE, props.id, getNodes());
+    }, [nodeData.varibleName, props.id, getNodes, dialogOpen]);
+
+    const httpDialogDefaults = useMemo<Partial<HttpRequestDialogSubmitValues>>(
+        () => ({
+            varibleName: suggestedName,
+            endpoint: nodeData.endpoint ?? "",
+            method: nodeData.method ?? "GET",
+            queryParams: nodeData.queryParams ?? [],
+            body: nodeData.body ?? "",
+            authType: nodeData.authType ?? "NONE",
+            bearerToken: nodeData.bearerToken ?? "",
+            basicUsername: nodeData.basicUsername ?? "",
+            basicPassword: nodeData.basicPassword ?? "",
+            apiKeyHeaderName: nodeData.apiKeyHeaderName ?? "",
+            apiKeyValue: nodeData.apiKeyValue ?? "",
+        }),
+        [
+            suggestedName,
+            nodeData.endpoint,
+            nodeData.method,
+            nodeData.queryParams,
+            nodeData.body,
+            nodeData.authType,
+            nodeData.bearerToken,
+            nodeData.basicUsername,
+            nodeData.basicPassword,
+            nodeData.apiKeyHeaderName,
+            nodeData.apiKeyValue,
+        ],
+    );
+
+    const handleSubmit = (values: HttpRequestDialogSubmitValues) => {
+        setNodes((nodes) => {
+            const fallbackVariableName = getUniqueVariableName(
+                HTTP_REQUEST_VARIABLE_BASE,
+                props.id,
+                nodes,
+            );
+            const nextVariableName = getUniqueVariableName(
+                values.varibleName.trim() || fallbackVariableName,
+                props.id,
+                nodes,
+            );
+            return nodes.map((node) => {
+                if (node.id === props.id) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            ...values,
+                            varibleName: nextVariableName,
+                        }
+                    };
+                }
+                return node;
+            });
+        });
+    }
+
     const description = nodeData?.endpoint
         ? `${nodeData.method ?? "GET"}: ${nodeData.endpoint}` :
         "NOT CONFIGURED";
@@ -155,7 +198,7 @@ export const HttpRequestNode = memo((props: NodeProps<HttpRequestNodeType>) => {
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
-                defaultValues={nodeData as Partial<HttpRequestFormValues>}
+                defaultValues={httpDialogDefaults}
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
@@ -170,7 +213,7 @@ export const HttpRequestNode = memo((props: NodeProps<HttpRequestNodeType>) => {
                 {...props}
                 id={props.id}
                 icon={GlobeIcon}
-                name="HTTP Request"
+                name={nodeData.varibleName?.trim() ?? "HTTP Request"}
                 description={description}
                 onSettings={handleOpenSettings}
                 onDelete={() => { setDialogOpen(true); }}
