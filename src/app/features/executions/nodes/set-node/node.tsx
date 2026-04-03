@@ -1,7 +1,7 @@
 "use client";
 
 // import { Node, NodeProps, useReactFlow } from "@xyflow/react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { useReactFlow, type Node, type NodeProps } from "@xyflow/react";
@@ -85,11 +85,24 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
             error?: string;
         })
         : null;
-    const defaultValues: Partial<SetNodeDialogValues> = {
-        variableName: props.data?.variableName ?? (props.data as { varibleName?: string } | undefined)?.varibleName,
-        value: props.data?.value,
-        valueType: props.data?.valueType,
-    };
+    const nodeData = props.data;
+
+    // Match Delay node behavior: auto-suggest a unique variable name
+    // when the Set node hasn't been configured yet.
+    const suggestedName = useMemo(() => {
+        const trimmed = nodeData?.variableName?.trim() ?? nodeData?.varibleName?.trim();
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(SET_NODE_VARIABLE_BASE, props.id, getNodes());
+    }, [nodeData?.variableName, nodeData?.varibleName, props.id, getNodes, dialogOpen]);
+
+    const defaultValues: Partial<SetNodeDialogValues> = useMemo(
+        () => ({
+            variableName: suggestedName,
+            value: nodeData?.value,
+            valueType: nodeData?.valueType,
+        }),
+        [suggestedName, nodeData?.value, nodeData?.valueType],
+    );
 
     useEffect(() => {
         if (!dialogOpen) return;
@@ -152,7 +165,6 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
             });
         });
     }
-    const nodeData = props.data;
     const existingVariableName = nodeData?.variableName ?? (nodeData as { varibleName?: string } | undefined)?.varibleName;
     const description = existingVariableName
         ? `Set variable: ${existingVariableName}`

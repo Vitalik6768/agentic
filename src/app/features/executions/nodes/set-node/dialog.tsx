@@ -144,6 +144,7 @@ export const SetNodeDialog = ({
                             ref={nameFieldRef}
                             open={open}
                             initialName={initialName}
+                            placeholder="setNode1"
                             variant="header"
                             helpText="Canvas label and variable updated by this step."
                         />
