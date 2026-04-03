@@ -22,6 +22,7 @@ import {
     getUpstreamVariableNodeOptions,
     type AvailableVariable,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
 
 
 type SetNodeNodeData = {
@@ -32,6 +33,8 @@ type SetNodeNodeData = {
 }
 
 type SetNodeType = Node<SetNodeNodeData>;
+
+const SET_NODE_VARIABLE_BASE = "setNode";
 
 export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
     const trpc = useTRPC();
@@ -119,19 +122,35 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
         setAvailableVariables(vars);
         setDialogOpen(true);
     }
+
     const handleSubmit = (values: SetNodeDialogValues) => {
-        setNodes((nodes) => nodes.map((node) => {
-            if (node.id === props.id) {
-                return {
-                    ...node,
-                    data: {
-                        ...node.data,
-                        ...values,
-                    }
-                };
-            }
-            return node;
-        }));
+        setNodes((nodes) => {
+            const fallbackName = getUniqueVariableName(
+                SET_NODE_VARIABLE_BASE,
+                props.id,
+                nodes,
+            );
+            const nextVariableName = getUniqueVariableName(
+                values.variableName.trim() || fallbackName,
+                props.id,
+                nodes,
+            );
+
+            return nodes.map((node) => {
+                if (node.id === props.id) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            ...values,
+                            variableName: nextVariableName,
+                            varibleName: nextVariableName,
+                        }
+                    };
+                }
+                return node;
+            });
+        });
     }
     const nodeData = props.data;
     const existingVariableName = nodeData?.variableName ?? (nodeData as { varibleName?: string } | undefined)?.varibleName;
@@ -160,7 +179,7 @@ export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {
                 {...props}
                 id={props.id}
                 icon={PencilIcon}
-                name="Set Node"
+                name={existingVariableName?.trim() ?? "Set"}
                 description={description}
                 onSettings={handleOpenSettings}
                 onDelete={() => undefined}

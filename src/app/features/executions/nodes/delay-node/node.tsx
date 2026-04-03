@@ -1,9 +1,9 @@
 "use client";
 
 import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
-import { DelayNodeDialog, type DelayNodeFormValues } from "./dialog";
+import { DelayNodeDialog } from "./dialog";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { fetchDelayNodeRealtimeToken } from "./actions";
 import { useInngestSubscription } from "@inngest/realtime/hooks";
@@ -17,6 +17,10 @@ import {
     type AvailableVariable,
     type UpstreamVariableNodeOption,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
+
+const DELAY_NODE_VARIABLE_BASE = "delayNode";
+
 type DelayNodeData = {
     varibleName?: string;
     delay: string | number;
@@ -92,10 +96,22 @@ export const DelayNode = memo((props: NodeProps<DelayNodeType>) => {
         setAvailableVariables(vars);
         setDialogOpen(true);
     }
-    const createDefaultVariableName = (nodeName: string) => {
-        const randomDigit = Math.floor(Math.random() * 9) + 1;
-        return `${nodeName}${randomDigit}`;
-    }
+
+    const nodeData = props.data;
+
+    const suggestedName = useMemo(() => {
+        const trimmed = nodeData.varibleName?.trim();
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(DELAY_NODE_VARIABLE_BASE, props.id, getNodes());
+    }, [nodeData.varibleName, props.id, getNodes, dialogOpen]);
+
+    const delayDialogDefaults = useMemo(
+        () => ({
+            varibleName: suggestedName,
+            delay: nodeData.delay != null ? String(nodeData.delay) : "1000",
+        }),
+        [suggestedName, nodeData.delay],
+    );
 
     useEffect(() => {
         if (!dialogOpen) return;
@@ -113,32 +129,39 @@ export const DelayNode = memo((props: NodeProps<DelayNodeType>) => {
         varibleName: string;
         delay: string;
     }) => {
-        const fallbackVariableName = createDefaultVariableName(props.type ?? "delayNode");
-        const nextVariableName = values.varibleName.trim() || fallbackVariableName;
-
-        setNodes((nodes) => nodes.map((node) => {
-            if (node.id === props.id) {
-                return {
-                    ...node,
-                    data: {
-                        ...node.data,
-                        ...values,
-                        varibleName: nextVariableName,
-                    }
-                };
-            }
-            return node;
-        }));
+        setNodes((nodes) => {
+            const fallbackVariableName = getUniqueVariableName(
+                DELAY_NODE_VARIABLE_BASE,
+                props.id,
+                nodes,
+            );
+            const nextVariableName = getUniqueVariableName(
+                values.varibleName.trim() || fallbackVariableName,
+                props.id,
+                nodes,
+            );
+            return nodes.map((node) => {
+                if (node.id === props.id) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            ...values,
+                            varibleName: nextVariableName,
+                        }
+                    };
+                }
+                return node;
+            });
+        });
     }
-    const nodeData = props.data;
     return (
         <>
             <DelayNodeDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
-                nodeName={props.type}
-                defaultValues={nodeData as Partial<DelayNodeFormValues>}
+                defaultValues={delayDialogDefaults}
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
@@ -153,7 +176,7 @@ export const DelayNode = memo((props: NodeProps<DelayNodeType>) => {
                 {...props}
                 id={props.id}
                 icon="/logos/delay-node.svg"
-                name="Delay Node"
+                name={nodeData.varibleName?.trim() ?? "Delay"}
                 description="Delay the execution of the next node"
                 onSettings={handleOpenSettings}
                 onDelete={() => { setDialogOpen(true); }}

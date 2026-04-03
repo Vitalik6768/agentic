@@ -3,8 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { DataTransferPanel, ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
+import {
+    NodeDialogNameField,
+    type NodeDialogNameFieldHandle,
+} from "@/components/node-dialog-name-field";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
@@ -13,17 +16,11 @@ import z from "zod";
 import { TemplateHighlightInput } from "@/lib/template-highlight";
 import type { AvailableVariable, UpstreamVariableNodeOption } from "@/lib/variable-picker";
 
-
-const formSchema = z.object({
-    varibleName: z.string()
-        .trim()
-        .min(1, { message: "Variable name is required" })
-        .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
+const delayFormSchema = z.object({
     delay: z.string().trim().min(1, { message: "Delay is required" }),
 }).superRefine((values, ctx) => {
     const raw = values.delay.trim();
 
-    // Allow templates like {{some.value}} — validate at runtime in executor.
     if (raw.includes("{{") && raw.includes("}}")) return;
 
     const asNumber = Number(raw);
@@ -52,14 +49,18 @@ const formSchema = z.object({
     }
 });
 
-export type DelayNodeFormValues = z.infer<typeof formSchema>;
+type DelayFormValues = z.infer<typeof delayFormSchema>;
+
+export type DelayNodeDialogSubmitValues = {
+    varibleName: string;
+    delay: string;
+};
 
 interface Props {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSubmit: (values: z.infer<typeof formSchema>) => void;
-    defaultValues?: Partial<DelayNodeFormValues>;
-    nodeName: string;
+    onSubmit: (values: DelayNodeDialogSubmitValues) => void;
+    defaultValues?: Partial<{ varibleName: string; delay: string | number }>;
     executionStatus?: NodeStatus;
     executionOutput?: string;
     executionError?: string;
@@ -70,12 +71,11 @@ interface Props {
     nodeOptions?: UpstreamVariableNodeOption[];
 }
 
-export const DelayNodeDialog = ({ 
-    open, 
-    onOpenChange, 
-    onSubmit, 
+export const DelayNodeDialog = ({
+    open,
+    onOpenChange,
+    onSubmit,
     defaultValues = {},
-    nodeName,
     executionStatus = "initial",
     executionOutput = "",
     executionError,
@@ -84,46 +84,49 @@ export const DelayNodeDialog = ({
     selectedNodeId,
     onSelectedNodeIdChange,
     nodeOptions = [],
- }: Props) => {
-    const createDefaultVariableName = () => `${nodeName}${Math.floor(Math.random() * 9) + 1}`;
-    const queryInputRef = useRef<HTMLInputElement | null>(null);
+}: Props) => {
+    const delayInputRef = useRef<HTMLInputElement | null>(null);
+    const nameFieldRef = useRef<NodeDialogNameFieldHandle>(null);
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<DelayFormValues>({
+        resolver: zodResolver(delayFormSchema),
         defaultValues: {
-            varibleName: defaultValues.varibleName ?? createDefaultVariableName(),
             delay: defaultValues.delay != null ? String(defaultValues.delay) : "1000",
         },
-    })
+    });
 
     useEffect(() => {
         if (open) {
-            const fallbackVariableName = createDefaultVariableName();
             form.reset({
-                varibleName: defaultValues.varibleName ?? fallbackVariableName,
                 delay: defaultValues.delay != null ? String(defaultValues.delay) : "1000",
-            })
+            });
         }
+    }, [defaultValues, open, form]);
 
-    }, [defaultValues, open, form])
+    const handleSubmit = (values: DelayFormValues) => {
+        const err = nameFieldRef.current?.validate();
+        if (err) {
+            nameFieldRef.current?.enterEditMode();
+            nameFieldRef.current?.focusNameInput();
+            return;
+        }
+        const name = nameFieldRef.current?.getTrimmedName() ?? "";
+        onSubmit({ varibleName: name, delay: values.delay });
+        onOpenChange(false);
+    };
 
-
-    const handleSubmit = (values: z.infer<typeof formSchema>) => {
-        onSubmit(values);
-        onOpenChange(false)
-    }
     const handleInsertVariable = (token: string) => {
-        const input = queryInputRef.current;
-        const currentValue = form.getValues("varibleName") ?? "";
+        const input = delayInputRef.current;
+        const currentValue = form.getValues("delay") ?? "";
         if (!input) {
-            form.setValue("varibleName", `${currentValue}${token}`, { shouldDirty: true });
+            form.setValue("delay", `${currentValue}${token}`, { shouldDirty: true });
             return;
         }
 
         const start = input.selectionStart ?? currentValue.length;
         const end = input.selectionEnd ?? currentValue.length;
         const nextValue = `${currentValue.slice(0, start)}${token}${currentValue.slice(end)}`;
-        form.setValue("varibleName", nextValue, { shouldDirty: true });
+        form.setValue("delay", nextValue, { shouldDirty: true });
 
         requestAnimationFrame(() => {
             input.focus();
@@ -131,13 +134,22 @@ export const DelayNodeDialog = ({
             input.setSelectionRange(nextCursor, nextCursor);
         });
     };
+
+    const initialName = defaultValues.varibleName ?? "";
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[90vh] w-[98vw] overflow-hidden p-0 sm:max-w-7xl">
                 <DialogHeader>
                     <div className="border-b bg-background px-6 py-5">
-                        <DialogTitle>Delay Node</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="sr-only">Delay node</DialogTitle>
+                        <NodeDialogNameField
+                            ref={nameFieldRef}
+                            open={open}
+                            initialName={initialName}
+                            variant="header"
+                        />
+                        <DialogDescription className="pt-3">
                             Configure how long this workflow should wait before continuing.
                         </DialogDescription>
                     </div>
@@ -152,7 +164,7 @@ export const DelayNodeDialog = ({
                             selectedNodeId={selectedNodeId}
                             onSelectedNodeIdChange={onSelectedNodeIdChange}
                             onInsertVariable={handleInsertVariable}
-                            className="max-h-[72vh] overflow-hidden"
+                            className="max-h-[60vh] overflow-hidden"
                         />
                     </div>
 
@@ -164,40 +176,13 @@ export const DelayNodeDialog = ({
                                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                                         <FormField
                                             control={form.control}
-                                            name="varibleName"
-                                            render={({ field }) => {
-                                                const { ref, ...fieldProps } = field;
-                                                return (
-                                                    <FormItem>
-                                                        <FormLabel>Variable Name</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                ref={(el) => {
-                                                                    ref(el);
-                                                                    queryInputRef.current = el;
-                                                                }}
-                                                                type="text"
-                                                                placeholder="my_variable"
-                                                                {...fieldProps}
-                                                            />
-                                                        </FormControl>
-                                                        <FormDescription>
-                                                            Optional name for referencing this node’s output later.
-                                                        </FormDescription>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                );
-                                            }}
-                                        />
-
-                                        <FormField
-                                            control={form.control}
                                             name="delay"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Delay (ms)</FormLabel>
                                                     <FormControl>
                                                         <TemplateHighlightInput
+                                                            ref={delayInputRef}
                                                             inputMode="text"
                                                             type="text"
                                                             placeholder="1000 or {{myDelayMs}}"
