@@ -10,12 +10,12 @@ import {
     NodeDialogNameField,
     type NodeDialogNameFieldHandle,
 } from "@/components/node-dialog-name-field";
-import { TemplateHighlightInput } from "@/lib/template-highlight";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
+import { Clock, Play, Zap } from "lucide-react";
 
 
 
@@ -136,7 +136,7 @@ export const SetNodeDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-[98vw] overflow-hidden p-0 sm:max-w-7xl">
+            <DialogContent className="max-h-[90vh] w-[98vw] overflow-hidden rounded-2xl border border-border bg-background p-0 shadow-lg sm:max-w-7xl">
                 <DialogHeader>
                     <div className="border-b bg-background px-6 py-5">
                         <DialogTitle className="sr-only">Set variable</DialogTitle>
@@ -153,9 +153,8 @@ export const SetNodeDialog = ({
                         </DialogDescription>
                     </div>
                 </DialogHeader>
-                <div className="grid h-[calc(90vh-88px)] items-start gap-6 overflow-hidden bg-muted/10 px-6 py-6 md:grid-cols-3">
-                    <div className="space-y-2">
-                        <div className="px-1 text-xs font-semibold tracking-wider text-muted-foreground">INPUT</div>
+                <div className="grid h-[calc(90vh-88px)] items-start gap-6 overflow-hidden bg-background px-6 py-6 md:grid-cols-3 md:gap-8">
+                    <div className="flex h-full flex-col overflow-y-auto">
                         <VariablePickerPanel
                             items={availableVariables}
                             isLoading={isLoadingVariables}
@@ -165,14 +164,18 @@ export const SetNodeDialog = ({
                             onInsertVariable={handleInsertVariable}
                             allowPathMode
                             resetModeKey={open}
-                            className="max-h-[72vh] overflow-hidden"
+                            className="flex-1 rounded-2xl border border-emerald-200 bg-white p-4"
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="px-1 text-xs font-semibold tracking-wider text-muted-foreground">PARAMETERS</div>
-                        <DataTransferPanel title="Set Settings" subtitle="Configure value to write" className="max-h-[72vh] overflow-hidden">
-                            <div className="max-h-[52vh] overflow-y-auto pr-1">
+                    <div className="flex h-full flex-col">
+                        <DataTransferPanel
+                            title="Set Settings"
+                            subtitle="Configure value to write"
+                            icon={<Clock className="h-3.5 w-3.5" />}
+                            className="flex-1 rounded-2xl border border-sky-200 bg-white p-4"
+                        >
+                            <div className="h-full overflow-y-auto pr-1">
                                 <Form {...form}>
                                     <form
                                         onSubmit={form.handleSubmit(handleSubmit)}
@@ -243,14 +246,13 @@ export const SetNodeDialog = ({
                         </DataTransferPanel>
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="px-1 text-xs font-semibold tracking-wider text-muted-foreground">OUTPUT</div>
+                    <div className="flex h-full flex-col">
                         <ExecutionOutputPanel
                             executionStatus={executionStatus}
                             executionOutput={executionOutput}
                             executionError={executionError}
                             idleMessage="Execute this workflow to view the latest Set node output here."
-                            className="max-h-[72vh] overflow-hidden"
+                            className="flex-1 rounded-2xl border border-amber-200 bg-white p-4"
                         />
                     </div>
                 </div>

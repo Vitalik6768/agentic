@@ -3,16 +3,17 @@
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
 import { cn } from "@/lib/utils";
 import { NodeTypeIcon } from "@/lib/node-type-icon";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Play, Search, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 
 type DataTransferPanelProps = {
-  title: string;
+  title: React.ReactNode;
   subtitle?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  icon?: React.ReactNode;
 };
 
 export const DataTransferPanel = ({
@@ -20,11 +21,19 @@ export const DataTransferPanel = ({
   subtitle,
   children,
   className,
+  icon,
 }: DataTransferPanelProps) => {
   return (
     <div className={cn("rounded-md border bg-muted/30 p-4", className)}>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <div className="flex items-center gap-2">
+          {icon ? (
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted/60">
+              {icon}
+            </span>
+          ) : null}
+          <h3 className="text-sm font-semibold">{title}</h3>
+        </div>
         {subtitle ? (
           <span className="text-xs text-muted-foreground">{subtitle}</span>
         ) : null}
@@ -61,7 +70,12 @@ export const ExecutionOutputPanel = ({
           : "Idle";
 
   return (
-    <DataTransferPanel title="Execution Output" subtitle={subtitle} className={className}>
+    <DataTransferPanel
+      title="Execution Output"
+      subtitle={subtitle}
+      icon={<Play className="h-4 w-4 text-indigo-600" />}
+      className={className}
+    >
       {executionStatus === "success" && executionOutput ? (
         <pre className={cn("max-h-[52vh] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap", outputClassName)}>
           {executionOutput}
@@ -156,7 +170,12 @@ export const VariablePickerPanel = ({
     : null;
 
   return (
-    <DataTransferPanel title={title} subtitle={`${items.length} variables`} className={className}>
+    <DataTransferPanel
+      title={title}
+      subtitle={`${items.length} variables`}
+      icon={<Zap className="h-4 w-4 text-emerald-600" />}
+      className={className}
+    >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Search className="size-4 text-muted-foreground" />
@@ -259,21 +278,26 @@ export const VariablePickerPanel = ({
                 <button
                   key={`${item.nodeId}-${item.key}`}
                   type="button"
-                  className="w-full rounded-md border bg-background p-2 text-left hover:bg-accent"
+                  className="w-full rounded-md border bg-background p-2 text-left hover:bg-accent hover:cursor-pointer"
                   onClick={() => {
                     const insertValue =
                       allowPathMode && insertMode === "path" ? item.key : item.token;
                     onInsertVariable(insertValue);
                   }}
                 >
-                  <p className="font-mono text-xs">{item.token}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">{item.key}</p>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="min-w-0 flex-1 truncate font-mono text-xs">{item.token}</p>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {/* {item.nodeType} · {item.valueType} */}
+                      {item.valueType}
+                    </span>
+                  </div>
+                  {/* <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>{item.nodeType}</span>
                     <span>{item.valueType}</span>
-                  </div>
+                  </div> */}
                   {item.preview ? (
-                    <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                    <p className="mt-1 truncate text-[11px] text-black">
                       {item.preview}
                     </p>
                   ) : null}
