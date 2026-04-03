@@ -20,6 +20,9 @@ import {
     getUpstreamVariableNodeOptions,
     type AvailableVariable,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
+
+const INTERFACE_TABLE_VARIABLE_BASE = "interfaceTable";
 type InterfaceTableNodeData = {
     variableName?: string;
     varibleName?: string;
@@ -91,30 +94,37 @@ export const InterfaceTableNode = memo((props: NodeProps<InterfaceTableNodeType>
         );
         setAvailableVariables(vars);
         setDialogOpen(true);
-    }
-    const handleSubmit = (values: {
-        variableName: string;
-        interfaceId: string;
-        operation: "GET_DATA" | "APPEND_DATA" | "UPDATE_DATA";
-        appendColumnValues?: string[];
-        matchField?: string;
-        matchValue?: string;
-        updateField?: string;
-        updateValue?: string;
-    }) => {
-        setNodes((nodes) => nodes.map((node) => {
-            if (node.id === props.id) {
+    };
+
+    const handleSubmit = (values: InterfaceTableFormValues) => {
+        setNodes((nodes) => {
+            const fallbackVariableName = getUniqueVariableName(
+                INTERFACE_TABLE_VARIABLE_BASE,
+                props.id,
+                nodes,
+            );
+            const nextVariableName = getUniqueVariableName(
+                values.variableName.trim() || fallbackVariableName,
+                props.id,
+                nodes,
+            );
+
+            return nodes.map((node) => {
+                if (node.id !== props.id) return node;
+
                 return {
                     ...node,
                     data: {
                         ...node.data,
                         ...values,
-                    }
+                        variableName: nextVariableName,
+                        varibleName: nextVariableName,
+                    },
                 };
-            }
-            return node;
-        }));
-    }
+            });
+        });
+    };
+
     const nodeData = props.data;
     const latestResultMessage = realtimeMessages
         .filter(
@@ -148,6 +158,9 @@ export const InterfaceTableNode = memo((props: NodeProps<InterfaceTableNodeType>
               ? "Append table row"
               : "Update table data";
     const description = nodeData?.interfaceId ? operationLabel : "NOT CONFIGURED";
+    const existingVariableName =
+        nodeData?.variableName ?? (nodeData as { varibleName?: string } | undefined)?.varibleName;
+    const trimmedVariableName = existingVariableName?.trim() ?? "";
     return (
         <>
             <InterfaceTableDialog
@@ -169,7 +182,7 @@ export const InterfaceTableNode = memo((props: NodeProps<InterfaceTableNodeType>
                 {...props}
                 id={props.id}
                 icon="/logos/table-interface.svg"
-                name="Interface Table"
+                name={trimmedVariableName.length > 0 ? trimmedVariableName : "Interface Table"}
                 description={description}
                 onSettings={handleOpenSettings}
                 onDelete={() => undefined}

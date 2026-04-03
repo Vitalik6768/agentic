@@ -3,7 +3,7 @@
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
 import { cn } from "@/lib/utils";
 import { NodeTypeIcon } from "@/lib/node-type-icon";
-import { Loader2, Play, Search, Zap } from "lucide-react";
+import { Loader2, Play, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
@@ -140,26 +140,11 @@ export const VariablePickerPanel = ({
 }: VariablePickerPanelProps) => {
   const [insertMode, setInsertMode] = useState<"token" | "path">("token");
   const [activeTab, setActiveTab] = useState<"schema" | "json">("schema");
-  const [query, setQuery] = useState("");
 
   useEffect(() => {
     setInsertMode("token");
     setActiveTab("schema");
-    setQuery("");
   }, [resetModeKey]);
-
-  const filteredItems =
-    query.trim().length === 0
-      ? items
-      : items.filter((item) => {
-          const q = query.trim().toLowerCase();
-          return (
-            item.key.toLowerCase().includes(q) ||
-            item.token.toLowerCase().includes(q) ||
-            item.nodeType.toLowerCase().includes(q) ||
-            item.valueType.toLowerCase().includes(q)
-          );
-        });
 
   const selectedRootKey =
     selectedNodeId && nodeOptions.length > 0
@@ -176,17 +161,7 @@ export const VariablePickerPanel = ({
       icon={<Zap className="h-4 w-4 text-emerald-600" />}
       className={className}
     >
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Search className="size-4 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search"
-            className="h-8 w-[140px] rounded-md border bg-background px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-[180px]"
-          />
-        </div>
-
+      <div className="mb-3 flex items-center justify-end gap-3">
         <div className="flex items-center gap-1 rounded-md bg-muted p-1">
           <button
             type="button"
@@ -269,12 +244,12 @@ export const VariablePickerPanel = ({
             insertMode={insertMode}
           />
         ) : (
-          <div className="max-h-[52vh] overflow-auto rounded-md border bg-background p-2">
+          <div className="h-[52vh] overflow-auto rounded-md border bg-background p-2">
             <div className="mb-2 text-[11px] text-muted-foreground">
-              {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"}
+              {items.length} item{items.length === 1 ? "" : "s"}
             </div>
             <div className="space-y-2">
-              {filteredItems.map((item) => (
+              {items.map((item) => (
                 <button
                   key={`${item.nodeId}-${item.key}`}
                   type="button"
@@ -338,7 +313,7 @@ const RootJsonPanel = ({
   const rootValue = selectedRootItem.value;
 
   return (
-    <div className="max-h-[52vh] overflow-auto rounded-md border bg-background p-3">
+    <div className="h-[52vh] overflow-auto rounded-md border bg-background p-3">
       <JsonTreeNode
         name={rootKey}
         value={rootValue}

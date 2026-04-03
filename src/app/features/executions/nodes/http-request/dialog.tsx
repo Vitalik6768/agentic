@@ -237,8 +237,8 @@ export const HttpRequestDialog = ({
                         </div>
                     </div>
                 </DialogHeader>
-                <div className="grid h-[calc(90vh-88px)] items-start gap-6 overflow-hidden bg-background px-6 py-6 md:grid-cols-3 md:gap-8">
-                    <div className="flex h-full flex-col overflow-y-auto">
+                <div className="grid h-[calc(90vh-88px)] min-h-[min(52vh,560px)] items-stretch gap-6 overflow-hidden bg-background px-6 py-6 md:grid-cols-3 md:gap-8">
+                    <div className="flex h-full min-h-[min(48vh,480px)] flex-col overflow-y-auto">
                         <VariablePickerPanel
                             items={availableVariables}
                             isLoading={isLoadingVariables}
@@ -247,16 +247,16 @@ export const HttpRequestDialog = ({
                             onSelectedNodeIdChange={onSelectedNodeIdChange}
                             onInsertVariable={handleInsertVariable}
                             resetModeKey={open}
-                            className="flex-1 rounded-2xl border border-emerald-200 bg-white p-4"
+                            className="min-h-[min(48vh,480px)] flex-1 rounded-2xl border border-emerald-200 bg-white p-4"
                         />
                     </div>
 
-                    <div className="flex h-full min-h-0 flex-col">
+                    <div className="flex h-full min-h-[min(48vh,480px)] flex-col">
                         <DataTransferPanel
                             title="HTTP Request Settings"
                             subtitle="Configure endpoint, auth, and payload"
                             icon={<Zap className="h-4 w-4 text-violet-600" />}
-                            className="flex-1 min-h-0 rounded-2xl border border-indigo-200 bg-white p-4"
+                            className="flex min-h-0 flex-1 flex-col rounded-2xl border border-indigo-200 bg-white p-4"
                         >
                             <div className="flex h-full min-h-0 flex-col">
                                 <Form {...form}>
@@ -555,7 +555,7 @@ export const HttpRequestDialog = ({
                                             />
                                         )}
                                             <DialogFooter className="pt-2">
-                                                <Button className="w-full gap-2 bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30" type="submit">
+                                                <Button className="w-full gap-2 bg-linear-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30" type="submit">
                                                     Save Changes
                                                 </Button>
                                             </DialogFooter>
@@ -566,13 +566,13 @@ export const HttpRequestDialog = ({
                         </DataTransferPanel>
                     </div>
 
-                    <div className="flex h-full min-h-0 flex-col">
+                    <div className="flex h-full min-h-[min(48vh,480px)] flex-col">
                         <ExecutionOutputPanel
                             executionStatus={executionStatus}
                             executionOutput={executionOutput}
                             executionError={executionError}
                             idleMessage="Execute this workflow to view the latest HTTP response output here."
-                            className="flex-1 min-h-0 rounded-2xl border border-amber-200 bg-white p-4"
+                            className="flex min-h-0 flex-1 flex-col rounded-2xl border border-amber-200 bg-white p-4"
                         />
                     </div>
                 </div>

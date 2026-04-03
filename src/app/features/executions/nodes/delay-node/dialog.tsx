@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { DataTransferPanel, ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
+import { ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
 import {
     NodeDialogNameField,
     type NodeDialogNameFieldHandle,
@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 import { TemplateHighlightInput } from "@/lib/template-highlight";
 import type { AvailableVariable, UpstreamVariableNodeOption } from "@/lib/variable-picker";
-import { Clock, Play, Zap } from "lucide-react";
+import { Clock } from "lucide-react";
 
 const delayFormSchema = z.object({
     delay: z.string().trim().min(1, { message: "Delay is required" }),
@@ -140,9 +140,9 @@ export const DelayNodeDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-[98vw] overflow-hidden rounded-2xl border border-border bg-background p-0 shadow-lg sm:max-w-7xl">
+            <DialogContent className="max-h-[90vh] w-[95vw] gap-0 overflow-y-auto p-0 sm:max-w-6xl">
                 <DialogHeader>
-                    <div className="w-full rounded-t-2xl border-b bg-linear-to-r from-blue-100/80 via-blue-50/40 to-blue-50/20 px-6 py-5 dark:from-blue-950/55 dark:via-blue-950/25 dark:to-background">
+                    <div className="w-full rounded-t-lg border-b bg-linear-to-r from-blue-100/80 via-blue-50/40 to-blue-50/20 px-6 py-5 dark:from-blue-950/55 dark:via-blue-950/25 dark:to-background">
                         <DialogTitle className="sr-only">Delay node</DialogTitle>
                         <div className="flex items-start gap-4">
                             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-sky-500 text-white shadow-lg shadow-blue-600/20">
@@ -155,78 +155,58 @@ export const DelayNodeDialog = ({
                                     initialName={initialName}
                                     variant="header"
                                 />
-                                <DialogDescription className="pt-2">
-                                    Configure how long this workflow should wait before continuing.
-                                </DialogDescription>
                             </div>
                         </div>
                     </div>
                 </DialogHeader>
-                <div className="grid h-[calc(90vh-88px)] items-start gap-6 overflow-hidden bg-background px-6 py-6 md:grid-cols-3 md:gap-8">
-                    <div className="flex h-full flex-col overflow-y-auto">
-                        <VariablePickerPanel
-                            items={availableVariables}
-                            isLoading={isLoadingVariables}
-                            nodeOptions={nodeOptions}
-                            selectedNodeId={selectedNodeId}
-                            onSelectedNodeIdChange={onSelectedNodeIdChange}
-                            onInsertVariable={handleInsertVariable}
-                            className="flex-1 rounded-2xl border border-emerald-200 bg-white p-4"
-                        />
-                    </div>
+                <div className="grid items-start gap-6 px-6 pb-6 pt-4 md:grid-cols-3">
+                    <VariablePickerPanel
+                        items={availableVariables}
+                        isLoading={isLoadingVariables}
+                        nodeOptions={nodeOptions}
+                        selectedNodeId={selectedNodeId}
+                        onSelectedNodeIdChange={onSelectedNodeIdChange}
+                        onInsertVariable={handleInsertVariable}
+                        className="max-h-[72vh] overflow-hidden"
+                    />
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="delay"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Delay (ms)</FormLabel>
+                                        <FormControl>
+                                            <TemplateHighlightInput
+                                                ref={delayInputRef}
+                                                inputMode="text"
+                                                type="text"
+                                                placeholder="1000 or {{myDelayMs}}"
+                                                value={field.value ?? ""}
+                                                onChange={(event) => field.onChange(event.target.value)}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            Wait this many milliseconds before executing the next step.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                    <div className="flex h-full flex-col">
-                        <DataTransferPanel
-                            title="Delay Settings"
-                            subtitle="Configure step behavior"
-                            icon={<Clock className="h-4 w-4 text-sky-600" />}
-                            className="flex-1 rounded-2xl border border-sky-200 bg-white p-4"
-                        >
-                            <div className="h-full overflow-y-auto pr-1">
-                                <Form {...form}>
-                                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                                        <FormField
-                                            control={form.control}
-                                            name="delay"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Delay (ms)</FormLabel>
-                                                    <FormControl>
-                                                        <TemplateHighlightInput
-                                                            ref={delayInputRef}
-                                                            inputMode="text"
-                                                            type="text"
-                                                            placeholder="1000 or {{myDelayMs}}"
-                                                            value={field.value ?? ""}
-                                                            onChange={(event) => field.onChange(event.target.value)}
-                                                        />
-                                                    </FormControl>
-                                                    <FormDescription>
-                                                        Wait this many milliseconds before executing the next step.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        <DialogFooter className="pt-2">
-                                            <Button className="w-full gap-2 bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30" type="submit">Save Changes</Button>
-                                        </DialogFooter>
-                                    </form>
-                                </Form>
-                            </div>
-                        </DataTransferPanel>
-                    </div>
-
-                    <div className="flex h-full flex-col">
-                        <ExecutionOutputPanel
-                            executionStatus={executionStatus}
-                            executionOutput={executionOutput}
-                            executionError={executionError}
-                            idleMessage="Execute this workflow to view the latest Delay node output here."
-                            className="flex-1 rounded-2xl border border-amber-200 bg-white p-4"
-                        />
-                    </div>
+                            <DialogFooter className="mt-4">
+                                <Button className="w-full gap-2 bg-linear-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30" type="submit">Save Changes</Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                    <ExecutionOutputPanel
+                        executionStatus={executionStatus}
+                        executionOutput={executionOutput}
+                        executionError={executionError}
+                        idleMessage="Execute this workflow to view the latest Delay node output here."
+                        className="max-h-[72vh] overflow-hidden"
+                    />
                 </div>
             </DialogContent>
         </Dialog>

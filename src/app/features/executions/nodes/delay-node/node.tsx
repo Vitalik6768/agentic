@@ -184,7 +184,6 @@ export const DelayNode = memo((props: NodeProps<DelayNodeType>) => {
                 children={<></>}
             />
         </>
-
     )
 })
 

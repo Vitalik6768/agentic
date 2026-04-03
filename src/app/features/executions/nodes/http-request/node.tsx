@@ -168,8 +168,10 @@ export const HttpRequestNode = memo((props: NodeProps<HttpRequestNodeType>) => {
                 props.id,
                 nodes,
             );
+            const trimmedName = values.varibleName.trim();
+            const baseVariableName = trimmedName.length > 0 ? trimmedName : fallbackVariableName;
             const nextVariableName = getUniqueVariableName(
-                values.varibleName.trim() || fallbackVariableName,
+                baseVariableName,
                 props.id,
                 nodes,
             );
