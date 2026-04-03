@@ -2,6 +2,7 @@
 
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
 import { cn } from "@/lib/utils";
+import { NodeTypeIcon } from "@/lib/node-type-icon";
 import { Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -92,6 +93,7 @@ export type VariablePickerItem = {
 export type VariablePickerNodeOption = {
   nodeId: string;
   nodeType: string;
+  flowNodeType?: string;
   variableRoot: string;
 };
 
@@ -124,19 +126,13 @@ export const VariablePickerPanel = ({
 }: VariablePickerPanelProps) => {
   const [insertMode, setInsertMode] = useState<"token" | "path">("token");
   const [activeTab, setActiveTab] = useState<"schema" | "json">("schema");
-  const [selectedItemKey, setSelectedItemKey] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     setInsertMode("token");
     setActiveTab("schema");
-    setSelectedItemKey(null);
     setQuery("");
   }, [resetModeKey]);
-
-  const selectedItem = selectedItemKey
-    ? items.find((i) => i.key === selectedItemKey) ?? null
-    : null;
 
   const filteredItems =
     query.trim().length === 0
@@ -207,7 +203,12 @@ export const VariablePickerPanel = ({
             <SelectContent>
               {nodeOptions.map((option) => (
                 <SelectItem key={option.nodeId} value={option.nodeId}>
-                  {option.variableRoot} ({option.nodeType})
+                  <span className="flex items-center gap-2">
+                    <NodeTypeIcon flowNodeType={option.flowNodeType} className="size-4" />
+                    <span className="truncate">
+                      {option.variableRoot} ({option.nodeType})
+                    </span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -249,46 +250,36 @@ export const VariablePickerPanel = ({
             insertMode={insertMode}
           />
         ) : (
-          <div className="grid max-h-[52vh] grid-cols-1 grid-rows-[1fr_1fr] gap-3 overflow-hidden">
-            <div className="min-h-0 overflow-auto rounded-md border bg-background p-2">
-              <div className="mb-2 text-[11px] text-muted-foreground">
-                {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"}
-              </div>
-              <div className="space-y-2">
-                {filteredItems.map((item) => (
-                  <button
-                    key={`${item.nodeId}-${item.key}`}
-                    type="button"
-                    className={cn(
-                      "w-full rounded-md border bg-background p-2 text-left hover:bg-accent",
-                      selectedItemKey === item.key ? "border-primary/50 ring-1 ring-primary/20" : null
-                    )}
-                    onClick={() => {
-                      setSelectedItemKey(item.key);
-                      const insertValue =
-                        allowPathMode && insertMode === "path"
-                          ? item.key
-                          : item.token;
-                      onInsertVariable(insertValue);
-                    }}
-                  >
-                    <p className="font-mono text-xs">{item.token}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{item.key}</p>
-                    <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span>{item.nodeType}</span>
-                      <span>{item.valueType}</span>
-                    </div>
-                    {item.preview ? (
-                      <p className="mt-1 truncate text-[11px] text-muted-foreground">
-                        {item.preview}
-                      </p>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
+          <div className="max-h-[52vh] overflow-auto rounded-md border bg-background p-2">
+            <div className="mb-2 text-[11px] text-muted-foreground">
+              {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"}
             </div>
-
-            <InspectorPanel activeTab={activeTab} selectedItem={selectedItem} />
+            <div className="space-y-2">
+              {filteredItems.map((item) => (
+                <button
+                  key={`${item.nodeId}-${item.key}`}
+                  type="button"
+                  className="w-full rounded-md border bg-background p-2 text-left hover:bg-accent"
+                  onClick={() => {
+                    const insertValue =
+                      allowPathMode && insertMode === "path" ? item.key : item.token;
+                    onInsertVariable(insertValue);
+                  }}
+                >
+                  <p className="font-mono text-xs">{item.token}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{item.key}</p>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>{item.nodeType}</span>
+                    <span>{item.valueType}</span>
+                  </div>
+                  {item.preview ? (
+                    <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                      {item.preview}
+                    </p>
+                  ) : null}
+                </button>
+              ))}
+            </div>
           </div>
         )
       ) : (
@@ -358,64 +349,6 @@ const getValueType = (value: unknown): "string" | "number" | "boolean" | "object
 const toToken = (path: string, value: unknown) => {
   const type = getValueType(value);
   return type === "object" || type === "array" ? `{{json ${path}}}` : `{{${path}}}`;
-};
-
-const InspectorPanel = ({
-  activeTab,
-  selectedItem,
-}: {
-  activeTab: "schema" | "json";
-  selectedItem: VariablePickerItem | null;
-}) => {
-  if (!selectedItem) {
-    return (
-      <div className="flex min-h-0 items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-        Select an item to inspect.
-      </div>
-    );
-  }
-
-  const value = selectedItem.value;
-  if (value === undefined) {
-    return (
-      <div className="flex min-h-0 items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-        No runtime value available yet. Execute the workflow to populate outputs.
-      </div>
-    );
-  }
-
-  if (activeTab === "json") {
-    return (
-      <pre className="h-full overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre">
-        {JSON.stringify(value, null, 2)}
-      </pre>
-    );
-  }
-
-  if (!isRecord(value) && !Array.isArray(value)) {
-    return (
-      <div className="flex h-full flex-col justify-between rounded-md border bg-background p-3">
-        <div className="text-xs text-muted-foreground">Type</div>
-        <div className="mt-2 font-mono text-sm">{getSchemaLabel(value)}</div>
-        <div className="mt-3 text-[11px] text-muted-foreground">
-          Switch to <span className="font-medium">JSON</span> to view the value.
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full overflow-auto rounded-md border bg-background p-3">
-      <JsonTreeNode
-        name={selectedItem.key}
-        value={value}
-        depth={0}
-        mode={activeTab}
-        path={selectedItem.key}
-        onPickPath={() => undefined}
-      />
-    </div>
-  );
 };
 
 const getSchemaLabel = (value: unknown) => {

@@ -30,6 +30,8 @@ export type AvailableVariable = {
 export type UpstreamVariableNodeOption = {
   nodeId: string;
   nodeType: string;
+  /** Raw React Flow / Prisma node type, e.g. `HTTP_REQUEST` (for icons and stable identity). */
+  flowNodeType?: string;
   variableRoot: string;
 };
 
@@ -63,7 +65,10 @@ const collectUpstreamNodeIds = (currentNodeId: string, edges: Edge[]) => {
 
 const getUpstreamVariables = (currentNodeId: string, nodes: Node[], edges: Edge[]) => {
   const upstreamIds = collectUpstreamNodeIds(currentNodeId, edges);
-  const variableMap = new Map<string, { nodeId: string; nodeType: string }>();
+  const variableMap = new Map<
+    string,
+    { nodeId: string; nodeType: string; flowNodeType: string }
+  >();
 
   for (const node of nodes) {
     if (!upstreamIds.has(node.id)) continue;
@@ -74,9 +79,11 @@ const getUpstreamVariables = (currentNodeId: string, nodes: Node[], edges: Edge[
     const key = candidate.trim();
     if (variableMap.has(key)) continue;
 
+    const flowType = typeof node.type === "string" ? node.type : "";
     variableMap.set(key, {
       nodeId: node.id,
-      nodeType: getNodeTypeLabel(typeof node.type === "string" ? node.type : undefined),
+      nodeType: getNodeTypeLabel(flowType || undefined),
+      flowNodeType: flowType,
     });
   }
 
@@ -224,6 +231,7 @@ export const getUpstreamVariableNodeOptions = (
     .map(([variableRoot, meta]) => ({
       nodeId: meta.nodeId,
       nodeType: meta.nodeType,
+      flowNodeType: meta.flowNodeType,
       variableRoot,
     }))
     .sort((a, b) => a.variableRoot.localeCompare(b.variableRoot));
