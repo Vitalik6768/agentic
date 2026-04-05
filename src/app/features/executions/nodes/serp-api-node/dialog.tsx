@@ -12,7 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
-import { TemplateHighlightInput } from "@/lib/template-highlight";
+import { TemplateVariableInput } from "@/lib/template-highlight";
 import type { AvailableVariable, UpstreamVariableNodeOption } from "@/lib/variable-picker";
 
 
@@ -274,7 +274,7 @@ export const SerpApiNodeDialog = ({
                                 <FormItem>
                                     <FormLabel>Endpoint Url</FormLabel>
                                     <FormControl>
-                                        <TemplateHighlightInput
+                                        <TemplateVariableInput
                                             type="url"
                                             placeholder="https://api.example.com/api/v1/endpoint/
                                         {{httpResponse.data.id}}
@@ -295,7 +295,7 @@ export const SerpApiNodeDialog = ({
                                 <FormItem>
                                     <FormLabel>Engine</FormLabel>
                                     <FormControl>
-                                        <TemplateHighlightInput
+                                        <TemplateVariableInput
                                             type="string"
                                             placeholder="google
                                         {{httpResponse.data.id}}
@@ -318,7 +318,7 @@ export const SerpApiNodeDialog = ({
                                     <FormItem>
                                         <FormLabel>Query</FormLabel>
                                         <FormControl>
-                                            <TemplateHighlightInput
+                                            <TemplateVariableInput
                                                 ref={(element) => {
                                                     ref(element);
                                                     queryInputRef.current = element;
@@ -344,7 +344,7 @@ export const SerpApiNodeDialog = ({
                                 <FormItem>
                                     <FormLabel>Location</FormLabel>
                                     <FormControl>
-                                        <TemplateHighlightInput
+                                        <TemplateVariableInput
                                             type="text"
                                             placeholder="Austin, Texas, United States"
                                             {...field}
@@ -361,7 +361,7 @@ export const SerpApiNodeDialog = ({
                                 <FormItem>
                                     <FormLabel>Google Domain</FormLabel>
                                     <FormControl>
-                                        <TemplateHighlightInput
+                                        <TemplateVariableInput
                                             type="text"
                                             placeholder="google.com"
                                             {...field}
@@ -378,7 +378,7 @@ export const SerpApiNodeDialog = ({
                                 <FormItem>
                                     <FormLabel>hl</FormLabel>
                                     <FormControl>
-                                        <TemplateHighlightInput
+                                        <TemplateVariableInput
                                             type="text"
                                             placeholder="en"
                                             {...field}
@@ -395,7 +395,7 @@ export const SerpApiNodeDialog = ({
                                 <FormItem>
                                     <FormLabel>gl</FormLabel>
                                     <FormControl>
-                                        <TemplateHighlightInput
+                                        <TemplateVariableInput
                                             type="text"
                                             placeholder="us"
                                             {...field}
@@ -412,7 +412,7 @@ export const SerpApiNodeDialog = ({
                                 <FormItem>
                                     <FormLabel>API Key</FormLabel>
                                     <FormControl>
-                                        <TemplateHighlightInput
+                                        <TemplateVariableInput
                                             type="text"
                                             placeholder="Enter SERP API key"
                                             {...field}

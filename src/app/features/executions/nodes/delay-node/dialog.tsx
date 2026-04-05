@@ -1,11 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
 import {
-    NodeDialogNameField,
     type NodeDialogNameFieldHandle,
 } from "@/components/node-dialog-name-field";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
@@ -13,9 +11,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
-import { TemplateHighlightInput } from "@/lib/template-highlight";
+import { TemplateVariableInput } from "@/lib/template-highlight";
 import type { AvailableVariable, UpstreamVariableNodeOption } from "@/lib/variable-picker";
 import { Clock } from "lucide-react";
+import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { DIALOG_CONTENT_STYLE, PANELS_STYLES, SUBMIT_BUTTON_STYLE } from "../constants";
 
 const delayFormSchema = z.object({
     delay: z.string().trim().min(1, { message: "Delay is required" }),
@@ -140,26 +140,18 @@ export const DelayNodeDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-[95vw] gap-0 overflow-y-auto p-0 sm:max-w-6xl">
-                <DialogHeader>
-                    <div className="w-full rounded-t-lg border-b bg-linear-to-r from-blue-100/80 via-blue-50/40 to-blue-50/20 px-6 py-5 dark:from-blue-950/55 dark:via-blue-950/25 dark:to-background">
-                        <DialogTitle className="sr-only">Delay node</DialogTitle>
-                        <div className="flex items-start gap-4">
-                            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-sky-500 text-white shadow-lg shadow-blue-600/20">
-                                <Clock className="h-6 w-6 opacity-95" />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                                <NodeDialogNameField
-                                    ref={nameFieldRef}
-                                    open={open}
-                                    initialName={initialName}
-                                    variant="header"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </DialogHeader>
-                <div className="grid items-start gap-6 px-6 pb-6 pt-4 md:grid-cols-3">
+            <DialogContent className={DIALOG_CONTENT_STYLE}>
+                <NodeDialogEntity
+                    ref={nameFieldRef}
+                    open={open}
+                    initialName={initialName}
+                    title="Delay Node"
+                    description="Wait this many milliseconds before executing the next step."
+                    icon={<Clock className="h-6 w-6 opacity-95" />}
+                    placeholder="delayNode1"
+                    helpText="Canvas label and variable for this step’s output."
+                />
+                <div className={PANELS_STYLES}>
                     <VariablePickerPanel
                         items={availableVariables}
                         isLoading={isLoadingVariables}
@@ -178,7 +170,7 @@ export const DelayNodeDialog = ({
                                     <FormItem>
                                         <FormLabel>Delay (ms)</FormLabel>
                                         <FormControl>
-                                            <TemplateHighlightInput
+                                            <TemplateVariableInput
                                                 ref={delayInputRef}
                                                 inputMode="text"
                                                 type="text"
@@ -195,9 +187,7 @@ export const DelayNodeDialog = ({
                                 )}
                             />
 
-                            <DialogFooter className="mt-4">
-                                <Button className="w-full gap-2 bg-linear-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30" type="submit">Save Changes</Button>
-                            </DialogFooter>
+                            <NodeDialogEntityFooter />
                         </form>
                     </Form>
                     <ExecutionOutputPanel

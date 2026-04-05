@@ -1,46 +1,63 @@
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { forwardRef, type ComponentProps } from "react";
+import {
+  forwardRef,
+  type ComponentProps,
+  type ReactNode,
+  type UIEvent,
+  useCallback,
+  useRef,
+} from "react";
 
-export const TEMPLATE_TOKEN_REGEX = /(\{\{[\s\S]*?\}\})/g;
+/** Captures full `{{ ... }}` template tokens (non-greedy). Handlebars allows newlines inside `{{ }}`. */
+const TEMPLATE_TOKEN_RE = /(\{\{[\s\S]*?\}\})/g;
 
-export const splitTemplateSegments = (value: string) => {
-  return value.split(TEMPLATE_TOKEN_REGEX);
-};
+function splitTemplateSegments(value: string): string[] {
+  return value.split(TEMPLATE_TOKEN_RE);
+}
 
-export const isTemplateSegment = (segment: string) => {
+function isTemplateToken(segment: string): boolean {
   return /^\{\{[\s\S]*\}\}$/.test(segment);
+}
+
+const tokenClass = "text-sky-600 dark:text-sky-400";
+const plainClass = "text-foreground";
+
+function HighlightedTemplateSegments({ source }: { source: string }): ReactNode {
+  const segments = splitTemplateSegments(source);
+  return (
+    <>
+      {segments.map((segment, index) => (
+        <span key={`${index}-${segment.length}`} className={isTemplateToken(segment) ? tokenClass : plainClass}>
+          {segment}
+        </span>
+      ))}
+    </>
+  );
+}
+
+export type TemplateVariableInputProps = Omit<ComponentProps<typeof Input>, "value"> & {
+  value?: string;
 };
 
-type TemplateHighlightInputProps = Omit<ComponentProps<"input">, "value"> & { value?: string };
-
-export const TemplateHighlightInput = forwardRef<HTMLInputElement, TemplateHighlightInputProps>(
-  ({ value, className, placeholder, ...props }, ref) => {
+/**
+ * Single-line input that tints `{{ ... }}` template tokens (sky) while you type.
+ * Uses a stacked mirror layer; the input text is transparent so the caret stays visible.
+ */
+export const TemplateVariableInput = forwardRef<HTMLInputElement, TemplateVariableInputProps>(
+  ({ className, value, placeholder, ...props }, ref) => {
     const source = value ?? "";
-    const segments = splitTemplateSegments(source);
 
     return (
       <div className="relative">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 flex items-center overflow-hidden px-3 text-sm"
+          className="pointer-events-none absolute inset-0 z-0 flex items-center overflow-hidden px-3 py-1 text-base md:text-sm"
         >
           {source.length > 0 ? (
             <span className="w-full truncate whitespace-pre">
-              {segments.map((segment, index) => {
-                return (
-                  <span
-                    key={`${segment}-${index}`}
-                    className={
-                      isTemplateSegment(segment)
-                        ? "text-sky-500 dark:text-sky-400"
-                        : "text-foreground"
-                    }
-                  >
-                    {segment}
-                  </span>
-                );
-              })}
+              <HighlightedTemplateSegments source={source} />
             </span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
@@ -61,5 +78,66 @@ export const TemplateHighlightInput = forwardRef<HTMLInputElement, TemplateHighl
   }
 );
 
-TemplateHighlightInput.displayName = "TemplateHighlightInput";
+TemplateVariableInput.displayName = "TemplateVariableInput";
 
+export type TemplateVariableTextareaProps = Omit<ComponentProps<typeof Textarea>, "value"> & {
+  value?: string;
+};
+
+/**
+ * Multi-line textarea with the same `{{ ... }}` highlighting. Scroll position is kept in sync with the mirror layer.
+ */
+export const TemplateVariableTextarea = forwardRef<HTMLTextAreaElement, TemplateVariableTextareaProps>(
+  ({ className, value, placeholder, onScroll, ...props }, ref) => {
+    const source = value ?? "";
+    const highlightRef = useRef<HTMLDivElement>(null);
+
+    const handleScroll = useCallback(
+      (event: UIEvent<HTMLTextAreaElement>) => {
+        const el = highlightRef.current;
+        if (el) {
+          el.scrollTop = event.currentTarget.scrollTop;
+          el.scrollLeft = event.currentTarget.scrollLeft;
+        }
+        onScroll?.(event);
+      },
+      [onScroll]
+    );
+
+    return (
+      <div className="relative">
+        <div
+          ref={highlightRef}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 overflow-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div
+            className={cn(
+              "min-h-full whitespace-pre-wrap wrap-break-word px-3 py-2 text-base md:text-sm",
+              className
+            )}
+          >
+            {source.length > 0 ? (
+              <HighlightedTemplateSegments source={source} />
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )}
+          </div>
+        </div>
+        <Textarea
+          {...props}
+          ref={ref}
+          value={source}
+          placeholder={placeholder}
+          onScroll={handleScroll}
+          className={cn(
+            "relative z-10 bg-transparent text-transparent caret-foreground placeholder:text-transparent [scrollbar-gutter:stable]",
+            className
+          )}
+        />
+      </div>
+    );
+  }
+);
+
+TemplateVariableTextarea.displayName = "TemplateVariableTextarea";
