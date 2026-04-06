@@ -1,11 +1,8 @@
 "use client";
 
-// import { Node, NodeProps, useReactFlow } from "@xyflow/react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
-    // import { OpenAiDialog, OpenAiFormValues } from "./dialog";
 import { useNodeStatus } from "../../hooks/use-node-status";
-    // import { fetchOpenAiRealtimeToken } from "./actions";
 import { OPEN_ROUTER_CHANNEL_NAME } from "@/inngest/channels/open-router";
 import { useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { OpenRouterDialog, type OpenRouterFormValues, type OpenRouterVariableNodeOption } from "./dialog";
@@ -20,18 +17,24 @@ import {
     getUpstreamVariableNodeOptions,
     type AvailableVariable,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
 
 
 type OpenRouterNodeData = {
+    variableName?: string;
+    varibleName?: string;
     systemPrompt?: string;
     credentialId: string;
     userPrompt: string;
     model?: string;
     forceJsonOutput?: boolean;
+    jsonOutputTemplate?: string;
 }
 
 
 type OpenRouterNodeType = Node<OpenRouterNodeData>;
+
+const OPEN_ROUTER_VARIABLE_BASE = "openRouter";
 
 export const OpenRouterNode = memo((props: NodeProps<OpenRouterNodeType>) => {
     const trpc = useTRPC();
@@ -114,32 +117,49 @@ export const OpenRouterNode = memo((props: NodeProps<OpenRouterNodeType>) => {
         setAvailableVariables(vars);
         setDialogOpen(true);
     }
-    const handleSubmit = (values: {
-        varibleName: string;
-        credentialId: string;
-        systemPrompt?: string;
-        userPrompt: string;
-        model: string;
-        forceJsonOutput: boolean;
-    }) => {
-        setNodes((nodes) => nodes.map((node) => {
-            if (node.id === props.id) {
+
+    const nodeData = props.data;
+    const suggestedName = useMemo(() => {
+        const existingCandidate = nodeData?.variableName ?? nodeData?.varibleName;
+        const trimmed = typeof existingCandidate === "string" ? existingCandidate.trim() : "";
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(OPEN_ROUTER_VARIABLE_BASE, props.id, getNodes());
+    }, [nodeData?.variableName, nodeData?.varibleName, props.id, getNodes, dialogOpen]);
+
+    const handleSubmit = (values: OpenRouterFormValues) => {
+        setNodes((nodes) => {
+            const fallbackVariableName = getUniqueVariableName(
+                OPEN_ROUTER_VARIABLE_BASE,
+                props.id,
+                nodes,
+            );
+            const nextVariableName = getUniqueVariableName(
+                values.varibleName.trim() || fallbackVariableName,
+                props.id,
+                nodes,
+            );
+
+            return nodes.map((node) => {
+                if (node.id !== props.id) return node;
                 return {
                     ...node,
                     data: {
                         ...node.data,
                         ...values,
-                    }
+                        variableName: nextVariableName,
+                        varibleName: nextVariableName,
+                    },
                 };
-            }
-            return node;
-        }));
+            });
+        });
     }
-    const nodeData = props.data;
     const selectedModel = nodeData?.model ?? DEFAULT_OPEN_ROUTER_MODEL;
     const description = nodeData?.userPrompt
         ? `${selectedModel} : ${nodeData.userPrompt.slice(0, 50)}...`
         : "NOT CONFIGURED";
+    const existingVariableName =
+        nodeData?.variableName ?? (nodeData as { varibleName?: string } | undefined)?.varibleName;
+    const trimmedVariableName = existingVariableName?.trim() ?? "";
         
     return (
         <>
@@ -147,7 +167,7 @@ export const OpenRouterNode = memo((props: NodeProps<OpenRouterNodeType>) => {
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
-                defaultValues={nodeData as Partial<OpenRouterFormValues>}
+                defaultValues={{ ...(nodeData as Partial<OpenRouterFormValues>), varibleName: suggestedName }}
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
@@ -162,7 +182,7 @@ export const OpenRouterNode = memo((props: NodeProps<OpenRouterNodeType>) => {
                 {...props}
                 id={props.id}
                 icon="/logos/openrouter.svg"
-                name="OpenRouter"
+                name={trimmedVariableName.length > 0 ? trimmedVariableName : "OpenRouter"}
                 description={description}
                 onSettings={handleOpenSettings}
                 onDelete={() => undefined}

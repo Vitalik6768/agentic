@@ -1,11 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -14,9 +12,14 @@ import z from "zod";
 import { useGetCredentialsByType } from "@/app/features/credentials/hooks/use-credentials";
 import { CredentialType } from "@/types";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
-import { VariablePickerPanel } from "@/components/data-transfer";
+import { ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
 import type { AvailableVariable } from "@/lib/variable-picker";
 import { DEFAULT_OPEN_ROUTER_MODEL, OPEN_ROUTER_MODELS } from "@/config/constans";
+import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
+import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
+import { Bot } from "lucide-react";
+import { TemplateVariableTextarea } from "@/lib/template-highlight";
 
 
 
@@ -85,12 +88,15 @@ export const AgentNodeDialog = ({
     const [activeTarget, setActiveTarget] = useState<"systemPrompt" | "userPrompt">("userPrompt");
     const systemPromptRef = useRef<HTMLTextAreaElement | null>(null);
     const userPromptRef = useRef<HTMLTextAreaElement | null>(null);
+    const nameFieldRef = useRef<NodeDialogNameFieldHandle>(null);
+    const initialName = defaultValues.varibleName ?? (defaultValues as { variableName?: string }).variableName ?? "";
     const { data: credentials, isLoading: isLoadingCredentials } = useGetCredentialsByType(CredentialType.OPENROUTER);
 
     const form = useForm<AgentNodeFormInput, unknown, AgentNodeFormValues>({
         resolver: zodResolver(formSchema),
+        shouldUnregister: false,
         defaultValues: {
-            varibleName: defaultValues.varibleName ?? "",
+            varibleName: initialName,
             systemPrompt: defaultValues.systemPrompt ?? "",
             userPrompt: defaultValues.userPrompt ?? "",
             credentialId: defaultValues.credentialId ?? "",
@@ -103,7 +109,7 @@ export const AgentNodeDialog = ({
     useEffect(() => {
         if (open) {
             form.reset({
-                varibleName: defaultValues.varibleName ?? "",
+                varibleName: initialName,
                 credentialId: defaultValues.credentialId ?? "",
                 systemPrompt: defaultValues.systemPrompt ?? "",
                 userPrompt: defaultValues.userPrompt ?? "",
@@ -116,7 +122,15 @@ export const AgentNodeDialog = ({
     }, [defaultValues, open, form])
 
     const handleSubmit = (values: AgentNodeFormValues) => {
-        onSubmit(values);
+        const err = nameFieldRef.current?.validate();
+        if (err) {
+            nameFieldRef.current?.enterEditMode();
+            nameFieldRef.current?.focusNameInput();
+            return;
+        }
+        const name = nameFieldRef.current?.getTrimmedName() ?? "";
+        form.setValue("varibleName", name, { shouldDirty: true });
+        onSubmit({ ...values, varibleName: name });
         onOpenChange(false)
     }
 
@@ -151,14 +165,18 @@ export const AgentNodeDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-5xl">
-                <DialogHeader>
-                    <DialogTitle>Agent</DialogTitle>
-                    <DialogDescription>
-                        Configure the Agent node.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid items-start gap-6 md:grid-cols-3">
+            <DialogContent className={DIALOG_CONTENT_STYLE}>
+                <NodeDialogEntity
+                    ref={nameFieldRef}
+                    open={open}
+                    initialName={initialName}
+                    title="Agent"
+                    description="Run an OpenRouter-powered agent that can optionally use tools and (optionally) memory."
+                    icon={<Bot className="h-6 w-6 opacity-95" />}
+                    placeholder="agent1"
+                    helpText="Canvas label and variable for this step’s output."
+                />
+                <div className={PANELS_STYLES}>
                     <VariablePickerPanel
                         items={availableVariables}
                         isLoading={isLoadingVariables}
@@ -176,29 +194,6 @@ export const AgentNodeDialog = ({
                             onSubmit={form.handleSubmit(handleSubmit)}
                             className="space-y-6"
                         >
-                        <FormField
-                            control={form.control}
-                            name="varibleName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Variable Name</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="text"
-                                            placeholder="my_variable"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormDescription>
-                                        The name of the variable to store the Agent response data.
-                                        Must be a valid JavaScript variable name.
-                                    </FormDescription>
-                                    <FormMessage />
-
-                                </FormItem>
-                            )}
-                        />
-                        
                         <FormField control={form.control} name="credentialId" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Agent Credential</FormLabel>
@@ -257,7 +252,6 @@ export const AgentNodeDialog = ({
                                 </FormItem>
                             )}
                         />
-
                         <FormField
                             control={form.control}
                             name="chatMode"
@@ -302,7 +296,7 @@ export const AgentNodeDialog = ({
                                                         ? field.value
                                                         : ""
                                                 }
-                                                onChange={(event) => {
+                                                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                                                     const nextRawValue = event.target.value;
                                                     field.onChange(nextRawValue === "" ? undefined : Number(nextRawValue));
                                                 }}
@@ -321,12 +315,12 @@ export const AgentNodeDialog = ({
                             control={form.control}
                             name="systemPrompt"
                             render={({ field }) => {
-                                const { ref, ...fieldProps } = field;
+                                const { ref, value, ...fieldProps } = field;
                                 return (
                                     <FormItem>
                                         <FormLabel>System Prompt (Optional)</FormLabel>
                                         <FormControl>
-                                            <Textarea
+                                            <TemplateVariableTextarea
                                                 ref={(element) => {
                                                     ref(element);
                                                     systemPromptRef.current = element;
@@ -334,6 +328,7 @@ export const AgentNodeDialog = ({
                                                 className="min-h-[80px] font-mono text-sm"
                                                 placeholder="you are a helpful assistant"
                                                 onFocus={() => setActiveTarget("systemPrompt")}
+                                                value={value ?? ""}
                                                 {...fieldProps}
                                             />
                                         </FormControl>
@@ -350,12 +345,12 @@ export const AgentNodeDialog = ({
                             control={form.control}
                             name="userPrompt"
                             render={({ field }) => {
-                                const { ref, ...fieldProps } = field;
+                                const { ref, value, ...fieldProps } = field;
                                 return (
                                     <FormItem>
                                         <FormLabel>User Prompt</FormLabel>
                                         <FormControl>
-                                            <Textarea
+                                            <TemplateVariableTextarea
                                                 ref={(element) => {
                                                     ref(element);
                                                     userPromptRef.current = element;
@@ -363,6 +358,7 @@ export const AgentNodeDialog = ({
                                                 className="min-h-[80px] font-mono text-sm"
                                                 placeholder="What is the capital of France?"
                                                 onFocus={() => setActiveTarget("userPrompt")}
+                                                value={value ?? ""}
                                                 {...fieldProps}
                                             />
                                         </FormControl>
@@ -375,34 +371,17 @@ export const AgentNodeDialog = ({
                             }}
                         />
 
-                        <DialogFooter className="mt-4">
-
-                            <Button className="w-full" type="submit">Save</Button>
-                        </DialogFooter>
+                        <NodeDialogEntityFooter />
                         </form>
                     </Form>
                     </div>
-                    <div className="rounded-md border bg-muted/30 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-semibold">Execution Output</h3>
-                            <span className="text-xs text-muted-foreground">
-                                {executionStatus === "loading" ? "Running..." : executionStatus === "success" ? "Completed" : executionStatus === "error" ? "Failed" : "Idle"}
-                            </span>
-                        </div>
-                        {executionStatus === "success" && executionOutput ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap">
-                                {executionOutput}
-                            </pre>
-                        ) : executionStatus === "error" ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap text-red-500">
-                                {executionError ?? "Execution failed"}
-                            </pre>
-                        ) : (
-                            <div className="flex min-h-[180px] items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-                                Execute this workflow to view the latest OpenRouter output here.
-                            </div>
-                        )}
-                    </div>
+                    <ExecutionOutputPanel
+                        executionStatus={executionStatus}
+                        executionOutput={executionOutput}
+                        executionError={executionError}
+                        idleMessage="Execute this workflow to view the latest Agent output here."
+                        className="max-h-[72vh] overflow-hidden"
+                    />
                 </div>
             </DialogContent>
         </Dialog>

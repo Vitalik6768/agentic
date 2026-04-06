@@ -1,12 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -15,9 +12,14 @@ import z from "zod";
 import { useGetCredentialsByType } from "@/app/features/credentials/hooks/use-credentials";
 import { CredentialType } from "@/types";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
-import { VariablePickerPanel } from "@/components/data-transfer";
+import { ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
 import type { AvailableVariable } from "@/lib/variable-picker";
 import { DEFAULT_OPEN_ROUTER_MODEL, OPEN_ROUTER_MODELS } from "@/config/constans";
+import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
+import { Bot } from "lucide-react";
+import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
+import { TemplateVariableTextarea } from "@/lib/template-highlight";
 
 
 
@@ -53,6 +55,7 @@ interface Props {
     nodeOptions?: OpenRouterVariableNodeOption[];
 }
 
+
 export const OpenRouterDialog = ({
     open,
     onOpenChange,
@@ -67,15 +70,19 @@ export const OpenRouterDialog = ({
     onSelectedNodeIdChange,
     nodeOptions = [],
 }: Props) => {
-    const [activeTarget, setActiveTarget] = useState<"systemPrompt" | "userPrompt">("userPrompt");
+    const [activeTarget, setActiveTarget] = useState<"systemPrompt" | "userPrompt" | "jsonOutputTemplate">("userPrompt");
     const systemPromptRef = useRef<HTMLTextAreaElement | null>(null);
     const userPromptRef = useRef<HTMLTextAreaElement | null>(null);
+    const jsonOutputTemplateRef = useRef<HTMLTextAreaElement | null>(null);
+    const nameFieldRef = useRef<NodeDialogNameFieldHandle>(null);
+    const initialName = defaultValues.varibleName ?? (defaultValues as { variableName?: string }).variableName ?? "";
     const { data: credentials, isLoading: isLoadingCredentials } = useGetCredentialsByType(CredentialType.OPENROUTER);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
+        shouldUnregister: false,
         defaultValues: {
-            varibleName: defaultValues.varibleName ?? "",
+            varibleName: initialName,
             systemPrompt: defaultValues.systemPrompt ?? "",
             userPrompt: defaultValues.userPrompt ?? "",
             credentialId: defaultValues.credentialId ?? "",
@@ -88,7 +95,7 @@ export const OpenRouterDialog = ({
     useEffect(() => {
         if (open) {
             form.reset({
-                varibleName: defaultValues.varibleName ?? "",
+                varibleName: initialName,
                 credentialId: defaultValues.credentialId ?? "",
                 systemPrompt: defaultValues.systemPrompt ?? "",
                 userPrompt: defaultValues.userPrompt ?? "",
@@ -101,7 +108,15 @@ export const OpenRouterDialog = ({
     }, [defaultValues, open, form])
 
     const handleSubmit = (values: z.infer<typeof formSchema>) => {
-        onSubmit(values);
+        const err = nameFieldRef.current?.validate();
+        if (err) {
+            nameFieldRef.current?.enterEditMode();
+            nameFieldRef.current?.focusNameInput();
+            return;
+        }
+        const name = nameFieldRef.current?.getTrimmedName() ?? "";
+        form.setValue("varibleName", name, { shouldDirty: true });
+        onSubmit({ ...values, varibleName: name });
         onOpenChange(false)
     }
 
@@ -130,19 +145,43 @@ export const OpenRouterDialog = ({
     };
 
     const handleInsertVariable = (token: string) => {
+        if (activeTarget === "jsonOutputTemplate") {
+            const fieldName = "jsonOutputTemplate";
+            const textarea = jsonOutputTemplateRef.current;
+            const currentValue = form.getValues(fieldName) ?? "";
+            if (!textarea) {
+                form.setValue(fieldName, `${currentValue}${token}`, { shouldDirty: true });
+                return;
+            }
+            const start = textarea.selectionStart ?? currentValue.length;
+            const end = textarea.selectionEnd ?? currentValue.length;
+            const nextValue = `${currentValue.slice(0, start)}${token}${currentValue.slice(end)}`;
+            form.setValue(fieldName, nextValue, { shouldDirty: true });
+            requestAnimationFrame(() => {
+                textarea.focus();
+                const nextCursor = start + token.length;
+                textarea.setSelectionRange(nextCursor, nextCursor);
+            });
+            return;
+        }
+
         insertAtCursor(activeTarget, token);
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-5xl">
-                <DialogHeader>
-                    <DialogTitle>OpenRouter</DialogTitle>
-                    <DialogDescription>
-                        Configure the OpenRouter trigger.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid items-start gap-6 md:grid-cols-3">
+            <DialogContent className={DIALOG_CONTENT_STYLE}>
+                <NodeDialogEntity
+                    ref={nameFieldRef}
+                    open={open}
+                    initialName={initialName}
+                    title="OpenRouter"
+                    description="Call an OpenRouter model with templated prompts and store the response for downstream nodes."
+                    icon={<Bot className="h-6 w-6 opacity-95" />}
+                    placeholder="openRouter1"
+                    helpText="Canvas label and variable for this step’s output."
+                />
+                <div className={PANELS_STYLES}>
                     <VariablePickerPanel
                         items={availableVariables}
                         isLoading={isLoadingVariables}
@@ -160,29 +199,6 @@ export const OpenRouterDialog = ({
                                 onSubmit={form.handleSubmit(handleSubmit)}
                                 className="space-y-6"
                             >
-                                <FormField
-                                    control={form.control}
-                                    name="varibleName"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Variable Name</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="text"
-                                                    placeholder="my_variable"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormDescription>
-                                                The name of the variable to store the Gemini response data.
-                                                Must be a valid JavaScript variable name.
-                                            </FormDescription>
-                                            <FormMessage />
-
-                                        </FormItem>
-                                    )}
-                                />
-
                                 <FormField control={form.control} name="credentialId" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>OpenRouter Credential</FormLabel>
@@ -246,12 +262,12 @@ export const OpenRouterDialog = ({
                                     control={form.control}
                                     name="systemPrompt"
                                     render={({ field }) => {
-                                        const { ref, ...fieldProps } = field;
+                                        const { ref, value, ...fieldProps } = field;
                                         return (
                                             <FormItem>
                                                 <FormLabel>System Prompt (Optional)</FormLabel>
                                                 <FormControl>
-                                                    <Textarea
+                                                    <TemplateVariableTextarea
                                                         ref={(element) => {
                                                             ref(element);
                                                             systemPromptRef.current = element;
@@ -259,6 +275,7 @@ export const OpenRouterDialog = ({
                                                         className="min-h-[80px] font-mono text-sm"
                                                         placeholder="you are a helpful assistant"
                                                         onFocus={() => setActiveTarget("systemPrompt")}
+                                                        value={value ?? ""}
                                                         {...fieldProps}
                                                     />
                                                 </FormControl>
@@ -275,12 +292,12 @@ export const OpenRouterDialog = ({
                                     control={form.control}
                                     name="userPrompt"
                                     render={({ field }) => {
-                                        const { ref, ...fieldProps } = field;
+                                        const { ref, value, ...fieldProps } = field;
                                         return (
                                             <FormItem>
                                                 <FormLabel>User Prompt</FormLabel>
                                                 <FormControl>
-                                                    <Textarea
+                                                    <TemplateVariableTextarea
                                                         ref={(element) => {
                                                             ref(element);
                                                             userPromptRef.current = element;
@@ -288,6 +305,7 @@ export const OpenRouterDialog = ({
                                                         className="min-h-[80px] font-mono text-sm"
                                                         placeholder="What is the capital of France?"
                                                         onFocus={() => setActiveTarget("userPrompt")}
+                                                        value={value ?? ""}
                                                         {...fieldProps}
                                                     />
                                                 </FormControl>
@@ -322,56 +340,46 @@ export const OpenRouterDialog = ({
                                     <FormField
                                         control={form.control}
                                         name="jsonOutputTemplate"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>JSON Output Template (Optional)</FormLabel>
-                                                <FormControl>
-                                                    <Textarea
-                                                        className="min-h-[80px] font-mono text-sm"
-                                                        placeholder='{"key": "value"}'
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    Describe the JSON shape you expect from the model.
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
+                                        render={({ field }) => {
+                                            const { ref, value, ...fieldProps } = field;
+                                            return (
+                                                <FormItem>
+                                                    <FormLabel>JSON Output Template (Optional)</FormLabel>
+                                                    <FormControl>
+                                                        <TemplateVariableTextarea
+                                                            ref={(element) => {
+                                                                ref(element);
+                                                                jsonOutputTemplateRef.current = element;
+                                                            }}
+                                                            className="min-h-[80px] font-mono text-sm"
+                                                            placeholder='{"key": "value"}'
+                                                            onFocus={() => setActiveTarget("jsonOutputTemplate")}
+                                                            value={value ?? ""}
+                                                            {...fieldProps}
+                                                        />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        Describe the JSON shape you expect from the model.
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            );
+                                        }}
                                     />
                                 )}
 
 
-
-
-                                <DialogFooter className="mt-4">
-
-                                    <Button className="w-full" type="submit">Save</Button>
-                                </DialogFooter>
+                                <NodeDialogEntityFooter />
                             </form>
                         </Form>
                     </div>
-                    <div className="rounded-md border bg-muted/30 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-semibold">Execution Output</h3>
-                            <span className="text-xs text-muted-foreground">
-                                {executionStatus === "loading" ? "Running..." : executionStatus === "success" ? "Completed" : executionStatus === "error" ? "Failed" : "Idle"}
-                            </span>
-                        </div>
-                        {executionStatus === "success" && executionOutput ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap">
-                                {executionOutput}
-                            </pre>
-                        ) : executionStatus === "error" ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap text-red-500">
-                                {executionError ?? "Execution failed"}
-                            </pre>
-                        ) : (
-                            <div className="flex min-h-[180px] items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-                                Execute this workflow to view the latest OpenRouter output here.
-                            </div>
-                        )}
-                    </div>
+                    <ExecutionOutputPanel
+                        executionStatus={executionStatus}
+                        executionOutput={executionOutput}
+                        executionError={executionError}
+                        idleMessage="Execute this workflow to view the latest OpenRouter output here."
+                        className="max-h-[72vh] overflow-hidden"
+                    />
                 </div>
             </DialogContent>
         </Dialog>

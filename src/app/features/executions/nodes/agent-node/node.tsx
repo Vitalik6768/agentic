@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { AGENT_NODE_CHANNEL_NAME } from "@/inngest/channels/agent-node";
@@ -19,6 +19,7 @@ import {
     getUpstreamVariableNodeOptions,
     type AvailableVariable,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
 import {
     AGENT_TOOL_CATALOG,
     TableInterfaceToolDialog,
@@ -32,6 +33,8 @@ import {
 
 
 type AgentNodeData = {
+    variableName?: string;
+    varibleName?: string;
     systemPrompt?: string;
     credentialId: string;
     userPrompt: string;
@@ -41,9 +44,9 @@ type AgentNodeData = {
     enabledTools?: AgentToolId[];
     toolSettings?: Partial<AgentToolSettings>;
 }
-
-
 type AgentNodeType = Node<AgentNodeData>;
+
+const AGENT_VARIABLE_BASE = "agent";
 
 export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
     const trpc = useTRPC();
@@ -128,27 +131,41 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
         setAvailableVariables(vars);
         setDialogOpen(true);
     }
-    const handleSubmit = (values: {
-        varibleName: string;
-        credentialId: string;
-        systemPrompt?: string;
-        userPrompt: string;
-        model: string;
-        chatMode: "OFF" | "MEMORY";
-        maxMemoryMessages?: number;
-    }) => {
-        setNodes((nodes) => nodes.map((node) => {
-            if (node.id === props.id) {
+
+    const nodeData = props.data;
+    const suggestedName = useMemo(() => {
+        const existingCandidate = nodeData?.variableName ?? nodeData?.varibleName;
+        const trimmed = typeof existingCandidate === "string" ? existingCandidate.trim() : "";
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(AGENT_VARIABLE_BASE, props.id, getNodes());
+    }, [nodeData?.variableName, nodeData?.varibleName, props.id, getNodes, dialogOpen]);
+
+    const handleSubmit = (values: AgentNodeFormValues) => {
+        setNodes((nodes) => {
+            const fallbackVariableName = getUniqueVariableName(
+                AGENT_VARIABLE_BASE,
+                props.id,
+                nodes,
+            );
+            const nextVariableName = getUniqueVariableName(
+                values.varibleName.trim() || fallbackVariableName,
+                props.id,
+                nodes,
+            );
+
+            return nodes.map((node) => {
+                if (node.id !== props.id) return node;
                 return {
                     ...node,
                     data: {
                         ...node.data,
                         ...values,
-                    }
+                        variableName: nextVariableName,
+                        varibleName: nextVariableName,
+                    },
                 };
-            }
-            return node;
-        }));
+            });
+        });
     }
     const handleSaveTools = (enabledTools: AgentToolId[]) => {
         setNodes((nodes) =>
@@ -212,13 +229,15 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
         );
     };
 
-    const nodeData = props.data;
     const enabledTools = nodeData?.enabledTools ?? [];
     const enabledToolItems = AGENT_TOOL_CATALOG.filter((tool) => enabledTools.includes(tool.id));
     const selectedModel = nodeData?.model ?? DEFAULT_OPEN_ROUTER_MODEL;
     const description = nodeData?.userPrompt
         ? `${selectedModel} : ${nodeData.userPrompt.slice(0, 50)}...`
         : "NOT CONFIGURED";
+    const existingVariableName =
+        nodeData?.variableName ?? (nodeData as { varibleName?: string } | undefined)?.varibleName;
+    const trimmedVariableName = existingVariableName?.trim() ?? "";
         
     return (
         <>
@@ -226,7 +245,7 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
-                defaultValues={nodeData as Partial<AgentNodeFormValues>}
+                defaultValues={{ ...(nodeData as Partial<AgentNodeFormValues>), varibleName: suggestedName }}
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
@@ -263,7 +282,7 @@ export const AgentNode = memo((props: NodeProps<AgentNodeType>) => {
                 {...props}
                 id={props.id}
                 icon="/logos/agent-node.svg"
-                name="Agent"
+                name={trimmedVariableName.length > 0 ? trimmedVariableName : "Agent"}
                 onSettings={handleOpenSettings}
                 onDelete={() => undefined}
                 onDoubleClick={handleOpenSettings}

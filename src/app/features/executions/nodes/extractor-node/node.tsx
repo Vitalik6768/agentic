@@ -1,7 +1,7 @@
 "use client";
 
 // import { Node, NodeProps, useReactFlow } from "@xyflow/react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { useReactFlow, type Node, type NodeProps } from "@xyflow/react";
@@ -13,7 +13,6 @@ import {
 import { fetchExtractorNodeRealtimeToken } from "./actions";
 import { useInngestSubscription } from "@inngest/realtime/hooks";
 import { EXTRACTOR_NODE_CHANNEL_NAME } from "../../../../../inngest/channels/extractor-node";
-import { FilterIcon } from "lucide-react";
 import { useTRPC } from "@/trpc/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
@@ -22,6 +21,7 @@ import {
     getUpstreamVariableNodeOptions,
     type AvailableVariable,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
 
 
 type ExtractorNodeNodeData = {
@@ -45,6 +45,8 @@ type ExtractorNodeNodeData = {
 }
 
 type ExtractorNodeType = Node<ExtractorNodeNodeData>;
+
+const EXTRACTOR_VARIABLE_BASE = "extractor";
 
 export const ExtractorNode = memo((props: NodeProps<ExtractorNodeType>) => {
     const trpc = useTRPC();
@@ -113,6 +115,13 @@ export const ExtractorNode = memo((props: NodeProps<ExtractorNodeType>) => {
         operation: props.data?.operation,
         separator: props.data?.separator,
     };
+    const nodeData = props.data;
+    const suggestedName = useMemo(() => {
+        const existingCandidate = nodeData?.variableName ?? nodeData?.varibleName;
+        const trimmed = typeof existingCandidate === "string" ? existingCandidate.trim() : "";
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(EXTRACTOR_VARIABLE_BASE, props.id, getNodes());
+    }, [nodeData?.variableName, nodeData?.varibleName, props.id, getNodes, dialogOpen]);
 
     useEffect(() => {
         if (!dialogOpen) return;
@@ -146,26 +155,41 @@ export const ExtractorNode = memo((props: NodeProps<ExtractorNodeType>) => {
         setDialogOpen(true);
     }
     const handleSubmit = (values: ExtractorNodeDialogValues) => {
-        setNodes((nodes) => nodes.map((node) => {
-            if (node.id === props.id) {
+        setNodes((nodes) => {
+            const fallbackVariableName = getUniqueVariableName(
+                EXTRACTOR_VARIABLE_BASE,
+                props.id,
+                nodes,
+            );
+            const nextVariableName = getUniqueVariableName(
+                values.variableName.trim() || fallbackVariableName,
+                props.id,
+                nodes,
+            );
+
+            return nodes.map((node) => {
+                if (node.id !== props.id) return node;
                 return {
                     ...node,
                     data: {
                         ...node.data,
                         ...values,
-                    }
+                        variableName: nextVariableName,
+                        varibleName: nextVariableName,
+                    },
                 };
-            }
-            return node;
-        }));
+            });
+        });
     }
-    const nodeData = props.data;
     const fieldsCount = Array.isArray(nodeData?.fields) ? nodeData.fields.length : 0;
     const description = fieldsCount > 0
         ? `Extract ${fieldsCount} field${fieldsCount > 1 ? "s" : ""}`
         : nodeData?.sourcePath
             ? `Extract ${nodeData.sourcePath}`
         : "NOT CONFIGURED";
+    const existingVariableName =
+        nodeData?.variableName ?? (nodeData as { varibleName?: string } | undefined)?.varibleName;
+    const trimmedVariableName = existingVariableName?.trim() ?? "";
         
     return (
         <>
@@ -173,7 +197,7 @@ export const ExtractorNode = memo((props: NodeProps<ExtractorNodeType>) => {
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
-                defaultValues={defaultValues}
+                defaultValues={{ ...defaultValues, variableName: suggestedName }}
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
@@ -188,7 +212,7 @@ export const ExtractorNode = memo((props: NodeProps<ExtractorNodeType>) => {
                 {...props}
                 id={props.id}
                 icon="/logos/extractor-node.svg"
-                name="Extractor"
+                name={trimmedVariableName.length > 0 ? trimmedVariableName : "Extractor"}
                 description={description}
                 onSettings={handleOpenSettings}
                 onDelete={() => undefined}
@@ -199,5 +223,6 @@ export const ExtractorNode = memo((props: NodeProps<ExtractorNodeType>) => {
 
     )
 })
+
 
 ExtractorNode.displayName = "ExtractorNode";

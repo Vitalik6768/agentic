@@ -1,7 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +11,11 @@ import { useFieldArray, useForm } from "react-hook-form";
 import z from "zod";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
 import { cn } from "@/lib/utils";
-
+import { TemplateVariableInput } from "@/lib/template-highlight";
+import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
+import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
+import { Filter } from "lucide-react";
 
 const fieldSchema = z.object({
     outputKey: z.string().trim().min(1, { message: "Field key is required" }).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid key" }),
@@ -123,7 +126,13 @@ export const ExtractorNodeDialog = ({
     nodeOptions = [],
 }: Props) => {
     const sourcePathInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+    const nameFieldRef = useRef<NodeDialogNameFieldHandle>(null);
     const [activeFieldIndex, setActiveFieldIndex] = useState(0);
+    const [activeTarget, setActiveTarget] = useState<{ index: number; key: "sourcePath" | "lookupValue" | "matchValue" | "separator" }>({
+        index: 0,
+        key: "sourcePath",
+    });
+    const initialName = defaultValues.variableName ?? "";
 
     const defaultField: ExtractorFieldDialogValue = {
         outputKey: "value",
@@ -169,6 +178,7 @@ export const ExtractorNodeDialog = ({
 
     const form = useForm<ExtractorNodeDialogValues>({
         resolver: zodResolver(formSchema),
+        shouldUnregister: false,
         defaultValues: {
             variableName: defaultValues.variableName ?? "",
             fields: normalizedDefaultFields,
@@ -186,47 +196,66 @@ export const ExtractorNodeDialog = ({
                 fields: normalizedDefaultFields,
             });
             setActiveFieldIndex(0);
+            setActiveTarget({ index: 0, key: "sourcePath" });
         }
     }, [defaultValues, open, form, normalizedDefaultFields]);
 
     const handleSubmit = (values: ExtractorNodeDialogValues) => {
-        onSubmit(values);
+        const err = nameFieldRef.current?.validate();
+        if (err) {
+            nameFieldRef.current?.enterEditMode();
+            nameFieldRef.current?.focusNameInput();
+            return;
+        }
+        const name = nameFieldRef.current?.getTrimmedName() ?? "";
+        form.setValue("variableName", name, { shouldDirty: true });
+        onSubmit({ ...values, variableName: name });
         onOpenChange(false);
     };
 
-    const handleInsertVariable = (path: string) => {
-        const currentIndex = Math.max(0, Math.min(activeFieldIndex, fields.length - 1));
-        const input = sourcePathInputRefs.current[currentIndex];
-        const fieldName = `fields.${currentIndex}.sourcePath` as const;
-        const currentValue = form.getValues(fieldName) ?? "";
+    const handleInsertVariable = (token: string) => {
+        const currentIndex = Math.max(0, Math.min(activeTarget.index, fields.length - 1));
+        const key = activeTarget.key;
+        const fieldName = `fields.${currentIndex}.${key}` as const;
+        const currentValue = (form.getValues(fieldName)) ?? "";
 
+        if (key !== "sourcePath") {
+            form.setValue(fieldName, `${currentValue}${token}`, { shouldDirty: true });
+            return;
+        }
+
+        const input = sourcePathInputRefs.current[currentIndex];
         if (!input) {
-            form.setValue(fieldName, `${currentValue}${path}`, { shouldDirty: true });
+            form.setValue(fieldName, `${currentValue}${token}`, { shouldDirty: true });
             return;
         }
 
         const start = input.selectionStart ?? currentValue.length;
         const end = input.selectionEnd ?? currentValue.length;
-        const nextValue = `${currentValue.slice(0, start)}${path}${currentValue.slice(end)}`;
+        const nextValue = `${currentValue.slice(0, start)}${token}${currentValue.slice(end)}`;
 
         form.setValue(fieldName, nextValue, { shouldDirty: true });
         requestAnimationFrame(() => {
             input.focus();
-            const nextCursor = start + path.length;
+            const nextCursor = start + token.length;
             input.setSelectionRange(nextCursor, nextCursor);
         });
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-6xl">
-                <DialogHeader>
-                    <DialogTitle>Extractor Node</DialogTitle>
-                    <DialogDescription>
-                        Extract exactly what you need from previous nodes with simple options.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid items-start gap-6 md:grid-cols-3">
+            <DialogContent className={DIALOG_CONTENT_STYLE}>
+                <NodeDialogEntity
+                    ref={nameFieldRef}
+                    open={open}
+                    initialName={initialName}
+                    title="Extractor"
+                    description="Extract specific values from upstream node outputs and store them for downstream steps."
+                    icon={<Filter className="h-6 w-6 opacity-95" />}
+                    placeholder="extractor1"
+                    helpText="Canvas label and variable for this step’s output."
+                />
+                <div className={PANELS_STYLES}>
                     <VariablePickerPanel
                         items={availableVariables}
                         isLoading={isLoadingVariables}
@@ -244,35 +273,12 @@ export const ExtractorNodeDialog = ({
                                 onSubmit={form.handleSubmit(handleSubmit)}
                                 className="space-y-6"
                             >
-                            <FormField
-                                control={form.control}
-                                name="variableName"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Variable Name</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="text"
-                                                placeholder="my_variable"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormDescription>
-                                            The key that will be added to the workflow context object.
-                                            Must be a valid JavaScript variable name.
-                                        </FormDescription>
-                                        <FormMessage />
-
-                                    </FormItem>
-                                )}
-                            />
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <p className="text-sm font-medium">Fields to extract</p>
-                                    <Button
+                                    <button
                                         type="button"
-                                        variant="outline"
-                                        size="sm"
+                                        className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
                                         onClick={() => {
                                             append({
                                                 outputKey: `field_${fields.length + 1}`,
@@ -284,10 +290,11 @@ export const ExtractorNodeDialog = ({
                                                 separator: ", ",
                                             });
                                             setActiveFieldIndex(fields.length);
+                                            setActiveTarget({ index: fields.length, key: "sourcePath" });
                                         }}
                                     >
                                         Add field
-                                    </Button>
+                                    </button>
                                 </div>
                                 {fields.map((item, index) => {
                                     const operation = form.watch(`fields.${index}.operation`);
@@ -296,16 +303,14 @@ export const ExtractorNodeDialog = ({
                                         <div
                                             key={item.id}
                                             className={cn(
-                                                "space-y-3 rounded-md border p-3",
-                                                activeFieldIndex === index ? "border-primary" : "border-border",
+                                                "space-y-3 rounded-md p-3",
                                             )}
                                         >
                                             <div className="flex items-center justify-between">
                                                 <p className="text-xs font-medium text-muted-foreground">Field {index + 1}</p>
-                                                <Button
+                                                <button
                                                     type="button"
-                                                    variant="ghost"
-                                                    size="sm"
+                                                    className="inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
                                                     onClick={() => {
                                                         if (fields.length === 1) return;
                                                         remove(index);
@@ -318,7 +323,7 @@ export const ExtractorNodeDialog = ({
                                                     disabled={fields.length === 1}
                                                 >
                                                     Remove
-                                                </Button>
+                                                </button>
                                             </div>
                                             <FormField
                                                 control={form.control}
@@ -360,7 +365,7 @@ export const ExtractorNodeDialog = ({
                                                 control={form.control}
                                                 name={`fields.${index}.sourcePath`}
                                                 render={({ field }) => {
-                                                    const { ref, ...fieldProps } = field;
+                                                    const { ref, value, ...fieldProps } = field;
                                                     return (
                                                         <FormItem>
                                                             <FormLabel>
@@ -371,12 +376,16 @@ export const ExtractorNodeDialog = ({
                                                                         : "Source Path (optional scope)"}
                                                             </FormLabel>
                                                             <FormControl>
-                                                                <Input
+                                                                <TemplateVariableInput
                                                                     ref={(element) => {
                                                                         ref(element);
                                                                         sourcePathInputRefs.current[index] = element;
                                                                     }}
-                                                                    onFocus={() => setActiveFieldIndex(index)}
+                                                                    value={value ?? ""}
+                                                                    onFocus={() => {
+                                                                        setActiveFieldIndex(index);
+                                                                        setActiveTarget({ index, key: "sourcePath" });
+                                                                    }}
                                                                     placeholder="search.httpResponse.data.organic_results.0.title"
                                                                     {...fieldProps}
                                                                 />
@@ -390,18 +399,26 @@ export const ExtractorNodeDialog = ({
                                                 <FormField
                                                     control={form.control}
                                                     name={`fields.${index}.lookupValue`}
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>{lookupMode === "key_name" ? "Key Name" : "Key Value"}</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    placeholder={lookupMode === "key_name" ? "title" : "OpenAI"}
-                                                                    {...field}
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
+                                                    render={({ field }) => {
+                                                        const { value, ...fieldProps } = field;
+                                                        return (
+                                                            <FormItem>
+                                                                <FormLabel>{lookupMode === "key_name" ? "Key Name" : "Key Value"}</FormLabel>
+                                                                <FormControl>
+                                                                    <TemplateVariableInput
+                                                                        placeholder={lookupMode === "key_name" ? "title" : "OpenAI"}
+                                                                        value={value ?? ""}
+                                                                        onFocus={() => {
+                                                                            setActiveFieldIndex(index);
+                                                                            setActiveTarget({ index, key: "lookupValue" });
+                                                                        }}
+                                                                        {...fieldProps}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        );
+                                                    }}
                                                 />
                                             ) : null}
                                             {lookupMode === "object_where" ? (
@@ -422,15 +439,26 @@ export const ExtractorNodeDialog = ({
                                                     <FormField
                                                         control={form.control}
                                                         name={`fields.${index}.matchValue`}
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <FormLabel>Match Value</FormLabel>
-                                                                <FormControl>
-                                                                    <Input placeholder="https://example.com or {{myVar}}" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
+                                                        render={({ field }) => {
+                                                            const { value, ...fieldProps } = field;
+                                                            return (
+                                                                <FormItem>
+                                                                    <FormLabel>Match Value</FormLabel>
+                                                                    <FormControl>
+                                                                        <TemplateVariableInput
+                                                                            placeholder="https://example.com or {{myVar}}"
+                                                                            value={value ?? ""}
+                                                                            onFocus={() => {
+                                                                                setActiveFieldIndex(index);
+                                                                                setActiveTarget({ index, key: "matchValue" });
+                                                                            }}
+                                                                            {...fieldProps}
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            );
+                                                        }}
                                                     />
                                                 </div>
                                             ) : null}
@@ -487,25 +515,33 @@ export const ExtractorNodeDialog = ({
                                                 <FormField
                                                     control={form.control}
                                                     name={`fields.${index}.separator`}
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Join Separator</FormLabel>
-                                                            <FormControl>
-                                                                <Input placeholder=", " {...field} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
+                                                    render={({ field }) => {
+                                                        const { value, ...fieldProps } = field;
+                                                        return (
+                                                            <FormItem>
+                                                                <FormLabel>Join Separator</FormLabel>
+                                                                <FormControl>
+                                                                    <TemplateVariableInput
+                                                                        placeholder=", "
+                                                                        value={value ?? ""}
+                                                                        onFocus={() => {
+                                                                            setActiveFieldIndex(index);
+                                                                            setActiveTarget({ index, key: "separator" });
+                                                                        }}
+                                                                        {...fieldProps}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        );
+                                                    }}
                                                 />
                                             ) : null}
                                         </div>
                                     );
                                 })}
                             </div>
-                                <DialogFooter className="mt-4">
-
-                                    <Button className="w-full" type="submit">Save</Button>
-                                </DialogFooter>
+                                <NodeDialogEntityFooter />
                             </form>
                         </Form>
                     </div>
