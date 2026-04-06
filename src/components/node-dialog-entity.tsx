@@ -64,8 +64,8 @@ export const NodeDialogEntity = forwardRef<NodeDialogNameFieldHandle, NodeDialog
 
 export const NodeDialogEntityFooter = () => {
     return (
-        <DialogFooter className="mt-4">
-            <Button className="w-full gap-2 bg-linear-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30" type="submit">Save Changes</Button>
+        <DialogFooter className="sticky bottom-0 z-10 mt-4 bg-background/95 pt-4 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+            <Button className="w-full gap-2 bg-linear-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:cursor-pointer" type="submit">Save Changes</Button>
         </DialogFooter>
     )
 }

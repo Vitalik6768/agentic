@@ -1,7 +1,7 @@
 "use client";
 
 import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
 import {
     InterfaceTextDialog,
@@ -20,6 +20,9 @@ import {
     getUpstreamVariableNodeOptions,
     type AvailableVariable,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
+
+const INTERFACE_TEXT_VARIABLE_BASE = "interfaceText";
 type InterfaceTextNodeData = {
     variableName?: string;
     varibleName?: string;
@@ -95,20 +98,39 @@ export const InterfaceTextNode = memo((props: NodeProps<InterfaceTextNodeType>) 
         body?: string;
      
     }) => {
-        setNodes((nodes) => nodes.map((node) => {
-            if (node.id === props.id) {
+        setNodes((nodes) => {
+            const fallbackVariableName = getUniqueVariableName(
+                INTERFACE_TEXT_VARIABLE_BASE,
+                props.id,
+                nodes,
+            );
+            const nextVariableName = getUniqueVariableName(
+                values.variableName.trim() || fallbackVariableName,
+                props.id,
+                nodes,
+            );
+
+            return nodes.map((node) => {
+                if (node.id !== props.id) return node;
                 return {
                     ...node,
                     data: {
                         ...node.data,
                         ...values,
+                        variableName: nextVariableName,
+                        varibleName: nextVariableName,
                     }
                 };
-            }
-            return node;
-        }));
+            });
+        });
     }
     const nodeData = props.data;
+    const suggestedName = useMemo(() => {
+        const existingCandidate = nodeData?.variableName ?? nodeData?.varibleName;
+        const trimmed = typeof existingCandidate === "string" ? existingCandidate.trim() : "";
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(INTERFACE_TEXT_VARIABLE_BASE, props.id, getNodes());
+    }, [nodeData?.variableName, nodeData?.varibleName, props.id, getNodes, dialogOpen]);
     const latestResultMessage = realtimeMessages
         .filter(
             (message) =>
@@ -136,13 +158,15 @@ export const InterfaceTextNode = memo((props: NodeProps<InterfaceTextNodeType>) 
     const description = nodeData?.interfaceId
         ? `${operation === "GET_CONTENT" ? "Get" : "Add"} content`
         : "NOT CONFIGURED";
+    const existingVariableName = nodeData?.variableName ?? (nodeData as { varibleName?: string } | undefined)?.varibleName;
+    const trimmedVariableName = existingVariableName?.trim() ?? "";
     return (
         <>
             <InterfaceTextDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
-                defaultValues={nodeData as Partial<InterfaceTextFormValues>}
+                defaultValues={{ ...(nodeData as Partial<InterfaceTextFormValues>), variableName: suggestedName }}
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
@@ -157,7 +181,7 @@ export const InterfaceTextNode = memo((props: NodeProps<InterfaceTextNodeType>) 
                 {...props}
                 id={props.id}
                 icon="/logos/interface-text.svg"
-                name="Interface Text"
+                name={trimmedVariableName.length > 0 ? trimmedVariableName : "Interface Text"}
                 description={description}
                 onSettings={handleOpenSettings}
                 onDelete={() => undefined}

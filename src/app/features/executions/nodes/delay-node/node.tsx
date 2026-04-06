@@ -18,7 +18,6 @@ import {
     type UpstreamVariableNodeOption,
 } from "@/lib/variable-picker";
 import { getUniqueVariableName } from "@/lib/unique-variable-name";
-
 const DELAY_NODE_VARIABLE_BASE = "delayNode";
 
 type DelayNodeData = {

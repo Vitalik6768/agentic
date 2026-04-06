@@ -1,11 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
 import { useTRPC } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +13,11 @@ import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import type { AvailableVariable } from "@/lib/variable-picker";
+import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
+import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { FileText } from "lucide-react";
+import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
+import { TemplateVariableTextarea } from "@/lib/template-highlight";
 
 
 const formSchema = z.object({
@@ -74,6 +76,8 @@ export const InterfaceTextDialog = ({
     const trpc = useTRPC();
     const interfacesQuery = useQuery(trpc.interfaces.getMany.queryOptions());
     const textInterfaces = interfacesQuery.data?.items.filter((item) => item.type === InterfaceType.TEXT) ?? [];
+    const nameFieldRef = useRef<NodeDialogNameFieldHandle>(null);
+    const initialName = defaultValues.variableName ?? (defaultValues as { varibleName?: string }).varibleName ?? "";
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -122,19 +126,34 @@ export const InterfaceTextDialog = ({
     };
 
     const handleSubmit = (values: z.infer<typeof formSchema>) => {
-        onSubmit(values);
-        onOpenChange(false)
+        const err = nameFieldRef.current?.validate();
+        if (err) {
+            nameFieldRef.current?.enterEditMode();
+            nameFieldRef.current?.focusNameInput();
+            return;
+        }
+        const name = nameFieldRef.current?.getTrimmedName() ?? "";
+        // Header name field is the source of truth for the node label.
+        // Keep the form value in sync so saved data matches what the user sees.
+        form.setValue("variableName", name, { shouldDirty: true });
+        onSubmit({ ...values, variableName: name });
+        onOpenChange(false);
     }
+    
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-6xl">
-                <DialogHeader>
-                    <DialogTitle>Interface Text</DialogTitle>
-                    <DialogDescription>
-                        Add content to an interface or fetch its current content.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid items-start gap-6 md:grid-cols-3">
+            <DialogContent className={DIALOG_CONTENT_STYLE}>
+                <NodeDialogEntity
+                    ref={nameFieldRef}
+                    open={open}
+                    initialName={initialName}
+                    title="Interface Text"
+                    description="Add content to an interface or fetch its current content."
+                    icon={<FileText className="h-6 w-6 opacity-95" />}
+                    placeholder="interfaceText1"
+                    helpText="Canvas label and variable for this step’s output."
+                />
+                <div className={PANELS_STYLES}>
                     <VariablePickerPanel
                         items={availableVariables}
                         isLoading={isLoadingVariables}
@@ -143,35 +162,13 @@ export const InterfaceTextDialog = ({
                         onSelectedNodeIdChange={onSelectedNodeIdChange}
                         onInsertVariable={handleInsertVariable}
                         resetModeKey={open}
-                        className="max-h-[72vh] overflow-hidden"
+                        className="max-h-[72vh] overflow-y-auto"
                     />
                     <Form {...form}>
                         <form
                             onSubmit={form.handleSubmit(handleSubmit)}
                             className="mt-4 space-y-8"
                         >
-                    <FormField
-                            control={form.control}
-                            name="variableName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Variable Name</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="text"
-                                            placeholder="my_variable"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    {/* <FormDescription>
-                                        The name of the variable to store the HTTP response data.
-                                        Must be a valid JavaScript variable name.
-                                    </FormDescription> */}
-                                    <FormMessage />
-
-                                </FormItem>
-                            )}
-                        />
                         <FormField
                             control={form.control}
                             name="interfaceId"
@@ -240,7 +237,7 @@ export const InterfaceTextDialog = ({
                                         <FormItem>
                                             <FormLabel>Content to Add</FormLabel>
                                             <FormControl>
-                                                <Textarea
+                                                <TemplateVariableTextarea
                                                     ref={(element) => {
                                                         ref(element);
                                                         bodyTextareaRef.current = element;
@@ -267,10 +264,7 @@ export const InterfaceTextDialog = ({
                                 No text interfaces found. Create one in the Interfaces page first.
                             </p>
                         )}
-                            <DialogFooter className="mt-4">
-
-                                <Button className="w-full" type="submit">Save</Button>
-                            </DialogFooter>
+                        <NodeDialogEntityFooter />
                         </form>
                     </Form>
                     <ExecutionOutputPanel

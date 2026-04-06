@@ -161,6 +161,7 @@ export const DelayNodeDialog = ({
                         onInsertVariable={handleInsertVariable}
                         className="max-h-[72vh] overflow-hidden"
                     />
+                    
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                             <FormField

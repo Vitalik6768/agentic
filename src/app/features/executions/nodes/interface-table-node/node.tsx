@@ -1,7 +1,7 @@
 "use client";
 
 import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
 import {
     InterfaceTableDialog,
@@ -126,6 +126,12 @@ export const InterfaceTableNode = memo((props: NodeProps<InterfaceTableNodeType>
     };
 
     const nodeData = props.data;
+    const suggestedName = useMemo(() => {
+        const existingCandidate = nodeData?.variableName ?? nodeData?.varibleName;
+        const trimmed = typeof existingCandidate === "string" ? existingCandidate.trim() : "";
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(INTERFACE_TABLE_VARIABLE_BASE, props.id, getNodes());
+    }, [nodeData?.variableName, nodeData?.varibleName, props.id, getNodes, dialogOpen]);
     const latestResultMessage = realtimeMessages
         .filter(
             (message) =>
@@ -167,7 +173,7 @@ export const InterfaceTableNode = memo((props: NodeProps<InterfaceTableNodeType>
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
-                defaultValues={nodeData as Partial<InterfaceTableFormValues>}
+                defaultValues={{ ...(nodeData as Partial<InterfaceTableFormValues>), variableName: suggestedName }}
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}

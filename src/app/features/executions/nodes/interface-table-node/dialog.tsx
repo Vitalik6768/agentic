@@ -1,11 +1,10 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DataTransferPanel, ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
+import { ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
 import { useTRPC } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -16,8 +15,11 @@ import { Controller, useForm } from "react-hook-form";
 import z from "zod";
 import type { AvailableVariable } from "@/lib/variable-picker";
 import { toast } from "sonner";
-import { Table2, Zap } from "lucide-react";
-import { NodeDialogNameField, type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
+import { Table2 } from "lucide-react";
+import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
+import { TemplateVariableInput } from "@/lib/template-highlight";
+import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
 
 /**
  * Read column names from the table header row (`rows[0].cells`) — e.g. `id`, `email`.
@@ -255,58 +257,32 @@ export const InterfaceTableDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-[98vw] overflow-hidden rounded-2xl border border-border bg-background p-0 shadow-lg sm:max-w-7xl">
-        <DialogHeader>
-          <div className="w-full rounded-t-2xl border-b bg-linear-to-r from-blue-100/80 via-blue-50/40 to-blue-50/20 px-6 py-5 dark:from-blue-950/55 dark:via-blue-950/25 dark:to-background">
-            <DialogTitle className="sr-only">Interface Table</DialogTitle>
-            <div className="flex items-start gap-4">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-sky-500 text-white shadow-lg shadow-blue-600/20">
-                <Table2 className="h-6 w-6 opacity-95" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <NodeDialogNameField
-                  ref={nameFieldRef}
-                  open={open}
-                  initialName={initialName}
-                  placeholder="interfaceTable1"
-                  variant="header"
-                  helpText="Canvas label and variable name for this table step."
-                />
-                <DialogDescription className="pt-2">
-                  Read, append, or update rows in a Table Interface and store results for downstream nodes.
-                </DialogDescription>
-              </div>
-            </div>
-          </div>
-        </DialogHeader>
-        <div className="grid h-[calc(90vh-88px)] items-start gap-6 overflow-hidden bg-background px-6 py-6 md:grid-cols-3 md:gap-8">
-          <div className="flex h-full flex-col overflow-y-auto">
-            <VariablePickerPanel
-              items={availableVariables}
-              isLoading={isLoadingVariables}
-              nodeOptions={nodeOptions}
-              selectedNodeId={selectedNodeId}
-              onSelectedNodeIdChange={onSelectedNodeIdChange}
-              onInsertVariable={handleInsertVariable}
-              resetModeKey={open}
-              className="flex-1 rounded-2xl border border-emerald-200 bg-white p-4"
-            />
-          </div>
+      <DialogContent className={DIALOG_CONTENT_STYLE}>
+        <NodeDialogEntity
+          ref={nameFieldRef}
+          open={open}
+          initialName={initialName}
+          title="Interface Table"
+          description="Read, append, or update rows in a Table Interface and store results for downstream nodes."
+          icon={<Table2 className="h-6 w-6 opacity-95" />}
+          placeholder="interfaceTable1"
+          helpText="Canvas label and variable for this step’s output."
+        />
+        <div className={PANELS_STYLES}>
+          <VariablePickerPanel
+            items={availableVariables}
+            isLoading={isLoadingVariables}
+            nodeOptions={nodeOptions}
+            selectedNodeId={selectedNodeId}
+            onSelectedNodeIdChange={onSelectedNodeIdChange}
+            onInsertVariable={handleInsertVariable}
+            resetModeKey={open}
+            className="max-h-[72vh] overflow-y-auto"
+          />
 
-          <div className="flex h-full min-h-0 flex-col">
-            <DataTransferPanel
-              title="Interface Table Settings"
-              subtitle="Configure interface and operation"
-              icon={<Zap className="h-4 w-4 text-sky-600" />}
-              className="flex-1 min-h-0 rounded-2xl border border-sky-200 bg-white p-4"
-            >
-              <div className="flex h-full min-h-0 flex-col">
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(handleSubmit)}
-                    className="flex h-full min-h-0 flex-1 flex-col"
-                  >
-                    <div className="min-h-0 flex-1 space-y-8 overflow-y-auto pr-1 pb-20">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="max-h-[72vh] space-y-6 overflow-y-auto pr-1">
+              <div className="space-y-8">
                 <FormField
                   control={form.control}
                   name="interfaceId"
@@ -392,8 +368,7 @@ export const InterfaceTableDialog = ({
                           <FormItem>
                             <FormLabel className="text-base font-semibold text-foreground">{label}</FormLabel>
                             <FormControl>
-                              <Input
-                                className="bg-background"
+                              <TemplateVariableInput
                                 {...field}
                                 value={field.value ?? ""}
                                 placeholder={`${label}…`}
@@ -449,7 +424,7 @@ export const InterfaceTableDialog = ({
                       <FormItem>
                         <FormLabel>Match Value</FormLabel>
                         <FormControl>
-                          <Input
+                          <TemplateVariableInput
                             {...field}
                             placeholder="e.g. {{customer.id}}"
                             onFocus={() => {
@@ -498,7 +473,7 @@ export const InterfaceTableDialog = ({
                       <FormItem>
                         <FormLabel>Update Value</FormLabel>
                         <FormControl>
-                          <Input
+                          <TemplateVariableInput
                             {...field}
                             placeholder="e.g. {{order.status}}"
                             onFocus={() => {
@@ -524,32 +499,18 @@ export const InterfaceTableDialog = ({
                     No table fields found. Add header values in first row of this table first.
                   </p>
                 )}
-                <DialogFooter className="mt-4">
-                  <Button className="w-full" type="submit">
-                    Save
-                  </Button>
-                </DialogFooter>
-                    </div>
-                    <DialogFooter className="pt-2">
-                      <Button className="w-full" type="submit">
-                        Save
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </Form>
+                <NodeDialogEntityFooter />
               </div>
-            </DataTransferPanel>
-          </div>
+            </form>
+          </Form>
 
-          <div className="flex h-full flex-col">
-            <ExecutionOutputPanel
-              executionStatus={executionStatus}
-              executionOutput={executionOutput}
-              executionError={executionError}
-              idleMessage="Execute this workflow to view the latest Interface Table node output here."
-              className="flex-1 rounded-2xl border border-amber-200 bg-white p-4"
-            />
-          </div>
+          <ExecutionOutputPanel
+            executionStatus={executionStatus}
+            executionOutput={executionOutput}
+            executionError={executionError}
+            idleMessage="Execute this workflow to view the latest Interface Table node output here."
+            className="max-h-[72vh] overflow-hidden"
+          />
         </div>
       </DialogContent>
     </Dialog>
