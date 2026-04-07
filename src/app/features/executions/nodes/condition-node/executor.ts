@@ -9,6 +9,11 @@ registerHandlebarsHelpers();
 type ConditionNodeData = {
   variableName?: string;
   varibleName?: string;
+  conditions?: Array<{
+    left?: string;
+    operator?: "eq" | "ne" | "gt" | "gte" | "lt" | "lte";
+    right?: string;
+  }>;
   expression?: string;
 };
 

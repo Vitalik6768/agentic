@@ -2,12 +2,12 @@
 
 import { BaseHandle } from "@/components/react-flow/base-handle";
 import { type Node, type NodeProps, Position, useReactFlow } from "@xyflow/react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { CONDITION_NODE_CHANNEL_NAME } from "@/inngest/channels/condition-node";
 import { fetchConditionNodeRealtimeToken } from "./actions";
-import { ConditionDialog, type ConditionDialogValues } from "./dialog";
+import { ConditionNodeDialog, type ConditionDialogValues } from "./dialog";
 import { useTRPC } from "@/trpc/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
@@ -18,10 +18,16 @@ import {
   type AvailableVariable,
   type UpstreamVariableNodeOption,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
 
 type ConditionNodeData = {
   variableName?: string;
   varibleName?: string;
+  conditions?: Array<{
+    left?: string;
+    operator?: "eq" | "ne" | "gt" | "gte" | "lt" | "lte";
+    right?: string;
+  }>;
   expression?: string;
 };
 
@@ -76,13 +82,27 @@ export const ConditionNode = memo((props: NodeProps<ConditionNodeType>) => {
     })
     : null;
 
-  const description = props.data?.expression?.trim()
-    ? props.data.expression
+  const nodeData = props.data;
+  const description = nodeData?.expression?.trim()
+    ? nodeData.expression
     : "IF condition";
 
+  const CONDITION_VARIABLE_BASE = "condition";
+  const suggestedName = useMemo(() => {
+    const existingCandidate = nodeData?.variableName ?? nodeData?.varibleName;
+    const trimmed = typeof existingCandidate === "string" ? existingCandidate.trim() : "";
+    if (trimmed) return trimmed;
+    return getUniqueVariableName(CONDITION_VARIABLE_BASE, props.id, getNodes());
+  }, [nodeData?.variableName, nodeData?.varibleName, props.id, getNodes, dialogOpen]);
+
   const defaultValues: Partial<ConditionDialogValues> = {
-    variableName: props.data?.variableName ?? props.data?.varibleName,
-    expression: props.data?.expression,
+    variableName: nodeData?.variableName ?? nodeData?.varibleName,
+    conditions: nodeData?.conditions?.map((c) => ({
+      left: c.left ?? "",
+      operator: c.operator ?? "eq",
+      right: c.right ?? "",
+    })),
+    expression: nodeData?.expression,
   };
 
   useEffect(() => {
@@ -118,30 +138,44 @@ export const ConditionNode = memo((props: NodeProps<ConditionNodeType>) => {
   };
 
   const handleSubmit = (values: ConditionDialogValues) => {
-    setNodes((nodes) =>
-      nodes.map((node) => {
-        if (node.id !== props.id) {
-          return node;
-        }
+    setNodes((nodes) => {
+      const fallbackVariableName = getUniqueVariableName(
+        CONDITION_VARIABLE_BASE,
+        props.id,
+        nodes,
+      );
+      const nextVariableName = getUniqueVariableName(
+        values.variableName.trim() || fallbackVariableName,
+        props.id,
+        nodes,
+      );
 
+      return nodes.map((node) => {
+        if (node.id !== props.id) return node;
         return {
           ...node,
           data: {
             ...node.data,
             ...values,
+            variableName: nextVariableName,
+            varibleName: nextVariableName,
           },
         };
-      }),
-    );
+      });
+    });
   };
+
+  const existingVariableName =
+    nodeData?.variableName ?? (nodeData as { varibleName?: string } | undefined)?.varibleName;
+  const trimmedVariableName = existingVariableName?.trim() ?? "";
 
   return (
     <>
-      <ConditionDialog
+      <ConditionNodeDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSubmit={handleSubmit}
-        defaultValues={defaultValues}
+        defaultValues={{ ...defaultValues, variableName: suggestedName }}
         executionStatus={nodeStatus}
         executionOutput={latestExecutionResult?.output ?? ""}
         executionError={latestExecutionResult?.error}
@@ -156,8 +190,8 @@ export const ConditionNode = memo((props: NodeProps<ConditionNodeType>) => {
         {...props}
         id={props.id}
         icon="/logos/condition-node.svg"
-        // name="Condition If"
-        // description={description}
+        name={trimmedVariableName.length > 0 ? trimmedVariableName : "Condition"}
+        description={description}
         onSettings={handleOpenSettings}
         onDoubleClick={handleOpenSettings}
       >

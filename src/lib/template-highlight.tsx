@@ -21,6 +21,15 @@ function isTemplateToken(segment: string): boolean {
   return /^\{\{[\s\S]*\}\}$/.test(segment);
 }
 
+/**
+ * If `value` is exactly a single `{{ ... }}` token, returns the inner expression (trimmed).
+ * Otherwise returns null.
+ */
+export function unwrapTemplateToken(value: string): string | null {
+  const match = /^\{\{\s*([\s\S]*?)\s*\}\}$/.exec(value);
+  return match?.[1]?.trim() ? match[1].trim() : null;
+}
+
 const tokenClass = "text-sky-600 dark:text-sky-400";
 const plainClass = "text-foreground";
 
