@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +10,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
+import { ExecutionOutputPanel } from "@/components/data-transfer";
+import { NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { TriggerDialogEntity } from "@/components/trigger-dialog-entity";
+import { TRIGGER_DIALOG_CONTENT_STYLE, TRIGGER_PANELS_STYLES } from "../trigger-constants";
+import { Clock } from "lucide-react";
 import z from "zod";
 
 const formSchema = z.object({
@@ -130,6 +135,7 @@ export const ScheduleTriggerDialog = ({
     });
     const form = useForm<ScheduleTriggerFormValues>({
         resolver: zodResolver(formSchema),
+        shouldUnregister: false,
         defaultValues: {
             cronExpression: defaultValues.cronExpression ?? "*/5 * * * *",
             timezone: defaultValues.timezone ?? "UTC",
@@ -175,14 +181,13 @@ export const ScheduleTriggerDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] sm:max-w-3xl">
-                <DialogHeader>
-                    <DialogTitle>Schedule Trigger</DialogTitle>
-                    <DialogDescription>
-                        Configure when this workflow should run automatically.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 md:grid-cols-2">
+            <DialogContent className={TRIGGER_DIALOG_CONTENT_STYLE}>
+                <TriggerDialogEntity
+                    title="Schedule Trigger"
+                    description="Configure when this workflow should run automatically."
+                    icon={<Clock className="h-6 w-6 opacity-95" />}
+                />
+                <div className={TRIGGER_PANELS_STYLES}>
                     <div className="max-h-[72vh] overflow-y-auto pr-1">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
@@ -383,28 +388,18 @@ export const ScheduleTriggerDialog = ({
                                 )}
                             />
 
-                            <DialogFooter>
-                                <Button className="w-full" type="submit">Save</Button>
-                            </DialogFooter>
+                            <NodeDialogEntityFooter />
                         </form>
                     </Form>
                     </div>
 
-                    <div className="rounded-md border bg-muted/30 p-4">
-                        <h3 className="mb-2 text-sm font-semibold">Status</h3>
-                        <p className="text-xs text-muted-foreground">
-                            {executionStatus === "loading"
-                                ? "Running..."
-                                : executionStatus === "success"
-                                  ? "Completed"
-                                  : executionStatus === "error"
-                                    ? "Failed"
-                                    : "Idle"}
-                        </p>
-                        <div className="mt-4 rounded-md border border-dashed bg-background p-3 text-sm text-muted-foreground">
-                            Save settings here, then call your cron endpoint to process due schedules.
-                        </div>
-                    </div>
+                    <ExecutionOutputPanel
+                        executionStatus={executionStatus}
+                        executionOutput=""
+                        executionError={undefined}
+                        idleMessage="Save settings here, then call your cron endpoint to process due schedules."
+                        className="max-h-[420px] overflow-hidden"
+                    />
                 </div>
             </DialogContent>
         </Dialog>

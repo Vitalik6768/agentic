@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,11 @@ import { useGetCredentialsByType } from "../../credentials/hooks/use-credentials
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
+import { ExecutionOutputPanel } from "@/components/data-transfer";
+import { NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { TriggerDialogEntity } from "@/components/trigger-dialog-entity";
+import { TRIGGER_DIALOG_CONTENT_STYLE, TRIGGER_PANELS_STYLES } from "../trigger-constants";
+import { MessageCircle } from "lucide-react";
 
 
 const formSchema = z.object({
@@ -57,6 +62,7 @@ export const TelegramTriggerDialog = ({
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
+        shouldUnregister: false,
         defaultValues: {
             variableName: defaultValues.variableName ?? "telegramTrigger",
             credentialId: defaultValues.credentialId ?? "",
@@ -141,18 +147,17 @@ export const TelegramTriggerDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-5xl">
-                <DialogHeader>
-                    <DialogTitle>Telegram Trigger</DialogTitle>
-                    <DialogDescription>
-                        Configure the Telegram trigger.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 md:grid-cols-2">
+            <DialogContent className={TRIGGER_DIALOG_CONTENT_STYLE}>
+                <TriggerDialogEntity
+                    title="Telegram Trigger"
+                    description="Configure the Telegram trigger."
+                    icon={<MessageCircle className="h-6 w-6 opacity-95" />}
+                />
+                <div className={TRIGGER_PANELS_STYLES}>
                     <Form {...form}>
                         <form
                             onSubmit={form.handleSubmit(handleSubmit)}
-                            className="space-y-8 mt-4"
+                            className="space-y-8"
                         >
                             <FormField control={form.control} name="variableName" render={({ field }) => (
                                 <FormItem>
@@ -197,9 +202,7 @@ export const TelegramTriggerDialog = ({
                                     <FormMessage />
                                 </FormItem>
                             )} />
-                           
-                            <DialogFooter className="mt-40 flex flex-wrap justify-end gap-2">
-                                <Button type="submit">Save</Button>
+                            <div className="flex flex-wrap items-center justify-end gap-2">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -216,30 +219,17 @@ export const TelegramTriggerDialog = ({
                                 >
                                     {webhookAction === "remove" ? "Removing..." : "Remove Webhook"}
                                 </Button>
-                            </DialogFooter>
+                            </div>
+                            <NodeDialogEntityFooter />
                         </form>
                     </Form>
-                    <div className="rounded-md border bg-muted/30 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-semibold">Execution Output</h3>
-                            <span className="text-xs text-muted-foreground">
-                                {executionStatus === "loading" ? "Running..." : executionStatus === "success" ? "Completed" : executionStatus === "error" ? "Failed" : "Idle"}
-                            </span>
-                        </div>
-                        {executionStatus === "success" && executionOutput ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap">
-                                {executionOutput}
-                            </pre>
-                        ) : executionStatus === "error" ? (
-                            <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap text-red-500">
-                                {executionError ?? "Execution failed"}
-                            </pre>
-                        ) : (
-                            <div className="flex min-h-[180px] items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-                                Execute this workflow to view the latest Telegram trigger output here.
-                            </div>
-                        )}
-                    </div>
+                    <ExecutionOutputPanel
+                        executionStatus={executionStatus}
+                        executionOutput={executionOutput}
+                        executionError={executionError}
+                        idleMessage="Execute this workflow to view the latest Telegram trigger output here."
+                        className="max-h-[420px] overflow-hidden"
+                    />
                 </div>
             </DialogContent>
         </Dialog>
