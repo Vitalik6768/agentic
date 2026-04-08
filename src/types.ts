@@ -4,7 +4,6 @@ export enum CredentialType {
   OPENROUTER = "OPENROUTER",
   SET_NODE = "SET_NODE",
   TELEGRAM_BOT = "TELEGRAM_BOT",
-  SERP_API_NODE = "SERP_API_NODE"
 }
 
 export interface Credential {

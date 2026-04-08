@@ -12,7 +12,6 @@ import { interfaceTextNodeExecutor } from "../executions/nodes/interface-text-no
 import { interfaceTableNodeExecutor } from "../executions/nodes/interface-table-node/executor";
 import { conditionNodeExecutor } from "../executions/nodes/condition-node/executor";
 import { agentNodeExecutor } from "../executions/nodes/agent-node/executor";
-import { serpApiNodeExecutor } from "../executions/nodes/serp-api-node/executor";
 import { extractorNodeExecutor } from "../executions/nodes/extractor-node/executor";
 import { loopExecutor } from "../executions/nodes/loop-node/executor";
 import { breakNodeExecutor } from "../executions/nodes/break-node/executor";

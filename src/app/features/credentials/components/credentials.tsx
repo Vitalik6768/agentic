@@ -99,7 +99,6 @@ const credentialTypeIcon: Record<CredentialType, React.ReactNode> = {
     [CredentialType.OPENROUTER]: "/logos/openrouter.svg",
     [CredentialType.SET_NODE]: "/logos/set-node.svg",
     [CredentialType.TELEGRAM_BOT]: "/logos/telegram.svg",
-    [CredentialType.SERP_API_NODE]: "/logos/serp-api.svg",
 
 }
 
