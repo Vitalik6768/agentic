@@ -5,10 +5,6 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,7 +13,12 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "next/navigation";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
+import { ExecutionOutputPanel } from "@/components/data-transfer";
+import { NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { TriggerDialogEntity } from "@/components/trigger-dialog-entity";
+import { Webhook } from "lucide-react";
 import z from "zod";
+import { TRIGGER_DIALOG_CONTENT_STYLE, TRIGGER_PANELS_STYLES } from "../trigger-constants";
 
 const formSchema = z.object({
   method: z.enum(["GET", "POST"]),
@@ -58,6 +59,7 @@ export const WebhookTriggerDialog = ({
 
   const form = useForm<WebhookTriggerFormValues>({
     resolver: zodResolver(formSchema),
+    shouldUnregister: false,
     defaultValues: {
       method: defaultValues.method ?? "POST",
     },
@@ -85,16 +87,16 @@ export const WebhookTriggerDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-5xl">
-        <DialogHeader>
-          <DialogTitle>Webhook Trigger</DialogTitle>
-          <DialogDescription>
-            Choose which HTTP method can trigger this workflow.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 mt-4">
+      <DialogContent className={TRIGGER_DIALOG_CONTENT_STYLE}>
+        <TriggerDialogEntity
+          title="Webhook Trigger"
+          description="Choose which HTTP method can trigger this workflow."
+          icon={<Webhook className="h-6 w-6 opacity-95" />}
+        />
+        <div className={TRIGGER_PANELS_STYLES}>
+          <div className="overflow-y-auto pr-1">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="method"
@@ -144,40 +146,18 @@ export const WebhookTriggerDialog = ({
                   </Button>
                 </div>
               </div>
-              <DialogFooter>
-                <Button className="w-full" type="submit">
-                  Save
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-          <div className="rounded-md border bg-muted/30 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Execution Output</h3>
-              <span className="text-xs text-muted-foreground">
-                {executionStatus === "loading"
-                  ? "Running..."
-                  : executionStatus === "success"
-                    ? "Completed"
-                    : executionStatus === "error"
-                      ? "Failed"
-                      : "Idle"}
-              </span>
-            </div>
-            {executionStatus === "success" && executionOutput ? (
-              <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap">
-                {executionOutput}
-              </pre>
-            ) : executionStatus === "error" ? (
-              <pre className="max-h-[420px] overflow-auto rounded-md bg-background p-3 font-mono text-xs whitespace-pre-wrap text-red-500">
-                {executionError ?? "Execution failed"}
-              </pre>
-            ) : (
-              <div className="flex min-h-[180px] items-center justify-center rounded-md border border-dashed bg-background px-4 text-center text-sm text-muted-foreground">
-                Execute this workflow to view the latest Webhook trigger output here.
-              </div>
-            )}
+              <NodeDialogEntityFooter />
+              </form>
+            </Form>
           </div>
+
+          <ExecutionOutputPanel
+            executionStatus={executionStatus}
+            executionOutput={executionOutput}
+            executionError={executionError}
+            idleMessage="Execute this workflow to view the latest Webhook trigger output here."
+            className="max-h-[420px] overflow-hidden"
+          />
         </div>
       </DialogContent>
     </Dialog>
