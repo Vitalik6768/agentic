@@ -1,21 +1,19 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { DataTransferPanel, ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
-import {
-    NodeDialogNameField,
-    type NodeDialogNameFieldHandle,
-} from "@/components/node-dialog-name-field";
+import { ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
+import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
+import { TemplateVariableTextarea } from "@/lib/template-highlight";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
-import { Clock, Play, Zap } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 
 
@@ -79,6 +77,7 @@ export const SetNodeDialog = ({
     const nameFieldRef = useRef<NodeDialogNameFieldHandle>(null);
     const form = useForm<SetNodeFormValues>({
         resolver: zodResolver(formSchema),
+        shouldUnregister: false,
         defaultValues: {
             value: defaultValues.value ?? "",
             valueType: defaultValues.valueType ?? "string",
@@ -136,125 +135,97 @@ export const SetNodeDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-[98vw] overflow-hidden rounded-2xl border border-border bg-background p-0 shadow-lg sm:max-w-7xl">
-                <DialogHeader>
-                    <div className="border-b bg-background px-6 py-5">
-                        <DialogTitle className="sr-only">Set variable</DialogTitle>
-                        <NodeDialogNameField
-                            ref={nameFieldRef}
-                            open={open}
-                            initialName={initialName}
-                            placeholder="setNode1"
-                            variant="header"
-                            helpText="Canvas label and variable updated by this step."
-                        />
-                        <DialogDescription className="pt-3">
-                            Create or overwrite a variable in workflow context.
-                        </DialogDescription>
+            <DialogContent className={DIALOG_CONTENT_STYLE}>
+                <NodeDialogEntity
+                    ref={nameFieldRef}
+                    open={open}
+                    initialName={initialName}
+                    title="Set"
+                    description="Create or overwrite a variable in workflow context."
+                    icon={<Pencil className="h-6 w-6 opacity-95" />}
+                    placeholder="set1"
+                    helpText="Canvas label and variable updated by this step."
+                />
+                <div className={PANELS_STYLES}>
+                    <VariablePickerPanel
+                        items={availableVariables}
+                        isLoading={isLoadingVariables}
+                        nodeOptions={nodeOptions}
+                        selectedNodeId={selectedNodeId}
+                        onSelectedNodeIdChange={onSelectedNodeIdChange}
+                        onInsertVariable={handleInsertVariable}
+                        allowPathMode
+                        resetModeKey={open}
+                        className="max-h-[72vh] overflow-hidden"
+                    />
+                    <div className="max-h-[72vh] overflow-y-auto pr-1">
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                                <FormField
+                                    control={form.control}
+                                    name="valueType"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Value Type</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Select value type" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="string">String</SelectItem>
+                                                    <SelectItem value="number">Number</SelectItem>
+                                                    <SelectItem value="boolean">Boolean</SelectItem>
+                                                    <SelectItem value="json">JSON</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormDescription>
+                                                Value is rendered with templates first, then cast to the selected type.
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="value"
+                                    render={({ field }) => {
+                                        const { ref, value, ...fieldProps } = field;
+                                        return (
+                                            <FormItem>
+                                                <FormLabel>Value</FormLabel>
+                                                <FormControl>
+                                                    <TemplateVariableTextarea
+                                                        ref={(element) => {
+                                                            ref(element);
+                                                            valueTextareaRef.current = element;
+                                                        }}
+                                                        value={value ?? ""}
+                                                        className="min-h-[160px] font-mono text-sm"
+                                                        placeholder='{{httpResponse.data.id}} or {"id":"{{httpResponse.data.id}}"}'
+                                                        {...fieldProps}
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Supports Handlebars templates like {`{{variable}}`} and {`{{json variable}}`}.
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        );
+                                    }}
+                                />
+                                <NodeDialogEntityFooter />
+                            </form>
+                        </Form>
                     </div>
-                </DialogHeader>
-                <div className="grid h-[calc(90vh-88px)] items-start gap-6 overflow-hidden bg-background px-6 py-6 md:grid-cols-3 md:gap-8">
-                    <div className="flex h-full flex-col overflow-y-auto">
-                        <VariablePickerPanel
-                            items={availableVariables}
-                            isLoading={isLoadingVariables}
-                            nodeOptions={nodeOptions}
-                            selectedNodeId={selectedNodeId}
-                            onSelectedNodeIdChange={onSelectedNodeIdChange}
-                            onInsertVariable={handleInsertVariable}
-                            allowPathMode
-                            resetModeKey={open}
-                            className="flex-1 rounded-2xl border border-emerald-200 bg-white p-4"
-                        />
-                    </div>
-
-                    <div className="flex h-full flex-col">
-                        <DataTransferPanel
-                            title="Set Settings"
-                            subtitle="Configure value to write"
-                            icon={<Clock className="h-3.5 w-3.5" />}
-                            className="flex-1 rounded-2xl border border-sky-200 bg-white p-4"
-                        >
-                            <div className="h-full overflow-y-auto pr-1">
-                                <Form {...form}>
-                                    <form
-                                        onSubmit={form.handleSubmit(handleSubmit)}
-                                        className="space-y-6"
-                                    >
-                                        <FormField
-                                            control={form.control}
-                                            name="valueType"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Value Type</FormLabel>
-                                                    <Select
-                                                        onValueChange={field.onChange}
-                                                        defaultValue={field.value}
-                                                    >
-                                                        <FormControl>
-                                                            <SelectTrigger className="w-full">
-                                                                <SelectValue placeholder="Select value type" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="string">String</SelectItem>
-                                                            <SelectItem value="number">Number</SelectItem>
-                                                            <SelectItem value="boolean">Boolean</SelectItem>
-                                                            <SelectItem value="json">JSON</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormDescription>
-                                                        Value is rendered with templates first, then cast to the selected type.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="value"
-                                            render={({ field }) => {
-                                                const { ref, ...fieldProps } = field;
-                                                return (
-                                                    <FormItem>
-                                                        <FormLabel>Value</FormLabel>
-                                                        <FormControl>
-                                                            <Textarea
-                                                                ref={(element) => {
-                                                                    ref(element);
-                                                                    valueTextareaRef.current = element;
-                                                                }}
-                                                                className="min-h-[120px] font-mono text-sm"
-                                                                placeholder='{{httpResponse.data.id}} or {"id":"{{httpResponse.data.id}}"}'
-                                                                {...fieldProps}
-                                                            />
-                                                        </FormControl>
-                                                        <FormDescription>
-                                                            Supports Handlebars templates like {`{{variable}}`} and {`{{json variable}}`}.
-                                                        </FormDescription>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                );
-                                            }}
-                                        />
-                                        <DialogFooter className="pt-2">
-                                            <Button className="w-full" type="submit">Save</Button>
-                                        </DialogFooter>
-                                    </form>
-                                </Form>
-                            </div>
-                        </DataTransferPanel>
-                    </div>
-
-                    <div className="flex h-full flex-col">
-                        <ExecutionOutputPanel
-                            executionStatus={executionStatus}
-                            executionOutput={executionOutput}
-                            executionError={executionError}
-                            idleMessage="Execute this workflow to view the latest Set node output here."
-                            className="flex-1 rounded-2xl border border-amber-200 bg-white p-4"
-                        />
-                    </div>
+                    <ExecutionOutputPanel
+                        executionStatus={executionStatus}
+                        executionOutput={executionOutput}
+                        executionError={executionError}
+                        idleMessage="Execute this workflow to view the latest Set node output here."
+                        className="max-h-[72vh] overflow-hidden"
+                    />
                 </div>
             </DialogContent>
         </Dialog>

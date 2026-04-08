@@ -1,11 +1,10 @@
 "use client";
 
 import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
-import { RepeatIcon } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
 import {
-    LoopDialog,
+    LoopNodeDialog,
     type LoopFormValues,
     type LoopVariableNodeOption,
 } from "./dialog";
@@ -21,6 +20,7 @@ import {
     getUpstreamVariableNodeOptions,
     type AvailableVariable,
 } from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
 
 type LoopNodeData = {
     variableName?: string;
@@ -30,6 +30,8 @@ type LoopNodeData = {
 }
 
 type LoopNodeType = Node<LoopNodeData>;
+
+const LOOP_VARIABLE_BASE = "loop";
 
 export const LoopNode = memo((props: NodeProps<LoopNodeType>) => {
     const trpc = useTRPC();
@@ -123,6 +125,8 @@ export const LoopNode = memo((props: NodeProps<LoopNodeType>) => {
                     data: {
                         ...node.data,
                         ...values,
+                        variableName: values.variableName,
+                        varibleName: values.variableName,
                     }
                 };
             }
@@ -130,8 +134,14 @@ export const LoopNode = memo((props: NodeProps<LoopNodeType>) => {
         }));
     }
     const nodeData = props.data;
+    const suggestedName = (() => {
+        const existingCandidate = nodeData?.variableName ?? nodeData?.varibleName;
+        const trimmed = typeof existingCandidate === "string" ? existingCandidate.trim() : "";
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(LOOP_VARIABLE_BASE, props.id, getNodes());
+    })();
     const defaultValues: Partial<LoopFormValues> = {
-        variableName: nodeData?.variableName ?? nodeData?.varibleName,
+        variableName: suggestedName,
         arrayInput: nodeData?.arrayInput,
     };
     const variableName = nodeData?.variableName ?? nodeData?.varibleName;
@@ -141,7 +151,7 @@ export const LoopNode = memo((props: NodeProps<LoopNodeType>) => {
         "NOT CONFIGURED";
     return (
         <>
-            <LoopDialog
+            <LoopNodeDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
@@ -171,5 +181,4 @@ export const LoopNode = memo((props: NodeProps<LoopNodeType>) => {
 
     )
 })
-
 LoopNode.displayName = "LoopNode";

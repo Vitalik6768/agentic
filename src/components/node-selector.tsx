@@ -43,12 +43,6 @@ const triggerNodes: NodeTypeOption[] = [
         description: "Trigger the workflow on a schedule",
         icon: "/logos/schedule-trigger.svg",
     },
-    {
-        type: NodeType.GOOGLE_FORM_TRIGGER,
-        label: "Google Form Trigger",
-        description: "When a Google Form is submitted",
-        icon: `/logos/googleform.svg`,
-    },
 ]
 
 const dataTransformationNodes: NodeTypeOption[] = [
@@ -96,12 +90,6 @@ const executionNodes: NodeTypeOption[] = [
         label: "HTTP Request",
         description: "Make an HTTP request",
         icon: GlobeIcon,
-    },
-    {
-        type: NodeType.SERP_API_NODE,
-        label: "SERP API Node",
-        description: "Use the SERP API to search the web",
-        icon: "/logos/serp-api.svg",
     },
     {
         type: NodeType.TELEGRAM_MESSAGE,

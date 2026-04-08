@@ -32,7 +32,6 @@ export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.TELEGRAM_MESSAGE]: telegramMessageExecutor as NodeExecutor,
     [NodeType.CONDITION_NODE]: conditionNodeExecutor as NodeExecutor,
     [NodeType.AGENT_NODE]: agentNodeExecutor as NodeExecutor,
-    [NodeType.SERP_API_NODE]: serpApiNodeExecutor as NodeExecutor,
     [NodeType.EXTRACTOR_NODE]: extractorNodeExecutor as NodeExecutor,
     [NodeType.LOOP_NODE]: loopExecutor as NodeExecutor,
     [NodeType.BREAK_NODE]: breakNodeExecutor as NodeExecutor,

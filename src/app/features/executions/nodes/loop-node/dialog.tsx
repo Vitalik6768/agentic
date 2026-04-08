@@ -1,12 +1,14 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ExecutionOutputPanel, VariablePickerPanel } from "@/components/data-transfer";
+import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
+import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
+import { TemplateVariableTextarea } from "@/lib/template-highlight";
+import { Repeat } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
@@ -36,7 +38,6 @@ export type LoopVariableNodeOption = {
     nodeType: string;
     variableRoot: string;
 };
-
 interface Props {
     open: boolean
     onOpenChange: (open: boolean) => void
@@ -52,7 +53,7 @@ interface Props {
     nodeOptions?: LoopVariableNodeOption[];
 }
 
-export const LoopDialog = ({ 
+export const LoopNodeDialog = ({ 
     open, 
     onOpenChange, 
     onSubmit, 
@@ -67,8 +68,11 @@ export const LoopDialog = ({
     nodeOptions = [],
 }: Props) => {
     const arrayTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const nameFieldRef = useRef<NodeDialogNameFieldHandle>(null);
+    const initialName = defaultValues.variableName ?? "";
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
+        shouldUnregister: false,
         defaultValues: {
             variableName: defaultValues.variableName ?? "",
             arrayInput: defaultValues.arrayInput ?? "",
@@ -87,7 +91,16 @@ export const LoopDialog = ({
 
 
     const handleSubmit = (values: z.infer<typeof formSchema>) => {
-        onSubmit(values);
+        const err = nameFieldRef.current?.validate();
+        if (err) {
+            nameFieldRef.current?.enterEditMode();
+            nameFieldRef.current?.focusNameInput();
+            return;
+        }
+
+        const name = nameFieldRef.current?.getTrimmedName() ?? "";
+        form.setValue("variableName", name, { shouldDirty: true });
+        onSubmit({ ...values, variableName: name });
         onOpenChange(false);
     };
 
@@ -115,14 +128,18 @@ export const LoopDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-6xl">
-                <DialogHeader>
-                    <DialogTitle>Loop</DialogTitle>
-                    <DialogDescription>
-                        Configure an array input and iterate over each item.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid items-start gap-6 md:grid-cols-3">
+            <DialogContent className={DIALOG_CONTENT_STYLE}>
+                <NodeDialogEntity
+                    ref={nameFieldRef}
+                    open={open}
+                    initialName={initialName}
+                    title="Loop"
+                    description="Iterate over an array and expose items/count for downstream steps."
+                    icon={<Repeat className="h-6 w-6 opacity-95" />}
+                    placeholder="loop1"
+                    helpText="Canvas label and variable for this step’s output."
+                />
+                <div className={PANELS_STYLES}>
                     <VariablePickerPanel
                         items={availableVariables}
                         isLoading={isLoadingVariables}
@@ -130,65 +147,45 @@ export const LoopDialog = ({
                         selectedNodeId={selectedNodeId}
                         onSelectedNodeIdChange={onSelectedNodeIdChange}
                         onInsertVariable={handleInsertVariable}
+                        allowPathMode
+                        resetModeKey={open}
                         className="max-h-[72vh] overflow-hidden"
                     />
-                    <Form {...form}>
-                        <form
-                            onSubmit={form.handleSubmit(handleSubmit)}
-                            className="space-y-6"
-                        >
-                            <FormField
-                                control={form.control}
-                                name="variableName"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Variable Name</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="text"
-                                                placeholder="my_variable"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormDescription>
-                                            The variable where loop output is stored in context.
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="arrayInput"
-                                render={({ field }) => {
-                                    const { ref, ...fieldProps } = field;
-                                    return (
-                                        <FormItem>
-                                            <FormLabel>Array Input</FormLabel>
-                                            <FormControl>
-                                                <Textarea
-                                                    ref={(element) => {
-                                                        ref(element);
-                                                        arrayTextareaRef.current = element;
-                                                    }}
-                                                    className="min-h-[140px] font-mono text-sm"
-                                                    placeholder='["apple", "banana", "orange"] or {{myArray}}'
-                                                    {...fieldProps}
-                                                />
-                                            </FormControl>
-                                            <FormDescription>
-                                                Accepts a JSON array. You can also use template tokens such as {`{{items}}`}.
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    );
-                                }}
-                            />
-                            <DialogFooter className="mt-4">
-                                <Button className="w-full" type="submit">Save</Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
+                    <div className="max-h-[72vh] overflow-y-auto pr-1">
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                                <FormField
+                                    control={form.control}
+                                    name="arrayInput"
+                                    render={({ field }) => {
+                                        const { ref, value, ...fieldProps } = field;
+                                        return (
+                                            <FormItem>
+                                                <FormLabel>Array Input</FormLabel>
+                                                <FormControl>
+                                                    <TemplateVariableTextarea
+                                                        ref={(element) => {
+                                                            ref(element);
+                                                            arrayTextareaRef.current = element;
+                                                        }}
+                                                        value={value ?? ""}
+                                                        className="min-h-[160px] font-mono text-sm"
+                                                        placeholder='["apple", "banana", "orange"] or {{myArray}}'
+                                                        {...fieldProps}
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Must resolve to valid JSON array text after templating. Example: {`{{items}}`}.
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        );
+                                    }}
+                                />
+                                <NodeDialogEntityFooter />
+                            </form>
+                        </Form>
+                    </div>
                     <ExecutionOutputPanel
                         executionStatus={executionStatus}
                         executionOutput={executionOutput}

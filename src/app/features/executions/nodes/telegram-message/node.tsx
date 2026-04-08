@@ -1,6 +1,5 @@
 "use client";
-
-import { memo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { useReactFlow, type Node, type NodeProps } from "@xyflow/react";
@@ -8,9 +7,20 @@ import { TelegramMessageDialog, type TelegramMessageDialogValues } from "./dialo
 import { fetchTelegramMessageRealtimeToken } from "./actions";
 import { useInngestSubscription } from "@inngest/realtime/hooks";
 import { TELEGRAM_MESSAGE_CHANNEL_NAME } from "@/inngest/channels/telegram-message";
+import { useTRPC } from "@/trpc/react";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
+import {
+    getAvailableVariables,
+    getUpstreamVariableNodeOptions,
+    type AvailableVariable,
+    type UpstreamVariableNodeOption,
+} from "@/lib/variable-picker";
+import { getUniqueVariableName } from "@/lib/unique-variable-name";
 
 type TelegramMessageNodeData = {
     variableName?: string;
+    varibleName?: string;
     message?: string;
     chatId?: string;
     credentialId?: string;
@@ -19,6 +29,9 @@ type TelegramMessageNodeData = {
 type TelegramMessageNodeType = Node<TelegramMessageNodeData>;
 
 export const TelegramMessageNode = memo((props: NodeProps<TelegramMessageNodeType>) => {
+    const trpc = useTRPC();
+    const params = useParams<{ workflowsId?: string }>();
+    const workflowId = typeof params.workflowsId === "string" ? params.workflowsId : undefined;
     const nodeStatus = useNodeStatus({
         nodeId: props.id,
         channel: TELEGRAM_MESSAGE_CHANNEL_NAME,
@@ -26,7 +39,16 @@ export const TelegramMessageNode = memo((props: NodeProps<TelegramMessageNodeTyp
         refreshToken: fetchTelegramMessageRealtimeToken,
     });
     const [dialogOpen, setDialogOpen] = useState(false);
-    const { setNodes } = useReactFlow();
+    const [availableVariables, setAvailableVariables] = useState<AvailableVariable[]>([]);
+    const [nodeOptions, setNodeOptions] = useState<UpstreamVariableNodeOption[]>([]);
+    const [selectedNodeId, setSelectedNodeId] = useState<string>("");
+    const { setNodes, getNodes, getEdges } = useReactFlow();
+    const latestWorkflowOutputQuery = useQuery({
+        ...(workflowId
+            ? trpc.executions.getLatestWorkflowOutput.queryOptions({ workflowId })
+            : trpc.executions.getLatestWorkflowOutput.queryOptions({ workflowId: "" })),
+        enabled: Boolean(workflowId) && dialogOpen,
+    });
     const { data: realtimeMessages } = useInngestSubscription({
         refreshToken: fetchTelegramMessageRealtimeToken,
         enabled: true,
@@ -56,33 +78,86 @@ export const TelegramMessageNode = memo((props: NodeProps<TelegramMessageNodeTyp
         })
         : null;
     const defaultValues: Partial<TelegramMessageDialogValues> = {
-        variableName: props.data?.variableName,
-        message: props.data?.message,
-        chatId: props.data?.chatId,
-        credentialId: props.data?.credentialId,
+        variableName: props.data?.variableName ?? props.data?.varibleName,
+        message: props.data?.message ?? "",
+        chatId: props.data?.chatId ?? "",
+        credentialId: props.data?.credentialId ?? "",
     };
 
     const handleOpenSettings = () => {
+        const upstreamOptions = getUpstreamVariableNodeOptions(
+            props.id,
+            getNodes(),
+            getEdges(),
+        );
+        setNodeOptions(upstreamOptions);
+        const defaultNodeId = upstreamOptions[upstreamOptions.length - 1]?.nodeId ?? "";
+        setSelectedNodeId(defaultNodeId);
+        const vars = getAvailableVariables(
+            props.id,
+            getNodes(),
+            getEdges(),
+            latestWorkflowOutputQuery.data?.output,
+            defaultNodeId || undefined,
+        );
+        setAvailableVariables(vars);
         setDialogOpen(true);
     }
+
+    useEffect(() => {
+        if (!dialogOpen) return;
+        const vars = getAvailableVariables(
+            props.id,
+            getNodes(),
+            getEdges(),
+            latestWorkflowOutputQuery.data?.output,
+            selectedNodeId || undefined,
+        );
+        setAvailableVariables(vars);
+    }, [dialogOpen, props.id, getNodes, getEdges, latestWorkflowOutputQuery.data?.output, selectedNodeId]);
+
+    const nodeData = props.data;
+    const TELEGRAM_MESSAGE_VARIABLE_BASE = "telegramMessage";
+    const suggestedName = useMemo(() => {
+        const existingCandidate = nodeData?.variableName ?? nodeData?.varibleName;
+        const trimmed = typeof existingCandidate === "string" ? existingCandidate.trim() : "";
+        if (trimmed) return trimmed;
+        return getUniqueVariableName(TELEGRAM_MESSAGE_VARIABLE_BASE, props.id, getNodes());
+    }, [nodeData?.variableName, nodeData?.varibleName, props.id, getNodes, dialogOpen]);
+
     const handleSubmit = (values: TelegramMessageDialogValues) => {
-        setNodes((nodes) => nodes.map((node) => {
-            if (node.id === props.id) {
+        setNodes((nodes) => {
+            const fallbackVariableName = getUniqueVariableName(
+                TELEGRAM_MESSAGE_VARIABLE_BASE,
+                props.id,
+                nodes,
+            );
+            const nextVariableName = getUniqueVariableName(
+                values.variableName.trim() || fallbackVariableName,
+                props.id,
+                nodes,
+            );
+
+            return nodes.map((node) => {
+                if (node.id !== props.id) return node;
                 return {
                     ...node,
                     data: {
                         ...node.data,
                         ...values,
+                        variableName: nextVariableName,
+                        varibleName: nextVariableName,
                     }
                 };
-            }
-            return node;
-        }));
+            });
+        });
     }
-    const nodeData = props.data;
     const description = nodeData?.message
         ? nodeData.message.slice(0, 50)
         : "NOT CONFIGURED";
+    const existingVariableName =
+        nodeData?.variableName ?? (nodeData as { varibleName?: string } | undefined)?.varibleName;
+    const trimmedVariableName = existingVariableName?.trim() ?? "";
         
     return (
         <>
@@ -90,17 +165,22 @@ export const TelegramMessageNode = memo((props: NodeProps<TelegramMessageNodeTyp
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
-                defaultValues={defaultValues}
+                defaultValues={{ ...defaultValues, variableName: suggestedName }}
                 executionStatus={nodeStatus}
                 executionOutput={latestExecutionResult?.output ?? ""}
                 executionError={latestExecutionResult?.error}
+                availableVariables={availableVariables}
+                isLoadingVariables={latestWorkflowOutputQuery.isFetching}
+                nodeOptions={nodeOptions}
+                selectedNodeId={selectedNodeId}
+                onSelectedNodeIdChange={setSelectedNodeId}
             />
             <BaseExecutionNode
                 status={nodeStatus}
                 {...props}
                 id={props.id}
                 icon="/logos/telegram-message.svg"
-                name="Telegram Message"
+                name={trimmedVariableName.length > 0 ? trimmedVariableName : "Telegram Message"}
                 description={description}
                 onSettings={handleOpenSettings}
                 onDelete={() => undefined}

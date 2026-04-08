@@ -33,7 +33,6 @@ type SetNodeNodeData = {
 }
 
 type SetNodeType = Node<SetNodeNodeData>;
-
 const SET_NODE_VARIABLE_BASE = "setNode";
 
 export const SetNodeNode = memo((props: NodeProps<SetNodeType>) => {

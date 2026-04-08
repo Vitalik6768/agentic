@@ -14,7 +14,6 @@ import { interfaceTableChannel } from "./channels/interface-table";
 import type { Realtime } from "@inngest/realtime";
 import { conditionNodeChannel } from "./channels/condition-node";
 import { agentNodeChannel } from "./channels/agent-node";
-import { serpApiNodeChannel } from "./channels/serp-api-node";
 import { extractorNodeChannel } from "./channels/extractor-node";
 import { loopNodeChannel } from "./channels/loop-node";
 import { breakNodeChannel } from "./channels/break-node";
@@ -59,7 +58,6 @@ export const executeWorkflow = inngest.createFunction(
       interfaceTableChannel(),
       conditionNodeChannel(),
       agentNodeChannel(),
-      serpApiNodeChannel(),
       extractorNodeChannel(),
       loopNodeChannel(),
       breakNodeChannel(),
