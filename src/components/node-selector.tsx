@@ -150,6 +150,9 @@ export function NodeSelector({ open, onOpenChange, children }: NodeSelectorProps
                 x: centerX + Math.random() - 0.5 * 200,
                 y: centerY + Math.random() - 0.5 * 200
             })
+            const deselectedNodes = nodes.map((n) =>
+                n.selected ? { ...n, selected: false } : n
+            );
             const newNode = {
                 id: createId(),
                 type: nodeType,
@@ -165,7 +168,7 @@ export function NodeSelector({ open, onOpenChange, children }: NodeSelectorProps
                 return [newNode]
 
             }
-            return [...nodes, newNode]
+            return [...deselectedNodes, newNode]
         }
         )
         onOpenChange(false)
