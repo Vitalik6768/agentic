@@ -10,12 +10,6 @@ import { editorAtom } from "../store/atoms";
 import { nodeComponents } from "@/app/features/registry/node-components";
 import { AddNodeButton } from "./add-node-button";
 import { ExecuteWorkflowButton } from "./execute-workflow-button";
-// import { nodeComponents } from "@/config/node-components";
-// import { AddNodeButton } from "./add-node-button";
-// import { useSetAtom } from "jotai";
-// import { editorAtom } from "../store/atoms";
-// import { ExecuteWorkflowButton } from "./execute-workflow-button";
-// import { useSuspenseWorkflow } from "@/app/features/workflows/hooks/use-workflows";
 
 export const EditorLoading = () => {
     return (
@@ -47,9 +41,10 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
         (changes: EdgeChange[]) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
         [],
     );
+    // Optional: Add smoothstep edges
     const onConnect = useCallback(
         (params: Connection) =>
-            setEdges((edgesSnapshot) => addEdge({ ...params, type: "smoothstep" }, edgesSnapshot)),
+            setEdges((edgesSnapshot) => addEdge({ ...params }, edgesSnapshot)),
         [],
     );
     const hasConfiguredTrigger = useMemo(() => {

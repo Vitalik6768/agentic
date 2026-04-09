@@ -23,8 +23,6 @@ export function WorkflowNode({
     showTollbar = false,
     onDelete,
     onSettings,
-    name,
-    description,
     bottomActions,
     ...props }: WorkflowNodeProps) {
 
@@ -40,22 +38,6 @@ export function WorkflowNode({
 
             </NodeToolbar>
             {children}
-            {name && 
-            <NodeToolbar
-            position={Position.Bottom}
-            isVisible
-            className="max-w-[200px] text-center"
-            >
-                <p className="font-medium">
-                    {name}
-                </p>
-                {description && (
-                    <p className="text-muted-foreground truncate text-sm">
-                        {description}
-                    </p>
-                )}
-            </NodeToolbar>
-            }
             {bottomActions && (
                 <NodeToolbar
                     position={Position.Bottom}

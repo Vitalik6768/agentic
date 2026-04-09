@@ -98,6 +98,16 @@ export const BaseExecutionNode = memo(({
                         position={Position.Right}
                     />
                 </BaseNodeContent>
+                {(name ?? description) && (
+                    <div className="pointer-events-none absolute left-1/2 top-full mt-2 w-[200px] -translate-x-1/2 text-center">
+                        {name && <p className="text-[9px] font-medium leading-tight">{name}</p>}
+                        {description && (
+                            <p className="text-[8px] text-muted-foreground truncate leading-tight">
+                                {description}
+                            </p>
+                        )}
+                    </div>
+                )}
             </BaseNode>
             </NodeStatusIndicator>
         </WorkflowNode >
