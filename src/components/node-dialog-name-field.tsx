@@ -6,13 +6,15 @@ import { cn } from "@/lib/utils";
 import { CheckIcon, PencilIcon } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-export const NODE_VARIABLE_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+// Unicode-friendly: allow letters/numbers from any language plus underscore.
+// Requires the `u` flag for `\p{...}` property escapes.
+export const NODE_VARIABLE_NAME_REGEX = /^[\p{L}_][\p{L}\p{N}_]*$/u;
 
 export function validateNodeVariableName(value: string): string | undefined {
     const t = value.trim();
     if (!t) return "Name is required";
     if (!NODE_VARIABLE_NAME_REGEX.test(t)) {
-        return "Use letters, numbers, or underscores (e.g. delayNode1)";
+        return "Use letters (any language), numbers, or underscores (e.g. delayNode1)";
     }
     return undefined;
 }

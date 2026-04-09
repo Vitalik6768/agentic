@@ -20,11 +20,12 @@ import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-fi
 import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
 import { Bot } from "lucide-react";
 import { TemplateVariableTextarea } from "@/lib/template-highlight";
+import { NODE_VARIABLE_NAME_REGEX } from "@/components/node-dialog-name-field";
 
 
 
 const formSchema = z.object({
-    varibleName: z.string().min(1, { message: "Variable name is required" }).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
+    varibleName: z.string().min(1, { message: "Variable name is required" }).regex(NODE_VARIABLE_NAME_REGEX, { message: "Invalid variable name" }),
     systemPrompt: z.string().optional(),
     userPrompt: z.string().min(1, { message: "User prompt is required" }),
     credentialId: z.string().min(1, { message: "Credential is required" }),

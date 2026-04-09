@@ -20,9 +20,10 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 import { CredentialType } from "@/types";
 import { useGetCredentialsByType } from "../../../credentials/hooks/use-credentials";
+import { NODE_VARIABLE_NAME_REGEX } from "@/components/node-dialog-name-field";
 
 const formSchema = z.object({
-    variableName: z.string().min(1, { message: "Variable name is required" }).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
+    variableName: z.string().min(1, { message: "Variable name is required" }).regex(NODE_VARIABLE_NAME_REGEX, { message: "Invalid variable name" }),
     message: z.string().min(1, { message: "Message is required" }),
     chatId: z.string().optional(),
     credentialId: z.string().min(1, { message: "Credential is required" }),

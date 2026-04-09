@@ -13,12 +13,12 @@ import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
 import { cn } from "@/lib/utils";
 import { TemplateVariableInput } from "@/lib/template-highlight";
 import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
-import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
+import { NODE_VARIABLE_NAME_REGEX, type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
 import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
 import { Filter } from "lucide-react";
 
 const fieldSchema = z.object({
-    outputKey: z.string().trim().min(1, { message: "Field key is required" }).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid key" }),
+    outputKey: z.string().trim().min(1, { message: "Field key is required" }).regex(NODE_VARIABLE_NAME_REGEX, { message: "Invalid key" }),
     lookupMode: z.enum(["path", "key_name", "key_value", "object_where"]),
     sourcePath: z.string().optional(),
     lookupValue: z.string().optional(),
@@ -68,7 +68,7 @@ const fieldSchema = z.object({
 });
 
 const formSchema = z.object({
-    variableName: z.string().min(1, { message: "Variable name is required" }).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
+    variableName: z.string().min(1, { message: "Variable name is required" }).regex(NODE_VARIABLE_NAME_REGEX, { message: "Invalid variable name" }),
     fields: z.array(fieldSchema).min(1, { message: "Add at least one field to extract" }),
 });
 

@@ -20,13 +20,14 @@ import { NodeDialogEntityFooter } from "@/components/node-dialog-entity";
 import { TriggerDialogEntity } from "@/components/trigger-dialog-entity";
 import { TRIGGER_DIALOG_CONTENT_STYLE, TRIGGER_PANELS_STYLES } from "../trigger-constants";
 import { MessageCircle } from "lucide-react";
+import { NODE_VARIABLE_NAME_REGEX } from "@/components/node-dialog-name-field";
 
 
 const formSchema = z.object({
     variableName: z
         .string()
         .min(1, { message: "Variable name is required" })
-        .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
+        .regex(NODE_VARIABLE_NAME_REGEX, { message: "Invalid variable name" }),
     credentialId: z.string().min(1, { message: "Credential is required" }),
 
 })

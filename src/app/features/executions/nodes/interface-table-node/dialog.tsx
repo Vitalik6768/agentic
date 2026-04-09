@@ -20,6 +20,7 @@ import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-fi
 import { TemplateVariableInput } from "@/lib/template-highlight";
 import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
 import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
+import { NODE_VARIABLE_NAME_REGEX } from "@/components/node-dialog-name-field";
 
 /**
  * Read column names from the table header row (`rows[0].cells`) — e.g. `id`, `email`.
@@ -53,7 +54,7 @@ const formSchema = z
     variableName: z
       .string()
       .min(1, { message: "Variable name is required" })
-      .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
+      .regex(NODE_VARIABLE_NAME_REGEX, { message: "Invalid variable name" }),
     interfaceId: z.string().min(1, { message: "Interface is required" }),
     operation: z.enum(["GET_DATA", "APPEND_DATA", "UPDATE_DATA"]),
     appendColumnValues: z.array(z.string()),

@@ -13,7 +13,7 @@ import z from "zod";
 import type { AvailableVariable, UpstreamVariableNodeOption } from "@/lib/variable-picker";
 import { TemplateVariableInput, unwrapTemplateToken } from "@/lib/template-highlight";
 import { NodeDialogEntity, NodeDialogEntityFooter } from "@/components/node-dialog-entity";
-import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
+import { NODE_VARIABLE_NAME_REGEX, type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-field";
 import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
 import { cn } from "@/lib/utils";
 import { Check, GitBranch, Plus, X } from "lucide-react";
@@ -31,7 +31,7 @@ const formSchema = z.object({
   variableName: z
     .string()
     .min(1, { message: "Variable name is required" })
-    .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
+    .regex(NODE_VARIABLE_NAME_REGEX, { message: "Invalid variable name" }),
   conditions: z.array(conditionRowSchema).min(1, { message: "Add at least one condition" }),
   // kept for legacy/back-compat; we compute it from conditions on submit.
   expression: z.string().optional(),

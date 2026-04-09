@@ -13,10 +13,11 @@ import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { type NodeStatus } from "@/components/react-flow/node-status-indicator";
+import { NODE_VARIABLE_NAME_REGEX } from "@/components/node-dialog-name-field";
 
 
 const formSchema = z.object({
-    variableName: z.string().min(1, { message: "Variable name is required" }).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Invalid variable name" }),
+    variableName: z.string().min(1, { message: "Variable name is required" }).regex(NODE_VARIABLE_NAME_REGEX, { message: "Invalid variable name" }),
     arrayInput: z.string().min(1, { message: "Array input is required" }),
 });
 
