@@ -97,6 +97,49 @@ export const executeWorkflow = inngest.createFunction(
         connections: true,
       },
     });
+
+    const periodStartUtc = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1, 0, 0, 0, 0));
+    if (workflow.published === true) {
+      // "Production executions" are defined as runs of *published* workflows.
+      // We snapshot this onto the execution row (`billable=true`) so later unpublish/publish
+      // does not rewrite historical usage. The `updateMany(... billable:false)` guard ensures
+      // we increment MonthlyUsage at most once per execution (Inngest can re-deliver events).
+      // Mark execution as billable exactly once and increment monthly usage only once.
+      await db.$transaction(async (tx) => {
+        const updated = await tx.execution.updateMany({
+          where: {
+            inngestEventId,
+            workflowId,
+            billable: false,
+          },
+          data: {
+            billable: true,
+          },
+        });
+
+        if (updated.count === 1) {
+          // One row per (user, month). If it doesn't exist yet, create it; otherwise increment.
+          await tx.monthlyUsage.upsert({
+            where: {
+              userId_periodStart: {
+                userId: workflow.userId,
+                periodStart: periodStartUtc,
+              },
+            },
+            create: {
+              userId: workflow.userId,
+              periodStart: periodStartUtc,
+              executions: 1,
+            },
+            update: {
+              executions: {
+                increment: 1,
+              },
+            },
+          });
+        }
+      });
+    }
     const sortedNodes = topologicalSort(
       workflow.nodes as unknown as import("@xyflow/react").Node[],
       workflow.connections,

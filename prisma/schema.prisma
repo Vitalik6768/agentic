@@ -28,6 +28,7 @@ model User {
   workflows     Workflow[]
   credentials   Credential[]
   interfaces    Interface[]
+  monthlyUsage  MonthlyUsage[]
 
   @@unique([email])
   @@map("user")
@@ -196,9 +197,30 @@ model Execution {
   error       String?         @db.Text
   errorStack  String?         @db.Text
 
+  // When true, this execution counts toward monthly usage limits.
+  // We snapshot this at execution start time so later publish/unpublish does not rewrite history.
+  billable    Boolean         @default(false)
+
   inngestEventId String @unique
 
   output Json?
+}
+
+model MonthlyUsage {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Start of the month in UTC (e.g. 2026-04-01T00:00:00.000Z).
+  periodStart DateTime
+
+  executions  Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, periodStart])
+  @@index([userId, periodStart])
 }
 
 enum MisfirePolicy {

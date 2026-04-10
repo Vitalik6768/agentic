@@ -11,3 +11,11 @@ export const prefetchExecutions = (params: Input) => {
 export const prefetchExecution = (id: string) => {
     return prefetch(trpc.executions.getOne.queryOptions({ id }));
 }
+
+export const prefetchCurrentMonthUsage = () => {
+    return prefetch(trpc.executions.getCurrentMonthUsage.queryOptions());
+}
+
+export const prefetchCurrentMonthStats = () => {
+    return prefetch(trpc.executions.getCurrentMonthStats.queryOptions());
+}

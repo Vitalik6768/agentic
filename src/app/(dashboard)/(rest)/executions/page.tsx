@@ -1,5 +1,5 @@
 import { executionsParamsLoader } from "@/app/features/executions/server/params-loader";
-import { prefetchExecutions } from "@/app/features/executions/server/prefetch";
+import { prefetchCurrentMonthStats, prefetchCurrentMonthUsage, prefetchExecutions } from "@/app/features/executions/server/prefetch";
 import { ExecutionsContainer, ExecutionsError, ExecutionsList, ExecutionsLoading } from "@/app/features/executions/components/executions";
 import { requireAuth } from "@/server/better-auth/server";
 import { HydrateClient } from "@/trpc/server";
@@ -12,6 +12,8 @@ const page = async ({ searchParams }: { searchParams: Promise<SearchParams> }) =
 
   const params = await executionsParamsLoader(searchParams);
   prefetchExecutions(params);
+  prefetchCurrentMonthUsage();
+  prefetchCurrentMonthStats();
   return (
       <ExecutionsContainer>
         <HydrateClient>

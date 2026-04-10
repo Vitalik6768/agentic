@@ -4,8 +4,9 @@ import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, Entit
 import { useExecutionsParams } from "../hooks/use-executions-params";
 import { formatDistanceToNow } from "date-fns";
 import { CheckCircleIcon, ClockIcon, LoaderCircleIcon, XCircleIcon } from "lucide-react";
-import { useSuspenseExecutions } from "../hooks/use-executions";
+import { useCurrentMonthStats, useSuspenseExecutions } from "../hooks/use-executions";
 import { ExecutionStatus, type Execution } from "generated/prisma";
+import { Card, CardContent } from "@/components/ui/card";
 
 
 export const ExecutionsList = () => {
@@ -20,10 +21,39 @@ export const ExecutionsList = () => {
     )
 }
 export const ExecutionsHeader = () => {
+    const stats = useCurrentMonthStats();
+    const monthLabel =
+        stats.data?.periodStart
+            ? new Date(stats.data.periodStart).toLocaleString(undefined, { month: "long", year: "numeric" })
+            : "This month";
+
+    const right = (
+        <div className="grid gap-3 sm:grid-cols-2">
+            <Card className="py-4">
+                <CardContent className="px-4">
+                    <div className="text-xs text-muted-foreground">Production executions</div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight">
+                        {stats.data?.productionExecutions ?? 0}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">{monthLabel}</div>
+                </CardContent>
+            </Card>
+            <Card className="py-4">
+                <CardContent className="px-4">
+                    <div className="text-xs text-muted-foreground">Failed production executions</div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight">
+                        {stats.data?.failedProductionExecutions ?? 0}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">{monthLabel}</div>
+                </CardContent>
+            </Card>
+        </div>
+    );
     return (
         <EntityHeader
             title="Executions"
-            description="Manage your executions"
+            description="Track your production executions."
+            right={right}
         />
     )
 }

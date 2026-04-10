@@ -18,3 +18,13 @@ export const useSuspenseExecution = (id: string) => {
     return useSuspenseQuery(trpc.executions.getOne.queryOptions({ id }));
 
 }
+
+export const useCurrentMonthUsage = () => {
+    const trpc = useTRPC();
+    return useQuery(trpc.executions.getCurrentMonthUsage.queryOptions());
+}
+
+export const useCurrentMonthStats = () => {
+    const trpc = useTRPC();
+    return useQuery(trpc.executions.getCurrentMonthStats.queryOptions());
+}

@@ -2,7 +2,14 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
 import z from "zod";
 import { PAGINATIONS } from "@/config/constans";
+import { ExecutionStatus } from "generated/prisma";
 
+const getCurrentMonthRangeUtc = () => {
+  const now = new Date();
+  const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+  const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0));
+  return { periodStart, periodEnd };
+};
 
 export const executionsRouter = createTRPCRouter({
   
@@ -10,6 +17,67 @@ export const executionsRouter = createTRPCRouter({
   
   
   
+  getCurrentMonthUsage: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { periodStart, periodEnd } = getCurrentMonthRangeUtc();
+
+      const usage = await db.monthlyUsage.findUnique({
+        where: {
+          userId_periodStart: {
+            userId: ctx.session.user.id,
+            periodStart,
+          },
+        },
+        select: {
+          executions: true,
+        },
+      });
+
+      return {
+        periodStart,
+        periodEnd,
+        executions: usage?.executions ?? 0,
+      };
+    }),
+  getCurrentMonthStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { periodStart, periodEnd } = getCurrentMonthRangeUtc();
+
+      const usage = await db.monthlyUsage.findUnique({
+        where: {
+          userId_periodStart: {
+            userId: ctx.session.user.id,
+            periodStart,
+          },
+        },
+        select: {
+          executions: true,
+        },
+      });
+
+      const failedProductionExecutions = await db.execution.count({
+        where: {
+          billable: true,
+          status: ExecutionStatus.FAILED,
+          startedAt: {
+            gte: periodStart,
+            lt: periodEnd,
+          },
+          workflow: {
+            userId: ctx.session.user.id,
+          },
+        },
+      });
+
+      const productionExecutions = usage?.executions ?? 0;
+
+      return {
+        periodStart,
+        periodEnd,
+        productionExecutions,
+        failedProductionExecutions,
+      };
+    }),
   getOne: protectedProcedure
     .input(
       z.object({

@@ -10,7 +10,8 @@ import { Switch } from "./ui/switch";
 
 type EntityHeaderProps = {
     title: string;
-    description?: string;
+    description?: React.ReactNode;
+    right?: React.ReactNode;
     newButtonLabel?: string;
     disabled?: boolean;
     isCreating?: boolean;
@@ -27,6 +28,7 @@ type EntityHeaderProps = {
 export const EntityHeader = ({
     title,
     description,
+    right,
     onNew,
     newButtonHref,
     newButtonLabel,
@@ -37,9 +39,14 @@ export const EntityHeader = ({
         <div className="flex flex-row items-center justify-between gap-x-4">
             <div className="flex flex-col">
                 <h1 className="text-lg md:text-xl font-semibold">{title}</h1>
-                {description && <p className="text-xs md:text-sm text-muted-foreground">{description}</p>}
+                {description && <div className="text-xs md:text-sm text-muted-foreground">{description}</div>}
 
             </div>
+            {right && (
+                <div className="flex items-center justify-end">
+                    {right}
+                </div>
+            )}
             {onNew && !newButtonHref && (
                 <Button
                     disabled={isCreating ?? disabled}
