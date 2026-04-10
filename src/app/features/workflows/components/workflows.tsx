@@ -1,6 +1,6 @@
 'use client';
 
-import { useCreateWorkflow, useRemoveWorkflow, useSuspenseWorkflows, useUpdatePublishedWorkflow } from "../hooks/use-workflows";
+import { useCopyWorkflow, useCreateWorkflow, useRemoveWorkflow, useSuspenseWorkflows, useUpdatePublishedWorkflow } from "../hooks/use-workflows";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useWorkflowsParams } from "../hooks/use-workflows-params";
@@ -115,9 +115,18 @@ export const WorkflowEmpty = () => {
 }
 
 export const WorkflowItem = ({ data }: { data: Workflow }) => {
+    const router = useRouter();
     const removeWorkflow = useRemoveWorkflow();
     const handleRemove = async () => {
         await removeWorkflow.mutateAsync({ id: data.id });
+    }
+    const copyWorkflow = useCopyWorkflow();
+    const handleCopy = async () => {
+        copyWorkflow.mutate({ id: data.id }, {
+            onSuccess: (newWorkflow) => {
+                router.push(`/workflows/${newWorkflow.id}`);
+            },
+        });
     }
     const updatePublishedWorkflow = useUpdatePublishedWorkflow();
     const handleUpdatePublished = async (published: boolean) => {
@@ -144,6 +153,8 @@ export const WorkflowItem = ({ data }: { data: Workflow }) => {
             }
             onRemove={handleRemove}
             isRemoving={removeWorkflow.isPending}
+            onCopy={handleCopy}
+            isCopying={copyWorkflow.isPending}
             onPublish={handleUpdatePublished}
             published={data.published ?? false}
             isPublishing={updatePublishedWorkflow.isPending}

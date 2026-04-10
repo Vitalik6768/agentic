@@ -1,17 +1,16 @@
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { generateSlug } from "random-word-slugs";
 import z from "zod";
-// import { PAGINATIONS } from "@/config/constans";
 import { db } from "@/server/db";
 import { TRPCError } from "@trpc/server";
 import type { Node, Edge } from "@xyflow/react";
-// import { sendWorkflowExecution } from "@/inngest/utils";
 import { NodeType } from "generated/prisma";
 import { PAGINATIONS } from "@/config/constans";
 import { sendWorkflowExecution } from "@/inngest/utills";
 import { parseScheduleConfig } from "@/lib/workflow-schedule";
 import { deleteRemoteCronJobForWorkflow } from "@/lib/cron-job";
-// import type { Edge } from "@xyflow/react";
+import { randomUUID } from "crypto";
+import { type Prisma } from "generated/prisma";
 
 export const workflowsRouter = createTRPCRouter({
 
@@ -69,6 +68,71 @@ export const workflowsRouter = createTRPCRouter({
       },
     });
   }),
+  copy: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const source = await db.workflow.findFirst({
+        where: {
+          id: input.id,
+          userId: ctx.session.user.id,
+        },
+        include: {
+          nodes: true,
+          connections: true,
+        },
+      });
+
+      if (!source) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Workflow not found",
+        });
+      }
+
+      return db.$transaction(async (tx) => {
+        const newWorkflow = await tx.workflow.create({
+          data: {
+            userId: ctx.session.user.id,
+            name: input.name ?? `${source.name} (copy)`,
+            published: false,
+          },
+        });
+
+        const nodeIdMap = new Map<string, string>();
+        for (const node of source.nodes) {
+          nodeIdMap.set(node.id, randomUUID());
+        }
+
+        await tx.node.createMany({
+          data: source.nodes.map((node) => ({
+            id: nodeIdMap.get(node.id)!,
+            workflowId: newWorkflow.id,
+            name: node.name,
+            type: node.type,
+            position: node.position as unknown as Prisma.InputJsonValue,
+            data: (node.data ?? {}) as unknown as Prisma.InputJsonValue,
+            credentialId: node.credentialId,
+          })),
+        });
+
+        await tx.connection.createMany({
+          data: source.connections.map((connection) => ({
+            workflowId: newWorkflow.id,
+            fromNodeId: nodeIdMap.get(connection.fromNodeId)!,
+            toNodeId: nodeIdMap.get(connection.toNodeId)!,
+            fromOutput: connection.fromOutput,
+            toInput: connection.toInput,
+          })),
+        });
+
+        return newWorkflow;
+      });
+    }),
   remove: protectedProcedure
     .input(
       z.object({

@@ -1,4 +1,4 @@
-import { AlertTriangleIcon, Loader2Icon, MoreHorizontalIcon, PackageOpenIcon, PlusIcon, SearchIcon, TrashIcon } from "lucide-react";
+import { AlertTriangleIcon, CopyIcon, Loader2Icon, MoreHorizontalIcon, PackageOpenIcon, PlusIcon, SearchIcon, TrashIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { Input } from "./ui/input";
@@ -264,14 +264,16 @@ interface entityItemProps {
     image?: React.ReactNode;
     actions?: React.ReactNode;
     onRemove?: () => void;
+    onCopy?: () => void;
     className?: string;
     onPublish?: (published: boolean) => void;
     published?: boolean;
     isRemoving?: boolean;
     isPublishing?: boolean;
+    isCopying?: boolean;
 }
 
-export const EntityItem = ({ href, title, subtitle, image, actions, onRemove, className, isRemoving, onPublish, published, isPublishing }: entityItemProps) => {
+export const EntityItem = ({ href, title, subtitle, image, actions, onRemove, onCopy, className, isRemoving, onPublish, published, isPublishing, isCopying }: entityItemProps) => {
     const handleRemove = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -282,6 +284,16 @@ export const EntityItem = ({ href, title, subtitle, image, actions, onRemove, cl
             onRemove();
         }
 
+    }
+    const handleCopy = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isCopying) {
+            return;
+        }
+        if (onCopy) {
+            onCopy();
+        }
     }
     return (
         <Link href={href} prefetch>
@@ -336,6 +348,12 @@ export const EntityItem = ({ href, title, subtitle, image, actions, onRemove, cl
                                         align="end"
                                         onClick={(e) => e.stopPropagation()}
                                     >
+                                        {onCopy && (
+                                            <DropdownMenuItem onClick={handleCopy}>
+                                                <CopyIcon className="size-4" />
+                                                Copy
+                                            </DropdownMenuItem>
+                                        )}
                                         <DropdownMenuItem onClick={handleRemove}>
                                             <TrashIcon className="size-4" />
                                             Delete

@@ -117,3 +117,18 @@ export const useUpdatePublishedWorkflow = () => {
     }));
 }
 
+export const useCopyWorkflow = () => {
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+
+    return useMutation(trpc.workflows.copy.mutationOptions({
+        onSuccess: (data) => {
+            toast.success(`Workflow ${data.name} copied successfully`);
+            void queryClient.invalidateQueries(trpc.workflows.getMany.queryOptions({}));
+        },
+        onError: (error) => {
+            toast.error(`failed to copy workflow ${error.message}`);
+        },
+    }));
+}
+
