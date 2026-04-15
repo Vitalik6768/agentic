@@ -139,6 +139,7 @@ enum NodeType {
   LOOP_NODE
   BREAK_NODE
   DELAY_NODE
+  CHAT_TRIGGER
 }
 
 model Node {

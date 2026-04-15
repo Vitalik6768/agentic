@@ -1,6 +1,6 @@
 "use client";
 
-import { FilterIcon, GlobeIcon, MousePointer2Icon } from "lucide-react";
+import { FilterIcon, GlobeIcon, MessagesSquareIcon, MousePointer2Icon } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import React, { useCallback } from "react";
 import { Separator } from "./ui/separator";
@@ -36,6 +36,12 @@ const triggerNodes: NodeTypeOption[] = [
         label: "Webhook Trigger",
         description: "Trigger the workflow via HTTP webhook",
         icon: "/logos/webhook.svg",
+    },
+    {
+        type: NodeType.CHAT_TRIGGER,
+        label: "Chat Trigger",
+        description: "Trigger the workflow via chat",
+        icon: MessagesSquareIcon,
     },
     {
         type: NodeType.SCHEDULE_TRIGGER,

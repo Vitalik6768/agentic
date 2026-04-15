@@ -16,11 +16,13 @@ import { extractorNodeExecutor } from "../executions/nodes/extractor-node/execut
 import { loopExecutor } from "../executions/nodes/loop-node/executor";
 import { breakNodeExecutor } from "../executions/nodes/break-node/executor";
 import { delayNodeExecutor } from "../executions/nodes/delay-node/executor";
+import { chatTriggerExecutor } from "../triggers/chat-trigger/executor";
 
 export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
     [NodeType.TELEGRAM_TRIGGER]: telegramTriggerExecutor,
     [NodeType.WEBHOOK_TRIGGER]: webhookTriggerExecutor,
+    [NodeType.CHAT_TRIGGER]: chatTriggerExecutor,
     [NodeType.SCHEDULE_TRIGGER]: scheduleTriggerExecutor,
     [NodeType.HTTP_REQUEST]: httpRequestExecutor as NodeExecutor,
     [NodeType.INITIAL]: manualTriggerExecutor,

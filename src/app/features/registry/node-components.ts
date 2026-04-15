@@ -17,6 +17,7 @@ import { ExtractorNode } from "../executions/nodes/extractor-node/node";
 import { LoopNode } from "../executions/nodes/loop-node/node";
 import { BreakNodeNode } from "../executions/nodes/break-node/node";
 import { DelayNode } from "../executions/nodes/delay-node/node";
+import { ChatTriggerNode } from "../triggers/chat-trigger/node";
 
 
 export const nodeComponents = {
@@ -24,6 +25,7 @@ export const nodeComponents = {
   [NodeType.MANUAL_TRIGGER]: ManualTriggerNode,
   [NodeType.TELEGRAM_TRIGGER]: TelegramTriggerNode,
   [NodeType.WEBHOOK_TRIGGER]: WebhookTriggerNode,
+  [NodeType.CHAT_TRIGGER]: ChatTriggerNode,
   [NodeType.SCHEDULE_TRIGGER]: ScheduleTriggerNode,
   [NodeType.HTTP_REQUEST]: HttpRequestNode,
   [NodeType.OPENROUTER]: OpenRouterNode,
