@@ -9,6 +9,7 @@ interface ChatMessageProps {
   message: string;
   isUser: boolean;
   timestamp?: Date;
+  isLoading?: boolean;
 }
 
 // Function to detect if content contains HTML tags
@@ -30,7 +31,7 @@ const sanitizeHTML = (html: string): string => {
   });
 };
 
-export function ChatMessage({ message, isUser, timestamp }: ChatMessageProps) {
+export function ChatMessage({ message, isUser, timestamp, isLoading }: ChatMessageProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -61,7 +62,13 @@ export function ChatMessage({ message, isUser, timestamp }: ChatMessageProps) {
             ? 'bg-primary text-primary-foreground' 
             : 'bg-muted text-muted-foreground'
         )}>
-          {isHTML && isClient ? (
+          {!isUser && isLoading ? (
+            <div className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-current opacity-60 animate-bounce [animation-delay:-0.2s]" />
+              <span className="h-2 w-2 rounded-full bg-current opacity-60 animate-bounce [animation-delay:-0.1s]" />
+              <span className="h-2 w-2 rounded-full bg-current opacity-60 animate-bounce" />
+            </div>
+          ) : isHTML && isClient ? (
             <div 
               dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
               className="prose prose-sm max-w-none dark:prose-invert"

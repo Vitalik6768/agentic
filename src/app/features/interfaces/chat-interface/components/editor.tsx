@@ -214,16 +214,36 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
   }, [realtimeMessages]);
 
   return (
-    <div className="h-full space-y-4">
-      <Card className="flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card/60 shadow-sm">
+    <div className="space-y-4">
+      <Card className="flex h-[calc(100dvh-180px)] min-h-[560px] flex-col rounded-xl border border-border/70 bg-card/60 shadow-sm">
         <div className="border-b bg-muted/20">
           <div className="flex flex-wrap items-start justify-between gap-3 p-4">
             <div className="space-y-1">
               <h2 className="text-2xl font-semibold leading-none tracking-tight">{chatInterface.name}</h2>
               <p className="text-xs text-muted-foreground">Connect this chat to a workflow that contains a Chat Trigger node.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => void handleSave()} disabled={saveSettings.isPending}>
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <div className="w-[280px] shrink-0">
+                <Select value={workflowId} onValueChange={setWorkflowId}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Select workflow (Chat Trigger)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(workflowsQuery.data?.items ?? []).map((wf) => (
+                      <SelectItem key={wf.id} value={wf.id}>
+                        {wf.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                size="sm"
+                className="bg-blue-600 text-white hover:bg-blue-700 rounded-xs hover:cursor-pointer hover:border-blue-800 shadow-sm"
+                onClick={() => void handleSave()}
+                disabled={saveSettings.isPending}
+              >
                 {saveSettings.isPending ? (
                   <Loader2 className="mr-1.5 size-4 animate-spin" />
                 ) : (
@@ -233,46 +253,24 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
               </Button>
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3 px-4 pb-4">
-            <div className="min-w-[260px] space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Workflow</p>
-              <Select value={workflowId} onValueChange={setWorkflowId}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Select workflow (Chat Trigger)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(workflowsQuery.data?.items ?? []).map((wf) => (
-                    <SelectItem key={wf.id} value={wf.id}>
-                      {wf.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {workflowsQuery.isLoading ? <p className="text-xs text-muted-foreground">Loading workflows...</p> : null}
-            </div>
-
-            {selectedWorkflow ? (
-              <div className="rounded-lg border bg-background/60 px-3 py-2 text-xs text-muted-foreground">
-                Status: {selectedWorkflow.published ? "published" : "draft"}
-              </div>
-            ) : null}
-          </div>
         </div>
 
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col">
           <ChatHeader />
-          <div className="flex-1 overflow-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {messages.map((m) => (
               <ChatMessage
                 key={m.id}
                 message={m.isLoading ? m.content : m.content}
                 isUser={m.role === "user"}
                 timestamp={m.createdAt}
+                isLoading={m.isLoading}
               />
             ))}
           </div>
-          <ChatInput onSendMessage={(msg) => void handleSend(msg)} isLoading={isBusy} disabled={!workflowId} />
+          <div className="sticky bottom-0 border-t bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60">
+            <ChatInput onSendMessage={(msg) => void handleSend(msg)} isLoading={isBusy} disabled={!workflowId} />
+          </div>
         </div>
       </Card>
     </div>
