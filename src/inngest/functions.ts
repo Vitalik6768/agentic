@@ -19,6 +19,7 @@ import { loopNodeChannel } from "./channels/loop-node";
 import { breakNodeChannel } from "./channels/break-node";
 import { delayNodeChannel } from "./channels/delay-node";
 import { chatTriggerChannel } from "./channels/chat-trigger";
+import { chatInterfaceChannel } from "./channels/chat-interface";
 
 
 /**
@@ -32,7 +33,7 @@ export const executeWorkflow = inngest.createFunction(
     id: "execute-workflow",
     retries: 0,
     // Persist failure on the execution row when the function throws (retries are off).
-    onFailure: async ({ event, step }) => {
+    onFailure: async ({ event, step, publish }) => {
       await step.run("update-execution", async () => {
         return await db.execution.update({
           where: {
@@ -45,6 +46,26 @@ export const executeWorkflow = inngest.createFunction(
           },
         });
       });
+
+      const chatRunId =
+        (event.data.event.data?.initialData as { chat?: { chatRunId?: unknown } } | undefined)?.chat?.chatRunId ??
+        (event.data.event.data?.initialData as { meta?: { chatRunId?: unknown } } | undefined)?.meta?.chatRunId;
+      if (typeof chatRunId === "string" && chatRunId.length > 0) {
+        // If this run was started from the Chat Interface, push the failure to the UI immediately.
+        await publish(
+          chatInterfaceChannel().result({
+            chatRunId,
+            status: "error",
+            error: event.data.error.message,
+          }),
+        );
+        await publish(
+          chatInterfaceChannel().status({
+            chatRunId,
+            status: "error",
+          }),
+        );
+      }
     },
   },
   {
@@ -64,6 +85,7 @@ export const executeWorkflow = inngest.createFunction(
       breakNodeChannel(),
       delayNodeChannel(),
       chatTriggerChannel(),
+      chatInterfaceChannel(),
     ],
   },
   async ({ event, step, publish }) => {
@@ -147,6 +169,12 @@ export const executeWorkflow = inngest.createFunction(
       workflow.connections,
     ) as unknown as typeof workflow.nodes;
     const userId = workflow.userId;
+
+    // When present, this execution is expected to report its final output to the Chat Interface
+    // via Inngest Realtime (keyed by this id).
+    const chatRunId =
+      (event.data.initialData as { chat?: { chatRunId?: unknown } } | undefined)?.chat?.chatRunId ??
+      (event.data.initialData as { meta?: { chatRunId?: unknown } } | undefined)?.meta?.chatRunId;
 
     // Shared JSON bag passed through executors; each node may read/write keys.
     let context = event.data.initialData ?? {};
@@ -378,6 +406,24 @@ export const executeWorkflow = inngest.createFunction(
         output: context as Prisma.InputJsonValue,
       },
     });
+
+    if (typeof chatRunId === "string" && chatRunId.length > 0) {
+      // Push the *final* execution output to the chat UI. The UI filters by `chatRunId`
+      // so parallel sends don't race each other.
+      await publishFn(
+        chatInterfaceChannel().result({
+          chatRunId,
+          status: "success",
+          output: context,
+        }),
+      );
+      await publishFn(
+        chatInterfaceChannel().status({
+          chatRunId,
+          status: "success",
+        }),
+      );
+    }
     return { workflowId, result: context };
   },
 );

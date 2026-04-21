@@ -12,6 +12,8 @@ import { ChatHeader } from "./chat-header";
 import { ChatInput } from "./chat-input";
 import { ChatMessage } from "./chat-message";
 import { useChatTriggerWorkflows, useSaveChatInterfaceSettings, useSendChatMessage, useSuspenseChatInterface } from "../hooks/use-chat-interface";
+import { useInngestSubscription } from "@inngest/realtime/hooks";
+import { fetchChatInterfaceRealtimeToken } from "../actions";
 
 type UiMessage = {
   id: string;
@@ -118,6 +120,13 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
 
   const isBusy = sendMessage.isPending;
   const latestExecutionIdRef = useRef<string | null>(null);
+  const pendingChatRunIdRef = useRef<string | null>(null);
+
+  // Subscribe once; we filter messages by `chatRunId` so multiple chats/users can share the channel.
+  const { data: realtimeMessages } = useInngestSubscription({
+    refreshToken: fetchChatInterfaceRealtimeToken,
+    enabled: true,
+  });
 
   useEffect(() => {
     setWorkflowId(initialWorkflowId);
@@ -156,80 +165,53 @@ export function Editor({ interfaceId }: { interfaceId: string }) {
 
     setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
 
-    const latestBefore = await queryClient.fetchQuery(
-      trpc.executions.getLatestWorkflowOutput.queryOptions({ workflowId }),
-    );
-    latestExecutionIdRef.current = latestBefore?.id ?? null;
-    const latestBeforeStartedAt = latestBefore?.startedAt
-      ? new Date(latestBefore.startedAt).getTime()
-      : null;
-
-    await sendMessage.mutateAsync({
+    const sendResult = await sendMessage.mutateAsync({
       interfaceId,
       workflowId,
       message: text,
     });
+    pendingChatRunIdRef.current = sendResult.chatRunId ?? null;
 
-    // Poll until we see a new execution record, then wait until it completes
-    // (so we actually have a final output to display).
-    const start = Date.now();
-    const timeoutMs = 45_000;
-    const intervalMs = 1_000;
-    let nextOutput = latestBefore;
-    let detectedExecutionId: string | null = null;
-
-    while (Date.now() - start < timeoutMs) {
-       
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
-       
-      const latest = await queryClient.fetchQuery(
-        trpc.executions.getLatestWorkflowOutput.queryOptions({ workflowId }),
-      );
-
-      const latestId = latest?.id ?? null;
-      const latestStartedAt = latest?.startedAt ? new Date(latest.startedAt).getTime() : null;
-      const isNewExecution =
-        Boolean(latestId) &&
-        (latestId !== latestExecutionIdRef.current ||
-          (latestBeforeStartedAt !== null &&
-            latestStartedAt !== null &&
-            latestStartedAt > latestBeforeStartedAt));
-
-      if (!detectedExecutionId) {
-        if (isNewExecution && latestId) {
-          detectedExecutionId = latestId;
-          latestExecutionIdRef.current = latestId;
-          nextOutput = latest;
-        }
-        continue;
-      }
-
-      // Once we know which execution we're waiting for, keep polling until it finishes.
-      if (latestId === detectedExecutionId && latest) {
-        nextOutput = latest;
-        if (latest.status !== "RUNNING") {
-          break;
-        }
-      }
-    }
-
-    const content =
-      detectedExecutionId && nextOutput?.id === detectedExecutionId && nextOutput.status !== "RUNNING"
-        ? formatWorkflowOutput(nextOutput.output)
-        : "Workflow started, but the final output wasn’t ready yet. Check Executions for results.";
-
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === assistantPlaceholder.id
-          ? {
-              ...msg,
-              content,
-              isLoading: false,
-            }
-          : msg,
-      ),
-    );
+    // Response will be pushed via Inngest Realtime channel (`chat-interface`).
   };
+
+  useEffect(() => {
+    const pendingChatRunId = pendingChatRunIdRef.current;
+    if (!pendingChatRunId) return;
+
+    // Find the newest result event for the current pending run id.
+    const latestResultMessage = (realtimeMessages ?? [])
+      .filter(
+        (message) =>
+          message.kind === "data" &&
+          message.channel === "chat-interface" &&
+          message.topic === "result" &&
+          (message.data as { chatRunId?: unknown } | undefined)?.chatRunId === pendingChatRunId,
+      )
+      .sort((a, b) => {
+        if (a.kind === "data" && b.kind === "data") {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+        return 0;
+      })[0];
+
+    if (latestResultMessage?.kind !== "data") return;
+    const payload = latestResultMessage.data as { status: "success" | "error"; output?: unknown; error?: string };
+    const content = payload.status === "success"
+      ? formatWorkflowOutput(payload.output)
+      : payload.error ?? "Workflow failed";
+
+    pendingChatRunIdRef.current = null;
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (last?.role !== "assistant" || !last.isLoading) return prev;
+      return prev.map((msg, idx) =>
+        idx === prev.length - 1
+          ? { ...msg, content, isLoading: false }
+          : msg,
+      );
+    });
+  }, [realtimeMessages]);
 
   return (
     <div className="h-full space-y-4">

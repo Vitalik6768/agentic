@@ -3,6 +3,7 @@ import { sendWorkflowExecution } from "@/inngest/utills";
 import { db } from "@/server/db";
 import { TRPCError } from "@trpc/server";
 import { InterfaceType, NodeType } from "generated/prisma";
+import { randomUUID } from "crypto";
 import z from "zod";
 
 const chatInterfaceSettingsSchema = z
@@ -125,6 +126,9 @@ export const chatInterfaceRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Correlation id between the UI send action and the eventual workflow result publish.
+      // This avoids DB polling and lets the UI update as soon as the run completes.
+      const chatRunId = randomUUID();
       const [chatInterface, workflow, chatTriggerNode] = await Promise.all([
         db.interface.findFirst({
           where: {
@@ -188,11 +192,14 @@ export const chatInterfaceRouter = createTRPCRouter({
         startNodeId: chatTriggerNode.id,
         initialData: {
           meta: {
-            disableRealtime: workflow.published === true,
+            // Chat UI needs realtime even for published workflows.
+            disableRealtime: false,
             triggerSource: "chat",
+            chatRunId,
           },
           chat: {
             interfaceId: input.interfaceId,
+            chatRunId,
             message: input.message,
           },
         },
@@ -200,6 +207,8 @@ export const chatInterfaceRouter = createTRPCRouter({
 
       return {
         ok: true,
+        // Returned to the client so it can wait for the matching realtime `result` event.
+        chatRunId,
       };
     }),
 });
