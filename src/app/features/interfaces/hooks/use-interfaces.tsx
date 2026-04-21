@@ -53,4 +53,9 @@ export const INTERFACE_TYPES = [
     label: "Table Interface",
     description: "Spreadsheet-like rows and columns",
   },
+  {
+    value: InterfaceType.CHAT,
+    label: "Chat Interface",
+    description: "Chat UI connected to a workflow trigger",
+  },
 ] as const;

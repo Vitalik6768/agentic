@@ -1,6 +1,7 @@
 import { credentialsRouter } from "@/app/features/credentials/server/routers";
 import { executionsRouter } from "@/app/features/executions/server/routers";
 import { interfacesRouter } from "@/app/features/interfaces/server/routers";
+import { chatInterfaceRouter } from "@/app/features/interfaces/chat-interface/server/routers";
 import { tableInterfaceRouter } from "@/app/features/interfaces/table-interface/server/routers";
 import { textInterfaceRouter } from "@/app/features/interfaces/text-interface/server/routers";
 import { workflowsRouter } from "@/app/features/workflows/server/routers";
@@ -18,6 +19,7 @@ export const appRouter = createTRPCRouter({
   interfaces: interfacesRouter,
   textInterface: textInterfaceRouter,
   tableInterface: tableInterfaceRouter,
+  chatInterface: chatInterfaceRouter,
 });
 
 // export type definition of API

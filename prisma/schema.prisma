@@ -256,7 +256,7 @@ model WorkflowSchedule {
 enum InterfaceType {
   TEXT
   TABLE
-  // CHAT
+  CHAT
   // FORM
   // ...
 }

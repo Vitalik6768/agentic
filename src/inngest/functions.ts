@@ -18,6 +18,7 @@ import { extractorNodeChannel } from "./channels/extractor-node";
 import { loopNodeChannel } from "./channels/loop-node";
 import { breakNodeChannel } from "./channels/break-node";
 import { delayNodeChannel } from "./channels/delay-node";
+import { chatTriggerChannel } from "./channels/chat-trigger";
 
 
 /**
@@ -62,6 +63,7 @@ export const executeWorkflow = inngest.createFunction(
       loopNodeChannel(),
       breakNodeChannel(),
       delayNodeChannel(),
+      chatTriggerChannel(),
     ],
   },
   async ({ event, step, publish }) => {

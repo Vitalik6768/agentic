@@ -163,9 +163,12 @@ export function NodeSelector({ open, onOpenChange, children }: NodeSelectorProps
                 id: createId(),
                 type: nodeType,
                 position: flowPosition,
-                data: nodeType === NodeType.TELEGRAM_TRIGGER
-                    ? { variableName: "telegramTrigger" }
-                    : {},
+                data:
+                    nodeType === NodeType.TELEGRAM_TRIGGER
+                        ? { variableName: "telegramTrigger" }
+                        : nodeType === NodeType.CHAT_TRIGGER
+                            ? { variableName: "chat" }
+                            : {},
                 selected: true,
                 dragging: false,
             }

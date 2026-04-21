@@ -74,12 +74,20 @@ const getUpstreamVariables = (currentNodeId: string, nodes: Node[], edges: Edge[
     if (!upstreamIds.has(node.id)) continue;
     const nodeData = (node.data as NodeDataWithVariableName | undefined) ?? {};
     const candidate = nodeData.variableName ?? nodeData.varibleName;
-    if (typeof candidate !== "string" || !candidate.trim()) continue;
+    const flowType = typeof node.type === "string" ? node.type : "";
+    const fallbackVariableName =
+      flowType === "CHAT_TRIGGER" ? "chat" : undefined;
 
-    const key = candidate.trim();
+    const resolved =
+      typeof candidate === "string" && candidate.trim()
+        ? candidate.trim()
+        : fallbackVariableName;
+
+    if (!resolved) continue;
+
+    const key = resolved;
     if (variableMap.has(key)) continue;
 
-    const flowType = typeof node.type === "string" ? node.type : "";
     variableMap.set(key, {
       nodeId: node.id,
       nodeType: getNodeTypeLabel(flowType || undefined),

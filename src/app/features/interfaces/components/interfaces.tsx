@@ -22,7 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { InterfaceType } from "generated/prisma";
-import { Clock3Icon, FileTextIcon, PlusIcon, Table2Icon, Trash2Icon } from "lucide-react";
+import { Clock3Icon, FileTextIcon, MessageSquareIcon, PlusIcon, Table2Icon, Trash2Icon } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { INTERFACE_TYPES, useCreateInterface, useRemoveInterface, useSuspenseInterfaces } from "../hooks/use-interfaces";
@@ -41,6 +41,9 @@ const getInterfaceHref = (item: InterfaceItem) => {
   if (item.type === InterfaceType.TABLE) {
     return `/interfaces/table-interface/${item.id}`;
   }
+  if (item.type === InterfaceType.CHAT) {
+    return `/interfaces/chat-interface/${item.id}`;
+  }
 
   return "/interfaces";
 };
@@ -53,6 +56,17 @@ const getInterfaceMeta = (type: InterfaceType) => {
       iconClassName: "text-emerald-600",
       cardClassName: "border-l-4 border-l-emerald-500 border-b-2 border-b-emerald-500/50 border-t-2 border-t-emerald-500/50 border-r-2 border-r-emerald-500/50",
       badgeClassName: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+    };
+  }
+
+  if (type === InterfaceType.CHAT) {
+    return {
+      label: "Chat Interface",
+      Icon: MessageSquareIcon,
+      iconClassName: "text-violet-600",
+      cardClassName:
+        "border-l-4 border-l-violet-500 border-b-2 border-b-violet-500/50 border-t-2 border-t-violet-500/50 border-r-2 border-r-violet-500/50",
+      badgeClassName: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
     };
   }
 
