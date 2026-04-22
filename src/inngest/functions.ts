@@ -89,6 +89,7 @@ export const executeWorkflow = inngest.createFunction(
     ],
   },
   async ({ event, step, publish }) => {
+    type FlowNode = import("@xyflow/react").Node;
     const inngestEventId = event.id;
     const workflowId = event.data.id;
     if (!workflowId) {
@@ -165,9 +166,12 @@ export const executeWorkflow = inngest.createFunction(
       });
     }
     const sortedNodes = topologicalSort(
-      workflow.nodes as unknown as import("@xyflow/react").Node[],
+      workflow.nodes as unknown as FlowNode[],
       workflow.connections,
-    ) as unknown as typeof workflow.nodes;
+    ) as FlowNode[];
+    const nodesById = new Map<string, FlowNode>(
+      sortedNodes.map((n) => [n.id, n]),
+    );
     const userId = workflow.userId;
 
     // When present, this execution is expected to report its final output to the Chat Interface
@@ -260,45 +264,103 @@ export const executeWorkflow = inngest.createFunction(
       return index === total - 1;
     };
 
-    const activateOutgoingNodes = (
+    const getOrderedOutgoingConnections = (
       nodeId: string,
       currentContext: Record<string, unknown>,
-      targetActiveNodeIds: Set<string>,
-    ) => {
-      const outgoing = outgoingConnectionsByNode.get(nodeId) ?? [];
+    ): (typeof workflow.connections) => {
+      const outgoing = [...(outgoingConnectionsByNode.get(nodeId) ?? [])];
       const selectedOutput = getSelectedOutput(currentContext, nodeId);
-      for (const connection of outgoing) {
+      const filtered = outgoing.filter((connection) => {
         if (
           typeof selectedOutput === "string" &&
           selectedOutput.length > 0 &&
           connection.fromOutput !== selectedOutput
         ) {
-          continue;
+          return false;
         }
+        return true;
+      });
+
+      // Execution ordering policy:
+      // - We want depth-first behavior (finish the downstream chain before continuing elsewhere).
+      // - When a node has multiple outgoing edges, "next" should prefer the node visually to the right
+      //   (higher x coordinate). This makes execution feel aligned with the canvas layout.
+      filtered.sort((a, b) => {
+        const aPos = nodesById.get(a.toNodeId)?.position;
+        const bPos = nodesById.get(b.toNodeId)?.position;
+        const ax = typeof aPos?.x === "number" ? aPos.x : 0;
+        const bx = typeof bPos?.x === "number" ? bPos.x : 0;
+        if (ax !== bx) return bx - ax;
+
+        const ay = typeof aPos?.y === "number" ? aPos.y : 0;
+        const by = typeof bPos?.y === "number" ? bPos.y : 0;
+        if (ay !== by) return ay - by;
+
+        return a.toNodeId.localeCompare(b.toNodeId);
+      });
+
+      return filtered;
+    };
+
+    const activateOutgoingNodes = (
+      nodeId: string,
+      currentContext: Record<string, unknown>,
+      targetActiveNodeIds: Set<string>,
+    ) => {
+      const ordered = getOrderedOutgoingConnections(nodeId, currentContext);
+      for (const connection of ordered) {
         targetActiveNodeIds.add(connection.toNodeId);
       }
     };
 
-    // Walk the full sorted list but only execute nodes present in `initialActiveNodeIds`,
-    // mutating that set as each node completes so newly reachable nodes run in order.
-    const executeActivatedNodes = async (
+    const pushOutgoingToStack = (
+      nodeId: string,
+      currentContext: Record<string, unknown>,
+      stack: string[],
+      executed: Set<string>,
+    ) => {
+      const ordered = getOrderedOutgoingConnections(nodeId, currentContext);
+      // Stack is LIFO. We push in reverse so the highest-priority connection (right-most)
+      // ends up on top of the stack and executes immediately.
+      for (let i = ordered.length - 1; i >= 0; i -= 1) {
+        const nextId = ordered[i]!.toNodeId;
+        if (executed.has(nextId)) continue;
+        stack.push(nextId);
+      }
+    };
+
+    const executeActivatedNodesDfs = async (
       initialContext: Record<string, unknown>,
       initialActiveNodeIds: Set<string>,
     ): Promise<Record<string, unknown>> => {
+      // Depth-first executor for a pre-activated subgraph (used for loop iterations).
+      // This intentionally differs from a pure topological scan: it runs each node's
+      // downstream chain immediately, which matches user expectations from the canvas layout.
       let scopedContext = initialContext;
-      for (const scopedNode of sortedNodes) {
-        if (!initialActiveNodeIds.has(scopedNode.id)) {
-          continue;
-        }
-        const scopedExecutor = getExecutor(scopedNode.type);
+      const executed = new Set<string>();
+      const stack: string[] = [];
+      for (const nodeId of initialActiveNodeIds) {
+        stack.push(nodeId);
+      }
+      while (stack.length > 0) {
+        const currentId = stack.pop()!;
+        if (executed.has(currentId)) continue;
+        if (!initialActiveNodeIds.has(currentId)) continue;
+
+        const scopedNode = nodesById.get(currentId);
+        if (!scopedNode) continue;
+        executed.add(currentId);
+
+        const scopedExecutor = getExecutor(scopedNode.type as NodeType);
         scopedContext = await scopedExecutor({
-          data: scopedNode.data as Record<string, unknown>,
+          data: scopedNode.data,
           nodeId: scopedNode.id,
           userId,
           context: scopedContext,
           step,
           publish: publishFn,
         });
+
         if (scopedNode.type === NodeType.BREAK_NODE) {
           const loopNodeId = (scopedNode.data as { loopNodeId?: unknown }).loopNodeId;
           if (
@@ -306,32 +368,49 @@ export const executeWorkflow = inngest.createFunction(
             loopNodeId.length > 0 &&
             shouldActivateBreakOutgoing(scopedContext, loopNodeId)
           ) {
-            activateOutgoingNodes(scopedNode.id, scopedContext, initialActiveNodeIds);
+            const ordered = getOrderedOutgoingConnections(scopedNode.id, scopedContext);
+            for (const conn of ordered) initialActiveNodeIds.add(conn.toNodeId);
+            pushOutgoingToStack(scopedNode.id, scopedContext, stack, executed);
           }
         } else {
-          activateOutgoingNodes(scopedNode.id, scopedContext, initialActiveNodeIds);
+          const ordered = getOrderedOutgoingConnections(scopedNode.id, scopedContext);
+          for (const conn of ordered) initialActiveNodeIds.add(conn.toNodeId);
+          pushOutgoingToStack(scopedNode.id, scopedContext, stack, executed);
         }
       }
       return scopedContext;
     };
 
     // --- Main pass: same activation rules as above; loop nodes expand into per-iteration subgraph runs ---
-    for (const node of sortedNodes) {
-      if (!activeNodeIds.has(node.id)) {
-        continue;
+    {
+      // Main depth-first execution pass.
+      // Note: this is not a strict "global topo walk". We still compute a topo order for
+      // stable metadata (and to resolve node positions), but execution is driven by a stack
+      // so we can finish downstream chains first.
+      const executed = new Set<string>();
+      const stack: string[] = [];
+      for (const nodeId of activeNodeIds) {
+        stack.push(nodeId);
       }
+      while (stack.length > 0) {
+        const currentId = stack.pop()!;
+        if (executed.has(currentId)) continue;
+        if (!activeNodeIds.has(currentId)) continue;
+        const node = nodesById.get(currentId);
+        if (!node) continue;
+        executed.add(currentId);
 
-      const executor = getExecutor(node.type);
-      context = await executor({
-        data: node.data as Record<string, unknown>,
-        nodeId: node.id,
-        userId,
-        context,
-        step,
-        publish: publishFn,
-      });
+        const executor = getExecutor(node.type as NodeType);
+        context = await executor({
+          data: node.data,
+          nodeId: node.id,
+          userId,
+          context,
+          step,
+          publish: publishFn,
+        });
 
-      if (node.type === NodeType.LOOP_NODE) {
+        if (node.type === NodeType.LOOP_NODE) {
         // Reads `items` from context under the configured variable; for each element,
         // downstream nodes see `current`/`index` on that variable and `context.loop[nodeId]`.
         const loopNodeData = node.data as { variableName?: unknown; varibleName?: unknown };
@@ -377,22 +456,27 @@ export const executeWorkflow = inngest.createFunction(
           };
 
           activateOutgoingNodes(node.id, scopedContext, scopedActiveNodeIds);
-          await executeActivatedNodes(scopedContext, scopedActiveNodeIds);
+          await executeActivatedNodesDfs(scopedContext, scopedActiveNodeIds);
         }
-        continue;
-      }
+          continue;
+        }
 
-      if (node.type === NodeType.BREAK_NODE) {
-        const loopNodeId = (node.data as { loopNodeId?: unknown }).loopNodeId;
-        if (
-          typeof loopNodeId === "string" &&
-          loopNodeId.length > 0 &&
-          shouldActivateBreakOutgoing(context, loopNodeId)
-        ) {
-          activateOutgoingNodes(node.id, context, activeNodeIds);
+        if (node.type === NodeType.BREAK_NODE) {
+          const loopNodeId = (node.data as { loopNodeId?: unknown }).loopNodeId;
+          if (
+            typeof loopNodeId === "string" &&
+            loopNodeId.length > 0 &&
+            shouldActivateBreakOutgoing(context, loopNodeId)
+          ) {
+            const ordered = getOrderedOutgoingConnections(node.id, context);
+            for (const conn of ordered) activeNodeIds.add(conn.toNodeId);
+            pushOutgoingToStack(node.id, context, stack, executed);
+          }
+        } else {
+          const ordered = getOrderedOutgoingConnections(node.id, context);
+          for (const conn of ordered) activeNodeIds.add(conn.toNodeId);
+          pushOutgoingToStack(node.id, context, stack, executed);
         }
-      } else {
-        activateOutgoingNodes(node.id, context, activeNodeIds);
       }
     }
     await db.execution.update({
