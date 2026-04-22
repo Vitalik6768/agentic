@@ -10,21 +10,22 @@ import {
     Webhook,
     Key,
     Server,
-    Globe
+    Globe,
+    BotIcon
   } from "lucide-react"
   
   const integrations = [
     { icon: Database, name: "PostgreSQL", category: "Database" },
-    { icon: Cloud, name: "AWS", category: "Cloud" },
-    { icon: MessageSquare, name: "Slack", category: "Communication" },
+    // { icon: Cloud, name: "AWS", category: "Cloud" },
+    { icon: BotIcon, name: "AI", category: "OpenRouter" },
     { icon: Mail, name: "Gmail", category: "Email" },
-    { icon: CreditCard, name: "Stripe", category: "Payments" },
-    { icon: FileText, name: "Notion", category: "Docs" },
-    { icon: Users, name: "Salesforce", category: "CRM" },
+    // { icon: CreditCard, name: "Stripe", category: "Payments" },
+    // { icon: FileText, name: "Notion", category: "Docs" },
+    // { icon: Users, name: "Salesforce", category: "CRM" },
     { icon: BarChart3, name: "Analytics", category: "Data" },
     { icon: Webhook, name: "Webhooks", category: "API" },
-    { icon: Key, name: "Auth0", category: "Auth" },
-    { icon: Server, name: "Docker", category: "DevOps" },
+    // { icon: Key, name: "Auth0", category: "Auth" },
+    // { icon: Server, name: "Docker", category: "DevOps" },
     { icon: Globe, name: "REST APIs", category: "Custom" },
   ]
   
@@ -36,10 +37,10 @@ import {
         <div className="mx-auto max-w-7xl px-6">
         <div className="relative text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            <span className="bg-linear-to-r from-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
+            {/* <span className="bg-linear-to-r from-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
                 300+
-              </span>{" "}
-            <span className="text-white">integrations and growing</span>
+              </span>{" "} */}
+            <span className="text-white">integrations</span>
             </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-white/65">
               Connect to any service with pre-built nodes or create custom integrations with our SDK.

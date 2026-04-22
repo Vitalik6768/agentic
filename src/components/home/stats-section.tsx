@@ -1,8 +1,8 @@
 const stats = [
-    { value: "10M+", label: "Workflows executed monthly" },
+    // { value: "10M+", label: "Workflows executed monthly" },
     { value: "99.99%", label: "Uptime SLA" },
     { value: "50ms", label: "Average latency" },
-    { value: "10,000+", label: "Active teams" },
+    // { value: "10,000+", label: "Active teams" },
   ]
   
   export function StatsSection() {

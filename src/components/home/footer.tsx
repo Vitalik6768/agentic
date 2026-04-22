@@ -2,29 +2,29 @@ import Link from "next/link"
 import { Zap, Github, Twitter } from "lucide-react"
 
 const footerLinks = {
-  Product: [
-    { name: "Features", href: "#features" },
-    { name: "Integrations", href: "#integrations" },
-    // { name: "Pricing", href: "#pricing" },
-    { name: "Changelog", href: "/changelog" },
-  ],
+  // Product: [
+  //   { name: "Features", href: "#features" },
+  //   { name: "Integrations", href: "#integrations" },
+  //   // { name: "Pricing", href: "#pricing" },
+  //   { name: "Changelog", href: "/changelog" },
+  // ],
   Resources: [
-    { name: "Documentation", href: "/docs" },
-    { name: "API Reference", href: "/docs/api" },
+    // { name: "Documentation", href: "/docs" },
+    // { name: "API Reference", href: "/docs/api" },
     { name: "Templates", href: "/templates" },
-    { name: "Blog", href: "/blog" },
+    // { name: "Blog", href: "/blog" },
   ],
-  Company: [
+  Website: [
     { name: "About", href: "/about" },
-    { name: "Careers", href: "/careers" },
+    // { name: "Careers", href: "/careers" },
     { name: "Contact", href: "/contact" },
-    { name: "Partners", href: "/partners" },
+    // { name: "Partners", href: "/partners" },
   ],
   Legal: [
     { name: "Privacy", href: "/privacy" },
     { name: "Terms", href: "/terms" },
-    { name: "Security", href: "/security" },
-    { name: "DPA", href: "/dpa" },
+    // { name: "Security", href: "/security" },
+    // { name: "DPA", href: "/dpa" },
   ],
 }
 

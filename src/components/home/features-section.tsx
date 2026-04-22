@@ -22,30 +22,30 @@ import {
       description: "React to events in real-time with webhooks, schedules, or app-specific triggers.",
       color: "from-amber-400 to-orange-500",
     },
-    {
-      icon: Shield,
-      title: "Enterprise Security",
-      description: "SOC 2 compliant with encrypted credentials, audit logs, and role-based access control.",
-      color: "from-green-400 to-emerald-500",
-    },
+    // {
+    //   icon: Shield,
+    //   title: "Enterprise Security",
+    //   description: "SOC 2 compliant with encrypted credentials, audit logs, and role-based access control.",
+    //   color: "from-green-400 to-emerald-500",
+    // },
     {
       icon: Clock,
       title: "Scheduled Jobs",
       description: "Run workflows on any schedule - from every minute to custom cron expressions.",
       color: "from-blue-400 to-cyan-500",
     },
-    {
-      icon: GitBranch,
-      title: "Version Control",
-      description: "Track changes, rollback deployments, and collaborate with your team seamlessly.",
-      color: "from-pink-400 to-rose-500",
-    },
-    {
-      icon: Code2,
-      title: "Custom Code Nodes",
-      description: "Write JavaScript or Python when you need custom logic in your workflows.",
-      color: "from-indigo-400 to-purple-500",
-    },
+    // {
+    //   icon: GitBranch,
+    //   title: "Version Control",
+    //   description: "Track changes, rollback deployments, and collaborate with your team seamlessly.",
+    //   color: "from-pink-400 to-rose-500",
+    // },
+    // {
+    //   icon: Code2,
+    //   title: "Custom Code Nodes",
+    //   description: "Write JavaScript or Python when you need custom logic in your workflows.",
+    //   color: "from-indigo-400 to-purple-500",
+    // },
     {
       icon: Database,
       title: "Data Transformation",
