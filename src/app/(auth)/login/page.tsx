@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
@@ -25,6 +26,34 @@ export default function LoginPage() {
     Partial<Record<keyof LoginFormData, string>>
   >({});
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      // better-auth typically returns a URL to redirect the browser to.
+      // If it auto-redirects in your version, this call is still safe.
+      const result = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+
+      // If a URL is provided, navigate explicitly.
+      const url =
+        (result as unknown as { url?: string; data?: { url?: string } })?.data
+          ?.url ??
+        (result as unknown as { url?: string; data?: { url?: string } })?.url;
+
+      if (url) {
+        window.location.assign(url);
+      }
+    } catch {
+      setError("Failed to sign in with Google");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +106,30 @@ export default function LoginPage() {
           Sign in to your account to continue
         </p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading || loading}
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer"
+        >
+          <Image
+            src="/logos/google.svg"
+            alt=""
+            width={18}
+            height={18}
+            className="shrink-0"
+            aria-hidden
+          />
+          <span>{googleLoading ? "Redirecting..." : "Continue with Google"}</span>
+        </button>
+
+        {/* <div className="mb-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="text-xs text-white/40">or</span>
+          <div className="h-px flex-1 bg-white/10" />
+        </div> */}
+
+        {/* <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {error && (
             <div className="rounded-lg bg-red-500/20 px-4 py-3 text-sm text-red-200">
               {error}
@@ -136,7 +188,7 @@ export default function LoginPage() {
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
-        </form>
+        </form> */}
 
         {/* Registration is temporarily disabled */}
       </div>

@@ -1,11 +1,10 @@
 "use client";
 
-"use client";
-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
+import Image from "next/image";
 
 import { authClient } from "@/server/better-auth/client";
 
@@ -40,6 +39,34 @@ export default function RegisterPage() {
     Partial<Record<keyof RegisterFormData, string>>
   >({});
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      // better-auth typically returns a URL to redirect the browser to.
+      // If it auto-redirects in your version, this call is still safe.
+      const result = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+
+      // If a URL is provided, navigate explicitly.
+      const url =
+        (result as unknown as { url?: string; data?: { url?: string } })?.data
+          ?.url ??
+        (result as unknown as { url?: string; data?: { url?: string } })?.url;
+
+      if (url) {
+        window.location.assign(url);
+      }
+    } catch {
+      setError("Failed to sign in with Google");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +122,24 @@ export default function RegisterPage() {
         <p className="mb-8 text-center text-sm text-white/60">
           Sign up to get started
         </p>
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading || loading}
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer"
+        >
+          <Image
+            src="/logos/google.svg"
+            alt=""
+            width={18}
+            height={18}
+            className="shrink-0"
+            aria-hidden
+          />
+          <span>{googleLoading ? "Redirecting..." : "Continue with Google"}</span>
+        </button>
 
+{/* 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {error && (
             <div className="rounded-lg bg-red-500/20 px-4 py-3 text-sm text-red-200">
@@ -202,7 +246,7 @@ export default function RegisterPage() {
           >
             {loading ? "Creating account..." : "Create account"}
           </button>
-        </form>
+        </form> */}
 
         <p className="mt-6 text-center text-sm text-white/60">
           Already have an account?{" "}

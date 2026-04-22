@@ -9,9 +9,16 @@ export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
-  emailAndPassword: {
-    enabled: true,
-    disableSignUp: true,
+  // emailAndPassword: {
+  //   enabled: true,
+  //   disableSignUp: true,
+  // },
+  socialProviders: {
+    google: {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      redirectURI: env.CALLBACK_URL,
+    },
   },
   // socialProviders: {
   //   github: {
