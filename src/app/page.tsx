@@ -1,9 +1,6 @@
-import { headers } from "next/headers";
-import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { auth } from "@/server/better-auth";
 import { getSession } from "@/server/better-auth/server";
+import { CookieConsent } from "@/components/cookie-consent";
 import { Header } from "@/components/header";
 import { FeaturesSection } from "@/components/home/features-section";
 import { Footer } from "@/components/home/footer";
@@ -25,7 +22,7 @@ export default async function Home() {
       <FeaturesSection />
       <IntegrationsSection />
 
-      <section className="py-20">
+      {/* <section className="py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/3 px-6 py-8 text-center backdrop-blur-sm">
             <p className="text-base text-white/65">
@@ -64,9 +61,10 @@ export default async function Home() {
             )}
           </div>
         </div>
-      </section>
+      </section> */}
 
       <Footer />
+      <CookieConsent />
     </main>
   );
 }
