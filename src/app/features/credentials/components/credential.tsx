@@ -16,10 +16,22 @@ import { CredentialType } from "@/types";
 import type { Credential } from "@/types";
 
 import { useCreateCredential, useSuspenseCredential, useUpdateCredential } from "../hooks/use-credentials";
+import type { SubmitHandler } from "react-hook-form";
 const formSchema = z.object({
     name: z.string().min(1, { message: "Name is required" }),
     type: z.nativeEnum(CredentialType),
     value: z.string().min(1, { message: "Value is required" }),
+    clientId: z.string().optional(),
+}).superRefine((val, ctx) => {
+    if (val.type === CredentialType.GOOGLE) {
+        if (!val.clientId || val.clientId.trim().length === 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["clientId"],
+                message: "Client ID is required for Google",
+            });
+        }
+    }
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -41,6 +53,11 @@ const credentialTypeOptions = [
         label: "Gemini",
         icon: "/logos/gemini.svg",
     },
+    {
+        value: CredentialType.GOOGLE,
+        label: "Google",
+        icon: "/logos/google.svg",
+    },
 ]
 
 interface CredentialFormProps {
@@ -49,6 +66,7 @@ interface CredentialFormProps {
         name?: string;
         type?: CredentialType;
         value: string;
+        settings?: Record<string, unknown> | null;
 
     }
 }
@@ -60,23 +78,45 @@ export const CredentialForm = ({ initialData }: CredentialFormProps) => {
 
     const isEdit = !!initialData?.id;
 
-    const form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
-        defaultValues: initialData ?? {
+        defaultValues: initialData ? {
+            name: initialData.name ?? "",
+            type: initialData.type ?? CredentialType.OPENROUTER,
+            value: initialData.value ?? "",
+            clientId:
+                (initialData.settings && typeof initialData.settings === "object"
+                    ? (initialData.settings).clientId
+                    : "") as string,
+        } : {
             name: "",
             type: CredentialType.OPENROUTER,
             value: "",
+            clientId: "",
         },
     });
-    const onSubmit = async (values: FormValues) => {
+    const selectedType = form.watch("type");
+    const onSubmit: SubmitHandler<FormValues> = async (values) => {
         try {
+            const settings =
+                values.type === CredentialType.GOOGLE
+                    ? { clientId: values.clientId?.trim() ?? "" }
+                    : undefined;
             if (isEdit && initialData?.id) {
                 await updateCredential.mutateAsync({
                     id: initialData?.id,
-                    ...values,
+                    name: values.name,
+                    type: values.type,
+                    value: values.value,
+                    settings,
                 });
             } else {
-                await createCredential.mutateAsync(values);
+                await createCredential.mutateAsync({
+                    name: values.name,
+                    type: values.type,
+                    value: values.value,
+                    settings,
+                });
             }
             router.push("/credentials");
         } catch (error) {
@@ -138,11 +178,33 @@ export const CredentialForm = ({ initialData }: CredentialFormProps) => {
                                     </FormItem>
                                 )} />
 
+                                {selectedType === CredentialType.GOOGLE && (
+                                    <FormField
+                                        control={form.control}
+                                        name="clientId"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Client ID</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Google OAuth Client ID" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+
                                 <FormField control={form.control} name="value" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>api key</FormLabel>
+                                        <FormLabel>
+                                            {selectedType === CredentialType.GOOGLE ? "Client secret" : "api key"}
+                                        </FormLabel>
                                         <FormControl>
-                                            <Input type="password" placeholder="...sk" {...field} />
+                                            <Input
+                                                type="password"
+                                                placeholder={selectedType === CredentialType.GOOGLE ? "Google OAuth client secret" : "...sk"}
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

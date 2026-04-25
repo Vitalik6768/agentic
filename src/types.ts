@@ -4,6 +4,7 @@ export enum CredentialType {
   OPENROUTER = "OPENROUTER",
   SET_NODE = "SET_NODE",
   TELEGRAM_BOT = "TELEGRAM_BOT",
+  GOOGLE = "GOOGLE",
 }
 
 export interface Credential {
@@ -11,6 +12,7 @@ export interface Credential {
   name: string;
   value: string;
   type: CredentialType;
+  settings?: Record<string, unknown> | null;
   createdAt: Date;
   updatedAt: Date;
 }
