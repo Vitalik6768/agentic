@@ -26,6 +26,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@inngest/realtime": "^0.4.6",
     "@openrouter/ai-sdk-provider": "^2.2.3",
+    "@opentelemetry/winston-transport": "^0.25.0",
     "@paralleldrive/cuid2": "^3.3.0",
     "@prisma/client": "^6.6.0",
     "@t3-oss/env-nextjs": "^0.12.0",
