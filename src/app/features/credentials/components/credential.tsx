@@ -17,14 +17,18 @@ import type { Credential } from "@/types";
 
 import { useCreateCredential, useSuspenseCredential, useUpdateCredential } from "../hooks/use-credentials";
 import type { SubmitHandler } from "react-hook-form";
+import { Separator } from "@/components/ui/separator";
+import { ExternalLinkIcon } from "lucide-react";
 const formSchema = z.object({
     name: z.string().min(1, { message: "Name is required" }),
     type: z.nativeEnum(CredentialType),
     value: z.string().min(1, { message: "Value is required" }),
     clientId: z.string().optional(),
+    googleAuthType: z.enum(["OAUTH", "SERVICE_ACCOUNT"]).optional(),
 }).superRefine((val, ctx) => {
     if (val.type === CredentialType.GOOGLE) {
-        if (!val.clientId || val.clientId.trim().length === 0) {
+        const mode = val.googleAuthType ?? "OAUTH";
+        if (mode === "OAUTH" && (!val.clientId || val.clientId.trim().length === 0)) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ["clientId"],
@@ -88,19 +92,25 @@ export const CredentialForm = ({ initialData }: CredentialFormProps) => {
                 (initialData.settings && typeof initialData.settings === "object"
                     ? (initialData.settings).clientId
                     : "") as string,
+            googleAuthType:
+                (initialData.settings && typeof initialData.settings === "object"
+                    ? ((initialData.settings as Record<string, unknown>).googleAuthType as "OAUTH" | "SERVICE_ACCOUNT" | undefined)
+                    : undefined) ?? "OAUTH",
         } : {
             name: "",
             type: CredentialType.OPENROUTER,
             value: "",
             clientId: "",
+            googleAuthType: "OAUTH",
         },
     });
     const selectedType = form.watch("type");
+    const googleAuthType = form.watch("googleAuthType") ?? "OAUTH";
     const onSubmit: SubmitHandler<FormValues> = async (values) => {
         try {
             const settings =
                 values.type === CredentialType.GOOGLE
-                    ? { clientId: values.clientId?.trim() ?? "" }
+                    ? { clientId: values.clientId?.trim() ?? "", googleAuthType: values.googleAuthType ?? "OAUTH" }
                     : undefined;
             if (isEdit && initialData?.id) {
                 await updateCredential.mutateAsync({
@@ -179,36 +189,89 @@ export const CredentialForm = ({ initialData }: CredentialFormProps) => {
                                 )} />
 
                                 {selectedType === CredentialType.GOOGLE && (
-                                    <FormField
-                                        control={form.control}
-                                        name="clientId"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Client ID</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Google OAuth Client ID" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
+                                    <>
+                                        <FormField
+                                            control={form.control}
+                                            name="googleAuthType"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Google auth type</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value ?? "OAUTH"}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Select Google auth type" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="OAUTH">OAuth (Connect account)</SelectItem>
+                                                            <SelectItem value="SERVICE_ACCOUNT">Service Account (JSON)</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        {googleAuthType === "OAUTH" && (
+                                            <FormField
+                                                control={form.control}
+                                                name="clientId"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Client ID</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Google OAuth Client ID" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
                                         )}
-                                    />
+                                    </>
                                 )}
 
                                 <FormField control={form.control} name="value" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            {selectedType === CredentialType.GOOGLE ? "Client secret" : "api key"}
+                                            {selectedType === CredentialType.GOOGLE
+                                                ? googleAuthType === "SERVICE_ACCOUNT"
+                                                    ? "Service account JSON"
+                                                    : "Client secret"
+                                                : "api key"}
                                         </FormLabel>
                                         <FormControl>
                                             <Input
-                                                type="password"
-                                                placeholder={selectedType === CredentialType.GOOGLE ? "Google OAuth client secret" : "...sk"}
+                                                type={selectedType === CredentialType.GOOGLE && googleAuthType === "SERVICE_ACCOUNT" ? "text" : "password"}
+                                                placeholder={
+                                                    selectedType === CredentialType.GOOGLE
+                                                        ? googleAuthType === "SERVICE_ACCOUNT"
+                                                            ? '{ "type": "service_account", ... }'
+                                                            : "Google OAuth client secret"
+                                                        : "...sk"
+                                                }
                                                 {...field}
                                             />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
+
+                                {isEdit && selectedType === CredentialType.GOOGLE && googleAuthType === "OAUTH" && initialData?.id ? (
+                                    <>
+                                        <Separator />
+                                        <div className="flex flex-col gap-2">
+                                            <div className="text-sm font-medium">Connect Google account</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                This saves the refresh token inside this credential (n8n-style), so nodes can run without relying on the user’s login session.
+                                            </div>
+                                            <Button type="button" variant="outline" asChild>
+                                                <a href={`/api/google/oauth/start?credentialId=${encodeURIComponent(initialData.id)}`}>
+                                                    Connect / Reconnect <ExternalLinkIcon className="ml-2 size-4" />
+                                                </a>
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : null}
                                 <div className="flex gap-2 justify-start">
                                     <Button
                                         type="submit"

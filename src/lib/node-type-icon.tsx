@@ -20,6 +20,7 @@ const NODE_TYPE_ICONS: Record<string, IconSource> = {
   GEMINI: "/logos/gemini.svg",
   INTERFACE_TEXT: "/logos/interface-text.svg",
   INTERFACE_TABLE: "/logos/table-interface.svg",
+  GOOGLE_SHEET: "/logos/google-sheets.svg",
   AGENT_NODE: "/logos/agent-node.svg",
   LOOP_NODE: "/logos/loop-node.svg",
   EXTRACTOR_NODE: "/logos/extractor-node.svg",

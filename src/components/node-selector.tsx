@@ -189,6 +189,13 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/agent-node.svg",
         categoryId: "ai",
     },
+    {
+        type: NodeType.GOOGLE_SHEET,
+        label: "Google Sheets",
+        description: "Read, append, or update a Google Sheet range",
+        icon: "/logos/google-sheets.svg",
+        categoryId: "core",
+    },
 
 ]
 

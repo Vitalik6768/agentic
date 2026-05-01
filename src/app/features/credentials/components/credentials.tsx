@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCredentialsParams } from "../hooks/use-credentials-params";
 import { useEntitySearch } from "../hooks/use-entity-search";
 import { formatDistanceToNow } from "date-fns";
+import { useEffect, useState } from "react";
 import type { Credential } from "@/types";
 import  { CredentialType } from "@/types";
 
@@ -105,19 +106,38 @@ const credentialTypeIcon: Record<CredentialType, React.ReactNode> = {
 
 export const CredentialItem = ({ data }: { data: Credential }) => {
     const removeCredential = useRemoveCredential();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     const handleRemove = async () => {
         void removeCredential.mutateAsync({ id: data.id });
     }
     const icon = credentialTypeIcon[data.type] ?? "/logos/openrouter.svg";
+    const settings =
+        data.settings && typeof data.settings === "object" ? (data.settings as Record<string, unknown>) : null;
+    const googleAuthType = settings && typeof settings.googleAuthType === "string" ? settings.googleAuthType : "";
+    const googleOauthTokenEnc =
+        settings &&
+        typeof (settings.googleOAuth as { tokenEnc?: unknown } | undefined)?.tokenEnc === "string"
+            ? ((settings.googleOAuth as { tokenEnc?: unknown }).tokenEnc as string)
+            : "";
+    const isGoogleOAuthConnected = data.type === CredentialType.GOOGLE && googleAuthType === "OAUTH" && !!googleOauthTokenEnc;
     return (
         <EntityItem
             href={`/credentials/${data.id}`}
             title={data.name}
             subtitle={
                 <>
-                    Updated {formatDistanceToNow(data.updatedAt)}
+                    Updated{" "}
+                    <span suppressHydrationWarning>
+                        {mounted ? formatDistanceToNow(data.updatedAt) : ""}
+                    </span>
                     &bull;
-                    Created {formatDistanceToNow(data.createdAt)}
+                    Created{" "}
+                    <span suppressHydrationWarning>
+                        {mounted ? formatDistanceToNow(data.createdAt) : ""}
+                    </span>
                 </>
             }
             image={
@@ -125,6 +145,24 @@ export const CredentialItem = ({ data }: { data: Credential }) => {
                     <Image src={icon as string} alt={data.type} width={20} height={20} />
                     
                 </div>
+            }
+            actions={
+                data.type === CredentialType.GOOGLE ? (
+                    <span
+                        className={
+                            "rounded-full border px-2 py-1 text-[10px] font-medium " +
+                            (isGoogleOAuthConnected
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
+                                : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200")
+                        }
+                    >
+                        {googleAuthType === "SERVICE_ACCOUNT"
+                            ? "Service account"
+                            : isGoogleOAuthConnected
+                                ? "Connected"
+                                : "Not connected"}
+                    </span>
+                ) : null
             }
             onRemove={handleRemove}
             isRemoving={removeCredential.isPending}
