@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const credential = await db.credential.findUnique({
     where: { id: credentialId, userId: session.user.id },
   });
-  if (!credential || credential.type !== CredentialType.GOOGLE) {
+  if (credential?.type !== CredentialType.GOOGLE) {
     return NextResponse.json({ error: "Google credential not found" }, { status: 404 });
   }
 

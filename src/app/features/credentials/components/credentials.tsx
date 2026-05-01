@@ -115,7 +115,7 @@ export const CredentialItem = ({ data }: { data: Credential }) => {
     }
     const icon = credentialTypeIcon[data.type] ?? "/logos/openrouter.svg";
     const settings =
-        data.settings && typeof data.settings === "object" ? (data.settings as Record<string, unknown>) : null;
+        data.settings && typeof data.settings === "object" ? (data.settings) : null;
     const googleAuthType = settings && typeof settings.googleAuthType === "string" ? settings.googleAuthType : "";
     const googleOauthTokenEnc =
         settings &&

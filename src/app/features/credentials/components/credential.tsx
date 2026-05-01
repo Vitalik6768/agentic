@@ -94,7 +94,7 @@ export const CredentialForm = ({ initialData }: CredentialFormProps) => {
                     : "") as string,
             googleAuthType:
                 (initialData.settings && typeof initialData.settings === "object"
-                    ? ((initialData.settings as Record<string, unknown>).googleAuthType as "OAUTH" | "SERVICE_ACCOUNT" | undefined)
+                    ? ((initialData.settings).googleAuthType as "OAUTH" | "SERVICE_ACCOUNT" | undefined)
                     : undefined) ?? "OAUTH",
         } : {
             name: "",

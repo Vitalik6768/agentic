@@ -52,15 +52,39 @@ const renderTemplate = (template: string, context: Record<string, unknown>): str
   }
 };
 
+const safeJsonStringify = (value: unknown): string => {
+  const seen = new WeakSet<object>();
+  return JSON.stringify(value, (_key, v: unknown) => {
+    if (typeof v === "bigint") return v.toString();
+    if (!v || typeof v !== "object") return v;
+    if (seen.has(v)) return "[Circular]";
+    seen.add(v);
+    return v;
+  });
+};
+
+const toSheetCellString = (cell: unknown): string => {
+  if (cell == null) return "";
+  if (typeof cell === "string") return cell;
+  if (typeof cell === "number" || typeof cell === "boolean" || typeof cell === "bigint") return String(cell);
+  if (cell instanceof Date) return cell.toISOString();
+  try {
+    return safeJsonStringify(cell);
+  } catch {
+    // Fall back to a stable explicit tag rather than base Object stringification.
+    return "[Unserializable]";
+  }
+};
+
 const parseValuesJson = (rendered: string): unknown[][] => {
   try {
     const parsed = JSON.parse(rendered) as unknown;
     if (Array.isArray(parsed) && parsed.every((row) => Array.isArray(row))) {
-      return (parsed as unknown[][]).map((row) => row.map((cell) => (cell == null ? "" : String(cell))));
+      return (parsed as unknown[][]).map((row) => row.map((cell) => toSheetCellString(cell)));
     }
     if (Array.isArray(parsed)) {
       // Allow a single row: ["a","b"] -> [["a","b"]]
-      return [(parsed as unknown[]).map((cell) => (cell == null ? "" : String(cell)))];
+      return [(parsed as unknown[]).map((cell) => toSheetCellString(cell))];
     }
   } catch {
     // fall through
@@ -226,7 +250,7 @@ export const googleSheetNodeExecutor: NodeExecutor<GoogleSheetNodeData> = async 
         const rows = dataRows.map((row) => {
           const obj: Record<string, string> = {};
           for (let i = 0; i < headerRow.length; i += 1) {
-            const key = headerRow[i] || `Column ${i + 1}`;
+            const key = headerRow[i] ?? `Column ${i + 1}`;
             obj[key] = row?.[i] == null ? "" : String(row[i]);
           }
           return obj;

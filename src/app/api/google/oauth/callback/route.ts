@@ -49,7 +49,7 @@ export async function GET(req: Request) {
 
   const decryptedState = decrypt(verification.value);
   const parsed = safeJsonParse(decryptedState);
-  const stored = (parsed && typeof parsed === "object" ? (parsed as StoredState) : null) as StoredState | null;
+  const stored = (parsed && typeof parsed === "object" ? (parsed as StoredState) : null);
   if (!stored?.credentialId || !stored.userId) {
     return NextResponse.json({ error: "Corrupted state" }, { status: 400 });
   }
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
   const credential = await db.credential.findUnique({
     where: { id: stored.credentialId, userId: session.user.id },
   });
-  if (!credential || credential.type !== CredentialType.GOOGLE) {
+  if (credential?.type !== CredentialType.GOOGLE) {
     return NextResponse.json({ error: "Google credential not found" }, { status: 404 });
   }
 
