@@ -19,6 +19,7 @@ import { BreakNodeNode } from "../executions/nodes/break-node/node";
 import { DelayNode } from "../executions/nodes/delay-node/node";
 import { ChatTriggerNode } from "../triggers/chat-trigger/node";
 import { GoogleSheetNode } from "../executions/nodes/google-sheet-node/node";
+import { GoogleDocsNode } from "../executions/nodes/google-docs-node/node";
 
 
 export const nodeComponents = {
@@ -41,6 +42,7 @@ export const nodeComponents = {
   [NodeType.BREAK_NODE]: BreakNodeNode,
   [NodeType.DELAY_NODE]: DelayNode,
   [NodeType.GOOGLE_SHEET]: GoogleSheetNode,
+  [NodeType.GOOGLE_DOCS]: GoogleDocsNode,
 } as const satisfies NodeTypes;
 
 export type RegisteredNodeType = keyof typeof nodeComponents;

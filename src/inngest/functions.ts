@@ -21,6 +21,7 @@ import { delayNodeChannel } from "./channels/delay-node";
 import { chatTriggerChannel } from "./channels/chat-trigger";
 import { chatInterfaceChannel } from "./channels/chat-interface";
 import { googleSheetChannel } from "./channels/google-sheet";
+import { googleDocsChannel } from "./channels/google-docs";
 
 
 /**
@@ -80,6 +81,7 @@ export const executeWorkflow = inngest.createFunction(
       webhookTriggerChannel(),
       interfaceTableChannel(),
       googleSheetChannel(),
+      googleDocsChannel(),
       conditionNodeChannel(),
       agentNodeChannel(),
       extractorNodeChannel(),

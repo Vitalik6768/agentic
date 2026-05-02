@@ -196,6 +196,13 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/google-sheets.svg",
         categoryId: "core",
     },
+    {
+        type: NodeType.GOOGLE_DOCS,
+        label: "Google Docs",
+        description: "Read a Google Doc or append / replace-all text",
+        icon: "/logos/google-docs.svg",
+        categoryId: "core",
+    },
 
 ]
 

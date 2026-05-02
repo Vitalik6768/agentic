@@ -4,8 +4,7 @@ import { db } from "@/server/db";
 import { google } from "googleapis";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { CredentialType, type Prisma } from "generated/prisma";
-
-const SHEETS_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"] as const;
+import { GOOGLE_OAUTH_SCOPES } from "@/lib/google-oauth-scopes";
 
 type StoredState = {
   credentialId: string;
@@ -118,7 +117,7 @@ export async function GET(req: Request) {
     googleOAuth: {
       connectedAt: new Date().toISOString(),
       email,
-      scopes: tokens.scope ?? previousScopes ?? [...SHEETS_SCOPES].join(" "),
+      scopes: tokens.scope ?? previousScopes ?? [...GOOGLE_OAUTH_SCOPES].join(" "),
       tokenEnc,
     },
   };

@@ -142,6 +142,7 @@ enum NodeType {
   DELAY_NODE
   CHAT_TRIGGER
   GOOGLE_SHEET
+  GOOGLE_DOCS
 }
 
 model Node {

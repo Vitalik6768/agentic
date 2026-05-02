@@ -4,8 +4,7 @@ import { db } from "@/server/db";
 import { google } from "googleapis";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { CredentialType } from "generated/prisma";
-
-const SHEETS_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"] as const;
+import { GOOGLE_OAUTH_SCOPES } from "@/lib/google-oauth-scopes";
 
 export async function GET(req: Request) {
   const session = await requireAuth();
@@ -59,7 +58,7 @@ export async function GET(req: Request) {
   const authUrl = oauth2.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
-    scope: [...SHEETS_SCOPES],
+    scope: [...GOOGLE_OAUTH_SCOPES],
     state,
     include_granted_scopes: true,
   });
