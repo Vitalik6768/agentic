@@ -394,7 +394,6 @@ export const GoogleDocsDialog = ({
                               ref(el);
                               documentIdRef.current = el;
                             }}
-                            className="font-mono text-sm"
                             placeholder="ID from the Google Docs URL (or {{variables}})"
                             onFocus={() => setActiveTarget("documentId")}
                             value={value ?? ""}

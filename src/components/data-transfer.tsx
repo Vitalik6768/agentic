@@ -254,7 +254,8 @@ export const VariablePickerPanel = ({
                   key={`${item.nodeId}-${item.key}`}
                   type="button"
                   className="w-full rounded-md border bg-background p-2 text-left hover:bg-accent hover:cursor-pointer"
-                  onClick={() => {
+                  onClick={(e) => {
+                    if (e.detail > 1) return;
                     const insertValue =
                       allowPathMode && insertMode === "path" ? item.key : item.token;
                     onInsertVariable(insertValue);
@@ -424,6 +425,7 @@ const JsonTreeNode = ({
           className="cursor-pointer text-left text-foreground hover:underline"
           onClick={(e) => {
             e.stopPropagation();
+            if (e.detail > 1) return;
             onPickPath(path, value);
           }}
           title={`Insert ${path}`}
