@@ -2,7 +2,6 @@
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGetCredentialsByType } from "@/app/features/credentials/hooks/use-credentials";
 import { CredentialType } from "@/types";
@@ -18,7 +17,7 @@ import { type NodeDialogNameFieldHandle } from "@/components/node-dialog-name-fi
 import { FileTextIcon } from "lucide-react";
 import { DIALOG_CONTENT_STYLE, PANELS_STYLES } from "../constants";
 import { NODE_VARIABLE_NAME_REGEX } from "@/components/node-dialog-name-field";
-import { TemplateVariableTextarea } from "@/lib/template-highlight";
+import { TemplateVariableInput, TemplateVariableTextarea } from "@/lib/template-highlight";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -94,6 +93,7 @@ interface Props {
 }
 
 type TextFieldName = "appendText" | "findText" | "replaceText";
+type TemplateInsertField = "documentId" | TextFieldName;
 
 export const GoogleDocsDialog = ({
   open,
@@ -111,10 +111,11 @@ export const GoogleDocsDialog = ({
 }: Props) => {
   const { data: credentials, isLoading: isLoadingCredentials } = useGetCredentialsByType(CredentialType.GOOGLE);
   const nameFieldRef = useRef<NodeDialogNameFieldHandle>(null);
+  const documentIdRef = useRef<HTMLInputElement | null>(null);
   const appendRef = useRef<HTMLTextAreaElement | null>(null);
   const findRef = useRef<HTMLTextAreaElement | null>(null);
   const replaceRef = useRef<HTMLTextAreaElement | null>(null);
-  const [activeTarget, setActiveTarget] = useState<TextFieldName>("appendText");
+  const [activeTarget, setActiveTarget] = useState<TemplateInsertField>("documentId");
 
   const initialName = defaultValues.variableName ?? (defaultValues as { varibleName?: string }).varibleName ?? "";
 
@@ -171,7 +172,25 @@ export const GoogleDocsDialog = ({
     onOpenChange(false);
   };
 
-  const insertAtCursor = (fieldName: TextFieldName, token: string) => {
+  const insertAtTemplateField = (fieldName: TemplateInsertField, token: string) => {
+    if (fieldName === "documentId") {
+      const el = documentIdRef.current;
+      const currentValue = form.getValues("documentId") ?? "";
+      if (!el) {
+        form.setValue("documentId", `${currentValue}${token}`, { shouldDirty: true });
+        return;
+      }
+      const start = el.selectionStart ?? currentValue.length;
+      const end = el.selectionEnd ?? currentValue.length;
+      const nextValue = `${currentValue.slice(0, start)}${token}${currentValue.slice(end)}`;
+      form.setValue("documentId", nextValue, { shouldDirty: true });
+      requestAnimationFrame(() => {
+        el.focus();
+        const nextCursor = start + token.length;
+        el.setSelectionRange(nextCursor, nextCursor);
+      });
+      return;
+    }
     const refMap = { appendText: appendRef, findText: findRef, replaceText: replaceRef } as const;
     const textarea = refMap[fieldName].current;
     const currentValue = form.getValues(fieldName) ?? "";
@@ -191,7 +210,7 @@ export const GoogleDocsDialog = ({
   };
 
   const handleInsertVariable = (token: string) => {
-    insertAtCursor(activeTarget, token);
+    insertAtTemplateField(activeTarget, token);
   };
 
   const credentialOptions = useMemo(() => credentials ?? [], [credentials]);
@@ -364,16 +383,32 @@ export const GoogleDocsDialog = ({
                 <FormField
                   control={form.control}
                   name="documentId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Document ID</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="ID from the Google Docs URL" />
-                      </FormControl>
-                      <FormDescription>The long ID between /d/ and /edit in the document URL.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const { ref, value, ...fieldProps } = field;
+                    return (
+                      <FormItem>
+                        <FormLabel>Document ID</FormLabel>
+                        <FormControl>
+                          <TemplateVariableInput
+                            ref={(el) => {
+                              ref(el);
+                              documentIdRef.current = el;
+                            }}
+                            className="font-mono text-sm"
+                            placeholder="ID from the Google Docs URL (or {{variables}})"
+                            onFocus={() => setActiveTarget("documentId")}
+                            value={value ?? ""}
+                            {...fieldProps}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          The long ID between /d/ and /edit in the document URL, or templates like{" "}
+                          <code className="rounded bg-muted px-1">{"{{variables}}"}</code>.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 <FormField

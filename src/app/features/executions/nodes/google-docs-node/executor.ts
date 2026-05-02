@@ -125,8 +125,8 @@ export const googleDocsNodeExecutor: NodeExecutor<GoogleDocsNodeData> = async ({
   }
 
   const authType = data.authType ?? "OAUTH";
-  const documentId = data.documentId?.trim();
-  if (!documentId) {
+  const documentIdTemplate = data.documentId?.trim();
+  if (!documentIdTemplate) {
     await publish(
       googleDocsChannel().result({
         nodeId,
@@ -217,6 +217,11 @@ export const googleDocsNodeExecutor: NodeExecutor<GoogleDocsNodeData> = async ({
       }
 
       const docs = google.docs({ version: "v1", auth: docsAuth });
+
+      const documentId = renderTemplate(documentIdTemplate, safeContext).trim();
+      if (!documentId) {
+        throw new NonRetriableError("Document ID is required after templates resolve.");
+      }
 
       if (operation === "GET_DOCUMENT") {
         const resp = await docs.documents.get({ documentId });
