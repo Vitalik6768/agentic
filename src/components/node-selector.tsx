@@ -203,6 +203,13 @@ const executionNodes: NodeTypeOption[] = [
         icon: "/logos/google-docs.svg",
         categoryId: "core",
     },
+    {
+        type: NodeType.GOOGLE_DOCS_FILE,
+        label: "Google Doc file",
+        description: "Create a blank Google Doc or delete a doc by ID",
+        icon: "/logos/google-docs.svg",
+        categoryId: "core",
+    },
 
 ]
 

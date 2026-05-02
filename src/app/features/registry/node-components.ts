@@ -20,6 +20,7 @@ import { DelayNode } from "../executions/nodes/delay-node/node";
 import { ChatTriggerNode } from "../triggers/chat-trigger/node";
 import { GoogleSheetNode } from "../executions/nodes/google-sheet-node/node";
 import { GoogleDocsNode } from "../executions/nodes/google-docs-node/node";
+import { GoogleDocsFileNode } from "../executions/nodes/google-docs-node-files/node";
 
 
 export const nodeComponents = {
@@ -43,6 +44,7 @@ export const nodeComponents = {
   [NodeType.DELAY_NODE]: DelayNode,
   [NodeType.GOOGLE_SHEET]: GoogleSheetNode,
   [NodeType.GOOGLE_DOCS]: GoogleDocsNode,
+  [NodeType.GOOGLE_DOCS_FILE]: GoogleDocsFileNode,
 } as const satisfies NodeTypes;
 
 export type RegisteredNodeType = keyof typeof nodeComponents;

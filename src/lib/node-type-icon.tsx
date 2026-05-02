@@ -22,6 +22,7 @@ const NODE_TYPE_ICONS: Record<string, IconSource> = {
   INTERFACE_TABLE: "/logos/table-interface.svg",
   GOOGLE_SHEET: "/logos/google-sheets.svg",
   GOOGLE_DOCS: "/logos/google-docs.svg",
+  GOOGLE_DOCS_FILE: "/logos/google-docs.svg",
   AGENT_NODE: "/logos/agent-node.svg",
   LOOP_NODE: "/logos/loop-node.svg",
   EXTRACTOR_NODE: "/logos/extractor-node.svg",

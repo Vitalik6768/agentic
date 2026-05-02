@@ -19,6 +19,7 @@ import { delayNodeExecutor } from "../executions/nodes/delay-node/executor";
 import { chatTriggerExecutor } from "../triggers/chat-trigger/executor";
 import { googleSheetNodeExecutor } from "../executions/nodes/google-sheet-node/executor";
 import { googleDocsNodeExecutor } from "../executions/nodes/google-docs-node/executor";
+import { googleDocsFileNodeExecutor } from "../executions/nodes/google-docs-node-files/executor";
 
 export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
@@ -41,6 +42,7 @@ export const executerRegistry: Partial<Record<NodeType, NodeExecutor>> = {
     [NodeType.DELAY_NODE]: delayNodeExecutor as NodeExecutor,
     [NodeType.GOOGLE_SHEET]: googleSheetNodeExecutor as NodeExecutor,
     [NodeType.GOOGLE_DOCS]: googleDocsNodeExecutor as NodeExecutor,
+    [NodeType.GOOGLE_DOCS_FILE]: googleDocsFileNodeExecutor as NodeExecutor,
 }
 
 export const getExecutor = (type: NodeType): NodeExecutor => {

@@ -22,6 +22,7 @@ import { chatTriggerChannel } from "./channels/chat-trigger";
 import { chatInterfaceChannel } from "./channels/chat-interface";
 import { googleSheetChannel } from "./channels/google-sheet";
 import { googleDocsChannel } from "./channels/google-docs";
+import { googleDocsFileChannel } from "./channels/google-docs-file";
 
 
 /**
@@ -82,6 +83,7 @@ export const executeWorkflow = inngest.createFunction(
       interfaceTableChannel(),
       googleSheetChannel(),
       googleDocsChannel(),
+      googleDocsFileChannel(),
       conditionNodeChannel(),
       agentNodeChannel(),
       extractorNodeChannel(),

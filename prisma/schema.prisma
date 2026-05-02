@@ -143,6 +143,8 @@ enum NodeType {
   CHAT_TRIGGER
   GOOGLE_SHEET
   GOOGLE_DOCS
+  GOOGLE_DOCS_FILE
+
 }
 
 model Node {
